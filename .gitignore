@@ -1,0 +1,65 @@
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE/Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# PHP
+composer.phar
+/vendor/
+composer.lock
+
+# Environment files
+.env
+.env.local
+.env.production
+.env.staging
+
+# Database files
+*.sqlite
+*.db
+database.sqlite
+
+# Log files
+*.log
+logs/
+error.log
+access.log
+
+# Cache files
+cache/
+tmp/
+temp/
+
+# Upload files (if they contain sensitive data)
+uploads/*
+!uploads/.gitkeep
+
+# Config files with sensitive data
+config/config.php
+
+# Backup files
+*.bak
+*.backup
+
+# Node modules (if using any JS build tools)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Build files
+dist/
+build/
+
+# XAMPP specific
+.htaccess.bak

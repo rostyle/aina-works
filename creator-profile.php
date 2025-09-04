@@ -1,0 +1,435 @@
+<?php
+require_once 'config/config.php';
+
+$creatorId = (int)($_GET['id'] ?? 0);
+
+if (!$creatorId) {
+    redirect(url('creators.php'));
+}
+
+// データベース接続
+$db = Database::getInstance();
+
+try {
+    // クリエイター詳細取得
+    $creator = $db->selectOne("
+        SELECT u.*, 
+               AVG(r.rating) as avg_rating, 
+               COUNT(DISTINCT r.id) as review_count,
+               COUNT(DISTINCT w.id) as work_count,
+               COUNT(DISTINCT ja.id) as completed_jobs
+        FROM users u
+        LEFT JOIN reviews r ON u.id = r.reviewee_id
+        LEFT JOIN works w ON u.id = w.user_id AND w.status = 'published'
+        LEFT JOIN job_applications ja ON u.id = ja.creator_id AND ja.status = 'accepted'
+        WHERE u.id = ? AND u.user_type = 'creator' AND u.is_active = 1
+        GROUP BY u.id
+    ", [$creatorId]);
+
+    if (!$creator) {
+        redirect(url('creators.php'));
+    }
+
+    // スキル取得
+    $skills = $db->select("
+        SELECT s.name, us.proficiency, c.name as category_name, c.color as category_color
+        FROM user_skills us
+        JOIN skills s ON us.skill_id = s.id
+        LEFT JOIN categories c ON s.category_id = c.id
+        WHERE us.user_id = ?
+        ORDER BY us.proficiency DESC, s.name ASC
+    ", [$creatorId]);
+
+    // 作品取得
+    $works = $db->select("
+        SELECT w.*, c.name as category_name,
+               AVG(r.rating) as avg_rating, COUNT(DISTINCT r.id) as review_count
+        FROM works w
+        LEFT JOIN categories c ON w.category_id = c.id
+        LEFT JOIN reviews r ON w.id = r.work_id
+        WHERE w.user_id = ? AND w.status = 'published'
+        GROUP BY w.id
+        ORDER BY w.view_count DESC, w.created_at DESC
+        LIMIT 6
+    ", [$creatorId]);
+
+    // レビュー取得
+    $reviews = $db->select("
+        SELECT r.*, u.full_name as reviewer_name, u.profile_image as reviewer_image
+        FROM reviews r
+        JOIN users u ON r.reviewer_id = u.id
+        WHERE r.reviewee_id = ?
+        ORDER BY r.created_at DESC
+        LIMIT 5
+    ", [$creatorId]);
+
+} catch (Exception $e) {
+    // エラー時はダミーデータを使用
+    $creator = [
+        'id' => 1,
+        'full_name' => '田中 美咲',
+        'bio' => 'AI漫画クリエイターとして活動しています。Stable DiffusionやMidjourneyを使った作品制作が得意で、キャラクターデザインから背景まで幅広く対応可能です。',
+        'location' => '東京都',
+        'profile_image' => null,
+        'hourly_rate' => 30000,
+        'experience_years' => 3,
+        'response_time' => 2,
+        'is_pro' => 1,
+        'is_verified' => 1,
+        'avg_rating' => 4.9,
+        'review_count' => 127,
+        'work_count' => 45,
+        'completed_jobs' => 127,
+        'created_at' => '2021-03-15'
+    ];
+    
+    $skills = [
+        ['name' => 'Stable Diffusion', 'proficiency' => 'expert', 'category_name' => 'AI漫画', 'category_color' => '#F59E0B'],
+        ['name' => 'Midjourney', 'proficiency' => 'expert', 'category_name' => 'AI漫画', 'category_color' => '#F59E0B'],
+        ['name' => 'Photoshop', 'proficiency' => 'advanced', 'category_name' => 'AI漫画', 'category_color' => '#F59E0B'],
+        ['name' => 'ComfyUI', 'proficiency' => 'intermediate', 'category_name' => 'AI漫画', 'category_color' => '#F59E0B']
+    ];
+    
+    $works = [
+        [
+            'id' => 1,
+            'title' => 'AI漫画キャラクターデザイン',
+            'main_image' => 'assets/images/sample-work-1.png',
+            'category_name' => 'AI漫画',
+            'avg_rating' => 4.9,
+            'review_count' => 127,
+            'price_min' => 50000,
+            'view_count' => 1520
+        ],
+        [
+            'id' => 2,
+            'title' => 'ファンタジー背景イラスト',
+            'main_image' => 'assets/images/sample-work-2.jpg',
+            'category_name' => 'AI漫画',
+            'avg_rating' => 4.8,
+            'review_count' => 89,
+            'price_min' => 30000,
+            'view_count' => 980
+        ]
+    ];
+    
+    $reviews = [
+        [
+            'id' => 1,
+            'rating' => 5,
+            'comment' => '非常に高品質な作品を制作していただきました。コミュニケーションも丁寧で、修正対応も迅速でした。',
+            'reviewer_name' => '山田太郎',
+            'reviewer_image' => null,
+            'created_at' => '2024-01-20'
+        ],
+        [
+            'id' => 2,
+            'rating' => 5,
+            'comment' => 'AI技術を駆使した素晴らしいイラストを描いていただきました。期待以上の仕上がりです。',
+            'reviewer_name' => '佐藤花子',
+            'reviewer_image' => null,
+            'created_at' => '2024-01-15'
+        ]
+    ];
+}
+
+$pageTitle = h($creator['full_name']) . ' - クリエイタープロフィール';
+$pageDescription = h($creator['bio']);
+
+include 'includes/header.php';
+?>
+
+<!-- Breadcrumb -->
+<nav class="bg-gray-50 py-4">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <ol class="flex items-center space-x-2 text-sm">
+            <li><a href="<?= url() ?>" class="text-gray-500 hover:text-gray-700">ホーム</a></li>
+            <li><span class="text-gray-400">/</span></li>
+            <li><a href="<?= url('creators.php') ?>" class="text-gray-500 hover:text-gray-700">クリエイター一覧</a></li>
+            <li><span class="text-gray-400">/</span></li>
+            <li><span class="text-gray-900 font-medium"><?= h($creator['full_name']) ?></span></li>
+        </ol>
+    </div>
+</nav>
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Main Content -->
+        <div class="lg:col-span-2">
+            <!-- Profile Header -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+                <div class="flex flex-col md:flex-row items-start md:items-center space-y-4 md:space-y-0 md:space-x-6">
+                    <img src="<?= uploaded_asset($creator['profile_image'] ?? 'assets/images/default-avatar.png') ?>" 
+                         alt="<?= h($creator['full_name']) ?>" 
+                         class="w-24 h-24 rounded-full">
+                    
+                    <div class="flex-1">
+                        <div class="flex items-center space-x-3 mb-2">
+                            <h1 class="text-3xl font-bold text-gray-900"><?= h($creator['full_name']) ?></h1>
+                            <?php if ($creator['is_verified']): ?>
+                                <svg class="h-6 w-6 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                </svg>
+                            <?php endif; ?>
+                        </div>
+                        
+                        <p class="text-lg text-gray-600 mb-3"><?= h($creator['location']) ?></p>
+                        
+                        <div class="flex items-center space-x-6 mb-4">
+                            <div class="flex items-center">
+                                <?= renderStars($creator['avg_rating']) ?>
+                                <span class="ml-2 text-sm text-gray-600">
+                                    <?= number_format($creator['avg_rating'] ?? 0, 1) ?> (<?= $creator['review_count'] ?>件のレビュー)
+                                </span>
+                            </div>
+                            <div class="text-sm text-gray-600">
+                                <?= formatDate($creator['created_at']) ?>から活動
+                            </div>
+                        </div>
+                        
+                        <div class="flex flex-wrap gap-2">
+                            <?php if ($creator['is_pro']): ?>
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                                    プロ認定
+                                </span>
+                            <?php endif; ?>
+                            <?php if ($creator['response_time'] <= 6): ?>
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                                    レスポンス早い
+                                </span>
+                            <?php endif; ?>
+                            <?php if ($creator['completed_jobs'] >= 50): ?>
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800">
+                                    実績豊富
+                                </span>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- About -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">自己紹介</h2>
+                <p class="text-gray-700 leading-relaxed"><?= nl2br(h($creator['bio'])) ?></p>
+            </div>
+
+            <!-- Skills -->
+            <?php if (!empty($skills)): ?>
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+                    <h2 class="text-xl font-semibold text-gray-900 mb-4">スキル・技術</h2>
+                    <div class="space-y-4">
+                        <?php foreach ($skills as $skill): ?>
+                            <div>
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-sm font-medium text-gray-900"><?= h($skill['name']) ?></span>
+                                    <span class="text-sm text-gray-500">
+                                        <?php
+                                        $proficiencyMap = [
+                                            'expert' => 'エキスパート',
+                                            'advanced' => '上級',
+                                            'intermediate' => '中級',
+                                            'beginner' => '初級'
+                                        ];
+                                        echo $proficiencyMap[$skill['proficiency']] ?? '中級';
+                                        ?>
+                                    </span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <?php
+                                    $widthMap = [
+                                        'expert' => '95%',
+                                        'advanced' => '85%',
+                                        'intermediate' => '70%',
+                                        'beginner' => '50%'
+                                    ];
+                                    $width = $widthMap[$skill['proficiency']] ?? '70%';
+                                    ?>
+                                    <div class="bg-blue-600 h-2 rounded-full" style="width: <?= $width ?>"></div>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            <?php endif; ?>
+
+            <!-- Portfolio -->
+            <?php if (!empty($works)): ?>
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xl font-semibold text-gray-900">ポートフォリオ</h2>
+                        <a href="<?= url('works.php?creator_id=' . $creator['id']) ?>" class="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                            すべて見る →
+                        </a>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <?php foreach ($works as $work): ?>
+                            <div class="group">
+                                <div class="relative overflow-hidden rounded-lg mb-3">
+                                    <img src="<?= uploaded_asset($work['main_image']) ?>" alt="<?= h($work['title']) ?>" 
+                                         class="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300">
+                                    <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-opacity duration-300"></div>
+                                </div>
+                                <h3 class="font-medium text-gray-900 mb-1">
+                                    <a href="<?= url('work-detail.php?id=' . $work['id']) ?>" class="hover:text-blue-600 transition-colors">
+                                        <?= h($work['title']) ?>
+                                    </a>
+                                </h3>
+                                <div class="flex items-center justify-between text-sm text-gray-500">
+                                    <span><?= h($work['category_name']) ?></span>
+                                    <div class="flex items-center">
+                                        <svg class="h-4 w-4 text-yellow-400 fill-current mr-1" viewBox="0 0 20 20">
+                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                        </svg>
+                                        <?= number_format($work['avg_rating'] ?? 0, 1) ?> (<?= $work['review_count'] ?>)
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            <?php endif; ?>
+
+            <!-- Reviews -->
+            <?php if (!empty($reviews)): ?>
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <h2 class="text-xl font-semibold text-gray-900 mb-6">クライアントレビュー</h2>
+                    
+                    <div class="space-y-6">
+                        <?php foreach ($reviews as $review): ?>
+                            <div class="border-b border-gray-200 last:border-b-0 pb-6 last:pb-0">
+                                <div class="flex items-start space-x-4">
+                                    <img src="<?= uploaded_asset($review['reviewer_image'] ?? 'assets/images/default-avatar.png') ?>" 
+                                         alt="<?= h($review['reviewer_name']) ?>" 
+                                         class="w-12 h-12 rounded-full">
+                                    <div class="flex-1">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <h4 class="font-medium text-gray-900"><?= h($review['reviewer_name']) ?></h4>
+                                            <span class="text-sm text-gray-500"><?= formatDate($review['created_at']) ?></span>
+                                        </div>
+                                        <div class="flex items-center mb-2">
+                                            <?= renderStars($review['rating']) ?>
+                                        </div>
+                                        <p class="text-gray-700"><?= h($review['comment']) ?></p>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            <?php endif; ?>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="lg:col-span-1">
+            <!-- Contact Card -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6 sticky top-24">
+                <div class="text-center mb-6">
+                    <div class="text-2xl font-bold text-gray-900 mb-1"><?= formatPrice($creator['hourly_rate']) ?>〜</div>
+                    <div class="text-sm text-gray-500">/ プロジェクト</div>
+                </div>
+
+                <!-- Stats -->
+                <div class="grid grid-cols-3 gap-4 text-center mb-6">
+                    <div>
+                        <div class="text-lg font-bold text-gray-900"><?= $creator['work_count'] ?></div>
+                        <div class="text-xs text-gray-500">作品数</div>
+                    </div>
+                    <div>
+                        <div class="text-lg font-bold text-gray-900"><?= $creator['completed_jobs'] ?></div>
+                        <div class="text-xs text-gray-500">完了案件</div>
+                    </div>
+                    <div>
+                        <div class="text-lg font-bold text-gray-900"><?= $creator['experience_years'] ?>年</div>
+                        <div class="text-xs text-gray-500">経験</div>
+                    </div>
+                </div>
+
+                <!-- Response Time -->
+                <div class="text-center mb-6">
+                    <div class="text-sm text-gray-600">
+                        平均レスポンス時間: <span class="font-medium"><?= $creator['response_time'] ?>時間以内</span>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="space-y-3">
+                    <button class="w-full px-4 py-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors">
+                        <svg class="h-5 w-5 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-3.582 8-8 8a8.955 8.955 0 01-4.126-.98L3 20l1.98-5.874A8.955 8.955 0 013 12c0-4.418 3.582-8 8-8s8 3.582 8 8z" />
+                        </svg>
+                        メッセージを送る
+                    </button>
+                    <button class="w-full px-4 py-3 border border-gray-300 text-gray-700 font-medium rounded-md hover:bg-gray-50 transition-colors">
+                        <svg class="h-5 w-5 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2V6z" />
+                        </svg>
+                        案件を依頼する
+                    </button>
+                    <button class="w-full px-4 py-3 border border-gray-300 text-gray-700 font-medium rounded-md hover:bg-gray-50 transition-colors">
+                        <svg class="h-5 w-5 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                        </svg>
+                        お気に入りに追加
+                    </button>
+                </div>
+            </div>
+
+            <!-- Basic Info -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+                <h3 class="font-semibold text-gray-900 mb-4">基本情報</h3>
+                <div class="space-y-3 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">所在地</span>
+                        <span class="text-gray-900"><?= h($creator['location']) ?></span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">経験年数</span>
+                        <span class="text-gray-900"><?= $creator['experience_years'] ?>年</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">対応可能状況</span>
+                        <span class="text-green-600 font-medium">対応可能</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">最終ログイン</span>
+                        <span class="text-gray-900">1時間前</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Certifications -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 class="font-semibold text-gray-900 mb-4">認定・資格</h3>
+                <div class="space-y-3">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                            <svg class="h-4 w-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="text-sm font-medium text-gray-900">プロ認定クリエイター</div>
+                            <div class="text-xs text-gray-500">2023年12月取得</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                            <svg class="h-4 w-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="text-sm font-medium text-gray-900">AI技術認定</div>
+                            <div class="text-xs text-gray-500">2023年8月取得</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<?php include 'includes/footer.php'; ?>
+
