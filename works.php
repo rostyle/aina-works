@@ -135,7 +135,7 @@ include 'includes/header.php';
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="text-center">
             <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">作品を探す</h1>
-            <p class="text-xl text-gray-600 mb-8">AIスクール修了生の優秀作品をご覧ください</p>
+            <p class="text-xl text-gray-600 mb-8">AIスクール生の優秀作品をご覧ください</p>
             
             <!-- Search Bar -->
             <div class="max-w-2xl mx-auto">

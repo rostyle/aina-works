@@ -79,7 +79,7 @@ include 'includes/header.php';
             
             <!-- Subtitle -->
             <p class="text-xl md:text-2xl mb-12 text-white/80 max-w-4xl mx-auto leading-relaxed animate-slide-up" style="animation-delay: 0.2s;">
-                AIスクール修了生と企業をつなぐ、革新的なクリエイティブプラットフォーム。
+                AIスクール生と企業をつなぐ、革新的なクリエイティブプラットフォーム。
                 <br class="hidden md:block">
                 才能と情熱を持つクリエイターが、素晴らしいプロジェクトと出会える場所
             </p>

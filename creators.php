@@ -2,7 +2,7 @@
 require_once 'config/config.php';
 
 $pageTitle = 'クリエイター一覧';
-$pageDescription = 'AIスクール修了生の優秀なクリエイターをご紹介';
+$pageDescription = 'AIスクール生の優秀なクリエイターをご紹介';
 
 // データベース接続
 $db = Database::getInstance();
