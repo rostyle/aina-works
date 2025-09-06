@@ -25,6 +25,7 @@ $search = buildSearchConditions($searchParams, $allowedFields);
 $orderBy = match($sortBy) {
     'newest' => 'w.created_at DESC',
     'popular' => 'w.view_count DESC',
+    'rating' => 'avg_rating DESC, w.view_count DESC',
     'price_low' => 'w.price_min ASC',
     'price_high' => 'w.price_min DESC',
     default => 'w.is_featured DESC, w.view_count DESC'
@@ -296,6 +297,7 @@ include 'includes/header.php';
                         <option value="recommended" <?= $sortBy === 'recommended' ? 'selected' : '' ?>>おすすめ順</option>
                         <option value="newest" <?= $sortBy === 'newest' ? 'selected' : '' ?>>新着順</option>
                         <option value="popular" <?= $sortBy === 'popular' ? 'selected' : '' ?>>人気順</option>
+                        <option value="rating" <?= $sortBy === 'rating' ? 'selected' : '' ?>>評価の高い順</option>
                         <option value="price_low" <?= $sortBy === 'price_low' ? 'selected' : '' ?>>価格の安い順</option>
                         <option value="price_high" <?= $sortBy === 'price_high' ? 'selected' : '' ?>>価格の高い順</option>
                     </select>

@@ -173,7 +173,7 @@ include 'includes/header.php';
 
             <!-- Work Details -->
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
-                <div class="flex items-start justify-between mb-6">
+                    <div class="flex items-start justify-between mb-6">
                     <div class="flex-1">
                         <h1 class="text-3xl font-bold text-gray-900 mb-2"><?= h($work['title']) ?></h1>
                         <div class="flex items-center space-x-4 text-sm text-gray-500 mb-4">
@@ -182,6 +182,16 @@ include 'includes/header.php';
                             </span>
                             <span><?= formatDate($work['created_at']) ?></span>
                             <span><?= number_format($work['view_count']) ?> views</span>
+                        </div>
+                        <!-- 星評価を追加 -->
+                        <div class="flex items-center mb-4">
+                            <?= renderStars($work['avg_rating'] ?: 0) ?>
+                            <span class="ml-2 text-sm font-medium text-gray-900">
+                                <?= number_format($work['avg_rating'] ?: 0, 1) ?>
+                            </span>
+                            <span class="ml-1 text-sm text-gray-500">
+                                (<?= $work['review_count'] ?: 0 ?>件のレビュー)
+                            </span>
                         </div>
                     </div>
                     <div class="text-right">
@@ -319,6 +329,81 @@ include 'includes/header.php';
                             </button>
                         </div>
                     <?php endif; ?>
+                </div>
+            <?php endif; ?>
+            
+            <!-- Review Form -->
+            <?php if (!isLoggedIn()): ?>
+                <!-- ログインしていない場合 -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">レビューを投稿</h3>
+                    <div class="text-center py-8">
+                        <p class="text-gray-600 mb-4">レビューを投稿するにはログインが必要です</p>
+                        <div class="space-x-4">
+                            <a href="<?= url('login.php?redirect=' . urlencode($_SERVER['REQUEST_URI'])) ?>" 
+                               class="inline-block px-6 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors">
+                                ログイン
+                            </a>
+                            <a href="<?= url('register.php') ?>" 
+                               class="inline-block px-6 py-2 bg-gray-100 text-gray-700 font-medium rounded-md hover:bg-gray-200 transition-colors">
+                                新規登録
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            <?php elseif ($work['user_id'] == (getCurrentUser()['id'] ?? 0)): ?>
+                <!-- 自分の作品の場合 -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">レビューを投稿</h3>
+                    <div class="text-center py-8">
+                        <p class="text-gray-600">自分の作品にはレビューを投稿できません</p>
+                    </div>
+                </div>
+            <?php else: ?>
+                <!-- レビューUI（details/summaryベース・ゼロJS） -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">レビューを投稿</h3>
+                    <details class="border border-gray-200 rounded-md">
+                        <summary class="list-none cursor-pointer select-none px-4 py-2 bg-blue-600 text-white rounded-md inline-flex items-center justify-center">
+                            <span class="font-medium">レビューを書く</span>
+                        </summary>
+                        <div class="p-4 border-t border-gray-200">
+                            <form method="POST" action="api/submit-review.php" class="space-y-4" id="review-form">
+                                <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
+                                <input type="hidden" name="work_id" value="<?= $workId ?>">
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">評価</label>
+                                    <div class="flex items-center space-x-2">
+                                        <?php for ($i = 1; $i <= 5; $i++): ?>
+                                            <label class="flex items-center">
+                                                <input type="radio" name="rating" value="<?= $i ?>" class="mr-1" <?= $i === 5 ? 'checked' : '' ?>>
+                                                <span class="text-sm"><?= $i ?>★</span>
+                                            </label>
+                                        <?php endfor; ?>
+                                    </div>
+                                </div>
+                                
+                                <div>
+                                    <label for="comment" class="block text-sm font-medium text-gray-700 mb-2">コメント</label>
+                                    <textarea 
+                                        name="comment" 
+                                        id="comment" 
+                                        rows="4" 
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        placeholder="この作品についてのコメントを書いてください..."
+                                        required
+                                    ></textarea>
+                                </div>
+                                
+                                <div class="flex justify-end pt-2">
+                                    <button type="submit" class="px-6 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700">
+                                        送信
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </details>
                 </div>
             <?php endif; ?>
         </div>
@@ -1007,6 +1092,7 @@ document.getElementById('job-request-modal').addEventListener('click', function(
     }
 });
 </script>
+
 
 <?php include 'includes/footer.php'; ?>
 
