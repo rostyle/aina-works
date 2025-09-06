@@ -118,7 +118,7 @@ include 'includes/header.php';
                              src="<?= uploaded_asset($images[0]) ?>" 
                              alt="<?= h($work['title']) ?>" 
                              class="w-full h-full object-cover cursor-zoom-in"
-                             onclick="openImageModal(uploaded_asset('<?= h($images[0]) ?>'))">
+                             onclick="openImageModal('<?= uploaded_asset($images[0]) ?>')">
                     </div>
                     
                     <!-- 画像カウンター -->
@@ -744,9 +744,11 @@ include 'includes/header.php';
 <script>
 let currentImageIndex = 0;
 const images = <?= json_encode($images) ?>;
+const imageUrls = <?= json_encode(array_map('uploaded_asset', $images)) ?>;
 
 function changeImage(src, index) {
-    const assetSrc = `<?= url('serve.php?file=') ?>${encodeURIComponent(src)}`;
+    // 事前に生成されたURLを使用
+    const assetSrc = imageUrls[index];
     document.getElementById('main-image').src = assetSrc;
     document.getElementById('main-image').onclick = function() { openImageModal(assetSrc); };
     currentImageIndex = index;
@@ -801,12 +803,10 @@ document.addEventListener('keydown', function(e) {
             closeImageModal();
         } else if (e.key === 'ArrowLeft') {
             previousImage();
-            const assetSrc = `<?= url('serve.php?file=') ?>${encodeURIComponent(images[currentImageIndex])}`;
-            openImageModal(assetSrc);
+            openImageModal(imageUrls[currentImageIndex]);
         } else if (e.key === 'ArrowRight') {
             nextImage();
-            const assetSrc = `<?= url('serve.php?file=') ?>${encodeURIComponent(images[currentImageIndex])}`;
-            openImageModal(assetSrc);
+            openImageModal(imageUrls[currentImageIndex]);
         }
     } else {
         if (e.key === 'ArrowLeft') {

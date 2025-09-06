@@ -403,7 +403,7 @@ function clearSearchResults() {
 // Enhanced Filter functionality
 function initFilters() {
     const filterCheckboxes = document.querySelectorAll('input[type="checkbox"], input[type="radio"]');
-    const clearFiltersBtn = document.querySelector('button:contains("フィルターをクリア")');
+    const clearFiltersBtn = document.querySelector('button[onclick="clearFilters()"]');
     const sortSelects = document.querySelectorAll('select');
     
     // Filter change handlers

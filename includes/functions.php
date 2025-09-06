@@ -44,12 +44,12 @@ function uploaded_asset($path) {
     }
     
     // デフォルトアセットの場合はassets配下のパスを返す
-    if (strpos($path, 'assets/images/') === 0) {
-        return asset(substr($path, strlen('assets/images/')));
+    if (strpos($path, 'assets/') === 0) {
+        return './' . $path;
     }
     
-    // アップロードされたファイルの場合はserve.php経由で返す
-    return url('serve.php?file=' . rawurlencode($path));
+    // アップロードされたファイルの場合は直接パスを返す
+    return './storage/app/uploads/' . $path;
 }
 
 /**

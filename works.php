@@ -63,6 +63,14 @@ try {
     
     $works = $db->select($worksSql, $search['values']);
     
+    // デバッグ: 取得された作品データを確認
+    if (DEBUG) {
+        echo "<!-- DEBUG: 取得された作品数: " . count($works) . " -->";
+        foreach ($works as $work) {
+            echo "<!-- DEBUG: 作品ID: " . $work['id'] . ", タイトル: " . $work['title'] . ", 画像: " . $work['main_image'] . " -->";
+        }
+    }
+    
     // カテゴリ一覧取得
     $categories = $db->select("
         SELECT c.*, COUNT(w.id) as work_count 
@@ -278,7 +286,7 @@ include 'includes/header.php';
                     <?php foreach ($works as $work): ?>
                         <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
                             <div class="relative">
-                                <img src="<?= uploaded_asset($work['main_image']) ?>" alt="<?= h($work['title']) ?>" class="w-full h-48 object-cover">
+                                <img src="<?= uploaded_asset($work['main_image']) ?>" alt="<?= h($work['title']) ?>" class="w-full h-48 object-cover" <?= DEBUG ? 'title="Debug: ' . h($work['main_image'] . ' -> ' . uploaded_asset($work['main_image'])) . '"' : '' ?>>
                                 <div class="absolute top-4 left-4">
                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                                         <?= h($work['category_name']) ?>
