@@ -148,11 +148,19 @@
                 <!-- Enhanced Navigation -->
                 <nav id="navigation" class="hidden lg:flex items-center space-x-1" role="navigation" aria-label="メインナビゲーション">
                     <?php
-                    $navItems = [
+                    $navItems = [];
+                    
+                    // ログイン済みの場合はダッシュボードを最初に追加
+                    if (isLoggedIn()) {
+                        $navItems[] = ['url' => 'dashboard.php', 'label' => 'ダッシュボード', 'icon' => 'M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z'];
+                    }
+                    
+                    // 共通のナビゲーションアイテム
+                    $navItems = array_merge($navItems, [
                         ['url' => 'works.php', 'label' => '作品を探す', 'icon' => 'M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z'],
                         ['url' => 'creators.php', 'label' => 'クリエイター', 'icon' => 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z'],
                         ['url' => 'jobs.php', 'label' => '案件一覧', 'icon' => 'M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2V6z']
-                    ];
+                    ]);
                     
                     // ログイン済みの場合はチャットリンクを追加
                     if (isLoggedIn()) {
@@ -213,7 +221,6 @@
                                      class="w-9 h-9 rounded-xl object-cover ring-2 ring-gray-200 group-hover:ring-primary-300 transition-all duration-300">
                                 <div class="hidden md:flex flex-col items-start">
                                     <span class="text-sm font-semibold text-gray-900 group-hover:text-primary-700 transition-colors duration-300"><?= h($user['full_name']) ?></span>
-                                    <span class="text-xs text-gray-500"><?= getRoleDisplayName($currentRole) ?></span>
                                 </div>
                                 <svg class="w-4 h-4 text-gray-400 group-hover:text-primary-500 transition-colors duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
@@ -231,30 +238,10 @@
                                         <div>
                                             <p class="text-sm font-semibold text-gray-900"><?= h($user['full_name']) ?></p>
                                             <p class="text-xs text-gray-500"><?= h($user['email'] ?? '') ?></p>
-                                            <p class="text-xs text-blue-600 font-medium"><?= getRoleDisplayName($currentRole) ?></p>
                                         </div>
                                     </div>
                                 </div>
                                 
-                                <!-- Role Switch Section -->
-                                <?php if (is_array($availableRoles) && count($availableRoles) > 1): ?>
-                                <div class="px-4 py-3 border-b border-gray-100">
-                                    <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">ロール切り替え</p>
-                                    <div class="space-y-1">
-                                        <?php foreach ($availableRoles as $role): ?>
-                                            <?php if ($role !== $currentRole): ?>
-                                                <a href="<?= url('switch-role.php?role=' . urlencode($role)) ?>" 
-                                                   class="flex items-center px-2 py-1.5 text-xs text-gray-600 hover:bg-blue-50 hover:text-blue-700 rounded-lg transition-colors duration-200">
-                                                    <svg class="w-3 h-3 mr-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                                                    </svg>
-                                                    <?= getRoleDisplayName($role) ?>に切り替え
-                                                </a>
-                                            <?php endif; ?>
-                                        <?php endforeach; ?>
-                                    </div>
-                                </div>
-                                <?php endif; ?>
                                 
                                 <!-- Menu Items -->
                                 <div class="py-1">
@@ -307,10 +294,10 @@
                         <!-- Registration Buttons -->
                         <div class="hidden md:flex items-center space-x-2">
                             <a href="<?= url('register.php?type=creator') ?>" class="btn btn-outline btn-sm">
-                                クリエイター登録
+                                登録
                             </a>
                             <a href="<?= url('register.php?type=client') ?>" class="btn btn-primary btn-sm btn-shimmer">
-                                依頼者登録
+                                登録
                             </a>
                         </div>
                         
@@ -345,7 +332,7 @@
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                                         </svg>
                                         <div>
-                                            <div class="font-medium">依頼者として登録</div>
+                                            <div class="font-medium">新規登録</div>
                                             <div class="text-xs text-gray-500">案件を投稿して優秀なクリエイターを見つける</div>
                                         </div>
                                     </a>
@@ -396,10 +383,10 @@
                             </a>
                             <div class="grid grid-cols-2 gap-3">
                                 <a href="<?= url('register.php?type=creator') ?>" class="btn btn-secondary btn-sm">
-                                    クリエイター登録
+                                    登録
                                 </a>
                                 <a href="<?= url('register.php?type=client') ?>" class="btn btn-primary btn-sm">
-                                    依頼者登録
+                                    登録
                                 </a>
                             </div>
                             <a href="<?= url('post-job.php') ?>" class="w-full btn btn-success btn-md">

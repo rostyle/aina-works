@@ -1,111 +1,106 @@
 <?php
-header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: POST');
-header('Access-Control-Allow-Headers: Content-Type, X-CSRF-TOKEN');
-
 require_once '../config/config.php';
+
+// JSONレスポンスのヘッダー設定
+header('Content-Type: application/json');
+header('X-Content-Type-Options: nosniff');
+
+// ログインチェック
+if (!isLoggedIn()) {
+    http_response_code(401);
+    echo json_encode(['success' => false, 'message' => 'ログインが必要です']);
+    exit;
+}
 
 // POSTリクエストのみ受け付け
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
-    echo json_encode(['error' => 'Method not allowed']);
+    echo json_encode(['success' => false, 'message' => 'POSTリクエストのみ受け付けます']);
     exit;
 }
 
-// CSRFトークンを検証
-$token = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
-if (!verifyCsrfToken($token)) {
-    http_response_code(403);
-    echo json_encode(['error' => 'Invalid CSRF token']);
-    exit;
-}
-
-// リクエストデータを取得
-$input = json_decode(file_get_contents('php://input'), true);
-$targetType = $input['target_type'] ?? '';
-$targetId = (int)($input['target_id'] ?? 0);
-
-// ログイン状態をチェック
-if (!isLoggedIn()) {
+$user = getCurrentUser();
+if (!$user) {
     http_response_code(401);
-    echo json_encode(['error' => 'ログインが必要です']);
+    echo json_encode(['success' => false, 'message' => 'ユーザー情報を取得できません']);
     exit;
 }
 
-$userId = $_SESSION['user_id'];
+// JSONデータを取得
+$input = json_decode(file_get_contents('php://input'), true);
+if (!$input) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => '無効なJSONデータです']);
+    exit;
+}
+
+$workId = (int)($input['work_id'] ?? 0);
 
 // バリデーション
-if (!in_array($targetType, ['work', 'creator']) || $targetId <= 0) {
+if ($workId <= 0) {
     http_response_code(400);
-    echo json_encode(['error' => 'Invalid parameters']);
+    echo json_encode(['success' => false, 'message' => '無効な作品IDです']);
     exit;
 }
 
 $db = Database::getInstance();
 
 try {
-    $db->beginTransaction();
+    // 作品の存在確認
+    $work = $db->selectOne("SELECT id, user_id, like_count FROM works WHERE id = ? AND status = 'published'", [$workId]);
+    
+    if (!$work) {
+        http_response_code(404);
+        echo json_encode(['success' => false, 'message' => '作品が見つかりません']);
+        exit;
+    }
+    
+    // 自分の作品にはいいねできない
+    if ($work['user_id'] === $user['id']) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => '自分の作品にいいねすることはできません']);
+        exit;
+    }
     
     // 既にいいねしているかチェック
-    $existing = $db->selectOne(
-        "SELECT id FROM favorites WHERE user_id = ? AND target_type = ? AND target_id = ?",
-        [$userId, $targetType, $targetId]
+    $existingLike = $db->selectOne(
+        "SELECT id FROM work_likes WHERE user_id = ? AND work_id = ?",
+        [$user['id'], $workId]
     );
     
-    if ($existing) {
-        // いいねを取り消す
-        $db->delete(
-            "DELETE FROM favorites WHERE user_id = ? AND target_type = ? AND target_id = ?",
-            [$userId, $targetType, $targetId]
-        );
+    $db->beginTransaction();
+    
+    if ($existingLike) {
+        // いいねを取り消し
+        $db->update("DELETE FROM work_likes WHERE user_id = ? AND work_id = ?", [$user['id'], $workId]);
+        $db->update("UPDATE works SET like_count = like_count - 1 WHERE id = ?", [$workId]);
         
-        // 作品のいいね数を更新
-        if ($targetType === 'work') {
-            $db->update("UPDATE works SET like_count = like_count - 1 WHERE id = ? AND like_count > 0", [$targetId]);
-        }
-        
-        $liked = false;
+        $newLikeCount = max(0, $work['like_count'] - 1);
+        $isLiked = false;
         $message = 'いいねを取り消しました';
     } else {
         // いいねを追加
-        $db->insert(
-            "INSERT INTO favorites (user_id, target_type, target_id) VALUES (?, ?, ?)",
-            [$userId, $targetType, $targetId]
-        );
+        $db->insert("INSERT INTO work_likes (user_id, work_id) VALUES (?, ?)", [$user['id'], $workId]);
+        $db->update("UPDATE works SET like_count = like_count + 1 WHERE id = ?", [$workId]);
         
-        // 作品のいいね数を更新
-        if ($targetType === 'work') {
-            $db->update("UPDATE works SET like_count = like_count + 1 WHERE id = ?", [$targetId]);
-        }
-        
-        $liked = true;
+        $newLikeCount = $work['like_count'] + 1;
+        $isLiked = true;
         $message = 'いいねしました';
     }
     
     $db->commit();
     
-    // 現在のいいね数を取得
-    if ($targetType === 'work') {
-        $likeCount = $db->selectOne("SELECT like_count FROM works WHERE id = ?", [$targetId])['like_count'] ?? 0;
-    } else {
-        $likeCount = $db->selectOne(
-            "SELECT COUNT(*) as count FROM favorites WHERE target_type = 'creator' AND target_id = ?",
-            [$targetId]
-        )['count'] ?? 0;
-    }
-    
     echo json_encode([
         'success' => true,
-        'liked' => $liked,
-        'like_count' => (int)$likeCount,
-        'message' => $message
+        'message' => $message,
+        'is_liked' => $isLiked,
+        'like_count' => $newLikeCount
     ]);
     
 } catch (Exception $e) {
-    $db->rollBack();
+    $db->rollback();
+    error_log("Like API error: " . $e->getMessage());
     http_response_code(500);
-    error_log($e->getMessage()); // エラーをログに記録
-    echo json_encode(['error' => 'サーバーエラーが発生しました']);
+    echo json_encode(['success' => false, 'message' => 'サーバーエラーが発生しました']);
 }
 ?>

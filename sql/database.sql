@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- ホスト: 127.0.0.1
--- 生成日時: 2025-09-06 06:34:26
+-- 生成日時: 2025-09-06 19:37:59
 -- サーバのバージョン： 10.4.32-MariaDB
 -- PHP のバージョン: 8.2.12
 
@@ -80,7 +80,7 @@ INSERT INTO `chat_messages` (`id`, `room_id`, `sender_id`, `message`, `message_t
 (5, 4, 5, 'aaaaa', 'text', NULL, 1, '2025-09-06 13:24:44'),
 (6, 4, 5, 'r', 'text', NULL, 1, '2025-09-06 13:24:53'),
 (7, 4, 4, 'a', 'text', NULL, 1, '2025-09-06 13:25:18'),
-(8, 4, 5, 'ww', 'text', NULL, 0, '2025-09-06 13:34:05');
+(8, 4, 5, 'ww', 'text', NULL, 1, '2025-09-06 13:34:05');
 
 -- --------------------------------------------------------
 
@@ -119,6 +119,20 @@ CREATE TABLE `favorites` (
   `target_id` int(11) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- テーブルのデータのダンプ `favorites`
+--
+
+INSERT INTO `favorites` (`id`, `user_id`, `target_type`, `target_id`, `created_at`) VALUES
+(2, 4, 'work', 4, '2025-09-06 13:08:43'),
+(3, 4, 'work', 2, '2025-09-06 13:08:46'),
+(5, 4, 'work', 5, '2025-09-06 13:11:15'),
+(6, 5, 'work', 5, '2025-09-06 13:22:50'),
+(7, 5, 'work', 2, '2025-09-06 15:03:28'),
+(8, 5, 'creator', 4, '2025-09-06 16:19:03'),
+(9, 5, 'work', 4, '2025-09-06 16:20:01'),
+(10, 4, 'creator', 2, '2025-09-06 17:26:21');
 
 -- --------------------------------------------------------
 
@@ -200,10 +214,19 @@ CREATE TABLE `reviews` (
   `reviewee_id` int(11) NOT NULL,
   `job_id` int(11) DEFAULT NULL,
   `work_id` int(11) DEFAULT NULL,
-  `rating` int(11) NOT NULL CHECK (`rating` >= 1 and `rating` <= 5),
+  `rating` int(11) NOT NULL CHECK (`rating` >= 0 and `rating` <= 5),
   `comment` text DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- テーブルのデータのダンプ `reviews`
+--
+
+INSERT INTO `reviews` (`id`, `reviewer_id`, `reviewee_id`, `job_id`, `work_id`, `rating`, `comment`, `created_at`) VALUES
+(1, 5, 2, NULL, 2, 4, 'aa', '2025-09-06 15:02:55'),
+(2, 5, 2, NULL, 2, 3, 'r', '2025-09-06 15:03:15'),
+(3, 5, 4, NULL, 4, 3, 'a', '2025-09-06 15:06:36');
 
 -- --------------------------------------------------------
 
@@ -296,7 +319,7 @@ INSERT INTO `users` (`id`, `username`, `email`, `password_hash`, `full_name`, `n
 (2, 'sato_kenta', 'sato@example.com', '$2y$10$example_hash', '佐藤 健太', NULL, 'creator', NULL, NULL, 'グラフィックデザイナーです。ロゴ制作からブランディングまで幅広く対応します。', '大阪府', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 4, 5, 25000, 1, 1, 1, 0, '2025-09-06 00:44:03', '2025-08-31 16:48:47', '2025-08-31 16:48:47'),
 (3, 'yamada_hanako', 'yamada@example.com', '$2y$10$example_hash', '山田 花子', NULL, 'creator', NULL, NULL, 'Webデザイナー・フロントエンドエンジニアです。', '神奈川県', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 6, 4, 40000, 1, 0, 1, 0, '2025-09-06 00:44:03', '2025-08-31 16:48:47', '2025-08-31 16:48:47'),
 (4, 'rostyle95', 'rostyle95@gmail.com', '$2y$10$3ILDllyesu0GgVvDJk8ezOW83fF1y9J3TV77uZMdoYKQ10NcHVU6i', '奥野隆太', 'Ryu', 'creator', NULL, NULL, '', '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 24, 0, 0, 0, 0, 1, 0, '2025-09-06 11:41:12', '2025-09-06 02:41:12', '2025-09-06 02:41:12'),
-(5, 'rostyle95+1', 'rostyle95+1@gmail.com', '$2y$10$euNCbQnmRM9LBDpmX6kbp.zUYPBIQDrtKcUjv65bVDa2iPkHBp26u', 'test+1', 't', 'creator', 'creator', NULL, '', '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 24, 0, 0, 0, 0, 1, 0, '2025-09-06 13:22:59', '2025-09-06 04:22:59', '2025-09-06 04:22:59');
+(5, 'rostyle95+1', 'rostyle95+1@gmail.com', '$2y$10$euNCbQnmRM9LBDpmX6kbp.zUYPBIQDrtKcUjv65bVDa2iPkHBp26u', 'test+1', 't', 'creator', 'creator', '68bc5a6db95a3.png', 'aaaa', '大阪府大阪市中央区伏見町2-2-10 谷ビル5F(北浜駅6番出口)', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 24, 0, 0, 0, 0, 1, 0, '2025-09-06 13:22:59', '2025-09-06 04:22:59', '2025-09-06 15:59:41');
 
 -- --------------------------------------------------------
 
@@ -366,10 +389,24 @@ CREATE TABLE `works` (
 --
 
 INSERT INTO `works` (`id`, `user_id`, `title`, `description`, `category_id`, `price_min`, `price_max`, `duration_weeks`, `main_image`, `images`, `tags`, `technologies`, `project_url`, `is_featured`, `view_count`, `like_count`, `status`, `created_at`, `updated_at`) VALUES
-(1, 1, 'オリジナルキャラクター制作', 'Stable DiffusionとPhotoshopを組み合わせて制作したオリジナルキャラクター', 5, 80000, 120000, 2, 'assets/images/sample-work-1.png', NULL, '[\"AI漫画\", \"キャラクター\", \"オリジナル\"]', '[\"Stable Diffusion\", \"Photoshop\", \"ComfyUI\"]', NULL, 1, 1523, 234, 'published', '2025-08-31 16:48:47', '2025-09-06 04:22:17'),
-(2, 2, 'ブランドロゴデザイン', 'モダンで印象的なブランドロゴの制作', 1, 50000, 80000, 1, 'assets/images/sample-work-2.jpg', NULL, '[\"ロゴ\", \"ブランディング\", \"モダン\"]', '[\"Illustrator\", \"Photoshop\"]', NULL, 1, 981, 189, 'published', '2025-08-31 16:48:47', '2025-09-06 04:22:07'),
-(3, 3, 'コーポレートサイト制作', 'レスポンシブ対応のコーポレートサイト', 3, 150000, 250000, 6, 'assets/images/sample-work-3.jpg', NULL, '[\"Web制作\", \"レスポンシブ\", \"コーポレート\"]', '[\"HTML/CSS\", \"JavaScript\", \"WordPress\"]', NULL, 0, 756, 92, 'published', '2025-08-31 16:48:47', '2025-08-31 16:48:47'),
-(4, 4, 'サムネイル作成', 'サムネイル作成します。', 1, 3300, 5000, 1, '68bba0547498a.jpg', NULL, NULL, NULL, NULL, 0, 7, 0, 'published', '2025-09-06 02:45:40', '2025-09-06 04:24:50');
+(1, 1, 'オリジナルキャラクター制作', 'Stable DiffusionとPhotoshopを組み合わせて制作したオリジナルキャラクター', 5, 80000, 120000, 2, 'assets/images/sample-work-1.png', NULL, '[\"AI漫画\", \"キャラクター\", \"オリジナル\"]', '[\"Stable Diffusion\", \"Photoshop\", \"ComfyUI\"]', NULL, 1, 1528, 234, 'published', '2025-08-31 16:48:47', '2025-09-06 17:26:09'),
+(2, 2, 'ブランドロゴデザイン', 'モダンで印象的なブランドロゴの制作', 1, 50000, 80000, 1, 'assets/images/sample-work-2.jpg', NULL, '[\"ロゴ\", \"ブランディング\", \"モダン\"]', '[\"Illustrator\", \"Photoshop\"]', NULL, 1, 1008, 191, 'published', '2025-08-31 16:48:47', '2025-09-06 15:03:28'),
+(3, 3, 'コーポレートサイト制作', 'レスポンシブ対応のコーポレートサイト', 3, 150000, 250000, 6, 'assets/images/sample-work-3.jpg', NULL, '[\"Web制作\", \"レスポンシブ\", \"コーポレート\"]', '[\"HTML/CSS\", \"JavaScript\", \"WordPress\"]', NULL, 0, 760, 93, 'published', '2025-08-31 16:48:47', '2025-09-06 13:21:50'),
+(4, 4, 'サムネイル作成', 'サムネイル作成します。', 1, 3300, 5000, 1, '68bba0547498a.jpg', NULL, NULL, NULL, NULL, 0, 22, 2, 'published', '2025-09-06 02:45:40', '2025-09-06 16:41:52'),
+(5, 4, 'aaaaa', 'aaaa', 2, 1111, 111111, 0, '68bbfd680f317.jpg', NULL, NULL, NULL, NULL, 0, 21, 2, 'published', '2025-09-06 09:22:48', '2025-09-06 13:55:35');
+
+-- --------------------------------------------------------
+
+--
+-- テーブルの構造 `work_likes`
+--
+
+CREATE TABLE `work_likes` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `work_id` int(11) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- ダンプしたテーブルのインデックス
@@ -481,6 +518,15 @@ ALTER TABLE `works`
   ADD KEY `category_id` (`category_id`);
 
 --
+-- テーブルのインデックス `work_likes`
+--
+ALTER TABLE `work_likes`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_like` (`user_id`,`work_id`),
+  ADD KEY `user_id` (`user_id`),
+  ADD KEY `work_id` (`work_id`);
+
+--
 -- ダンプしたテーブルの AUTO_INCREMENT
 --
 
@@ -506,7 +552,7 @@ ALTER TABLE `chat_rooms`
 -- テーブルの AUTO_INCREMENT `favorites`
 --
 ALTER TABLE `favorites`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- テーブルの AUTO_INCREMENT `jobs`
@@ -530,7 +576,7 @@ ALTER TABLE `messages`
 -- テーブルの AUTO_INCREMENT `reviews`
 --
 ALTER TABLE `reviews`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- テーブルの AUTO_INCREMENT `skills`
@@ -560,7 +606,13 @@ ALTER TABLE `user_skills`
 -- テーブルの AUTO_INCREMENT `works`
 --
 ALTER TABLE `works`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
+-- テーブルの AUTO_INCREMENT `work_likes`
+--
+ALTER TABLE `work_likes`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- ダンプしたテーブルの制約
@@ -641,6 +693,13 @@ ALTER TABLE `user_skills`
 ALTER TABLE `works`
   ADD CONSTRAINT `works_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `works_ibfk_2` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`) ON DELETE SET NULL;
+
+--
+-- テーブルの制約 `work_likes`
+--
+ALTER TABLE `work_likes`
+  ADD CONSTRAINT `work_likes_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `work_likes_ibfk_2` FOREIGN KEY (`work_id`) REFERENCES `works` (`id`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

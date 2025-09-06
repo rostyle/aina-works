@@ -1,9 +1,8 @@
 <?php
 require_once 'config/config.php';
 
-$userType = $_GET['type'] === 'client' ? 'client' : 'creator';
-$pageTitle = $userType === 'client' ? '依頼者登録' : 'クリエイター登録';
-$pageDescription = $userType === 'client' ? '依頼者としてAiNA Worksに新規登録してください' : 'クリエイターとしてAiNA Worksに新規登録してください';
+$pageTitle = '新規登録';
+$pageDescription = 'AiNA Worksに新規登録してクリエイターとしても依頼者としても活動できます';
 
 // 既にログインしている場合はリダイレクト
 if (isLoggedIn()) {
@@ -18,7 +17,6 @@ $formData = [
     'email' => '',
     'full_name' => '',
     'nickname' => '',
-    'user_type' => $_GET['type'] === 'client' ? 'client' : 'creator', // URLパラメータから取得
     'bio' => '',
     'location' => ''
 ];
@@ -33,7 +31,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $formData['email'] = trim($_POST['email'] ?? '');
         $formData['full_name'] = trim($_POST['full_name'] ?? '');
         $formData['nickname'] = trim($_POST['nickname'] ?? '');
-        $formData['user_type'] = $_GET['type'] === 'client' ? 'client' : 'creator';
         $formData['bio'] = trim($_POST['bio'] ?? '');
         $formData['location'] = trim($_POST['location'] ?? '');
         $password = $_POST['password'] ?? '';
@@ -67,10 +64,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $errors['full_name'] = '氏名は100文字以内で入力してください。';
         }
 
-        // アカウントタイプのバリデーション
-        if (!in_array($formData['user_type'], ['creator', 'client'])) {
-            $errors['user_type'] = '不正なアカウントタイプです。';
-        }
 
         if (empty($password)) {
             $errors['password'] = 'パスワードは必須です。';
@@ -116,23 +109,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     password_hash($password, PASSWORD_DEFAULT),
                     $formData['full_name'],
                     $formData['nickname'],
-                    $formData['user_type'],
-                    $formData['user_type'], // active_roleも同じ値に設定
+                    'creator', // デフォルトでcreatorに設定
+                    'creator', // active_roleもcreatorに設定
                     $formData['bio'],
                     $formData['location']
                 ]);
 
-                // user_rolesテーブルにもロールを追加
+                // 両方のロールを追加
                 $db->insert("
                     INSERT INTO user_roles (user_id, role, is_enabled) 
-                    VALUES (?, ?, 1)
-                ", [$userId, $formData['user_type']]);
+                    VALUES (?, ?, 1), (?, ?, 1)
+                ", [$userId, 'creator', $userId, 'client']);
 
                 $db->commit();
 
                 // 自動ログイン
                 $_SESSION['user_id'] = $userId;
-                $_SESSION['user_type'] = $formData['user_type'];
+                $_SESSION['user_type'] = 'creator';
 
                 setFlash('success', 'アカウントを作成しました。AiNA Worksへようこそ！');
                 redirect(url('dashboard.php'));
@@ -163,7 +156,7 @@ include 'includes/header.php';
                 <span class="text-white font-bold text-xl">CM</span>
             </div>
             <h2 class="mt-6 text-3xl font-extrabold text-gray-900">
-                <?= $userType === 'client' ? '依頼者登録' : 'クリエイター登録' ?>
+                新規登録
             </h2>
             <p class="mt-2 text-sm text-gray-600">
                 既にアカウントをお持ちの場合は
@@ -312,83 +305,44 @@ include 'includes/header.php';
             </div>
 
             <!-- Optional Information -->
-            <?php if ($userType === 'creator'): ?>
-                <div class="border-t border-gray-200 pt-6">
-                    <h2 class="text-xl font-bold text-gray-900 mb-4">クリエイター情報（任意）</h2>
-                    
-                    <div class="space-y-6">
-                        <div>
-                            <label for="bio" class="block text-sm font-medium text-gray-700 mb-2">
-                                自己紹介・得意分野
-                            </label>
-                            <textarea id="bio" 
-                                      name="bio" 
-                                      rows="4" 
-                                      maxlength="1000"
-                                      class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical"
-                                      placeholder="あなたのスキルや経験、得意分野などを自由に記載してください"><?= h($formData['bio']) ?></textarea>
-                            <p class="text-sm text-gray-500 mt-1">1000文字以内</p>
-                            <?php if (!empty($errors['bio'])): ?>
-                                <p class="mt-2 text-sm text-red-600"><?= h($errors['bio']) ?></p>
-                            <?php endif; ?>
-                        </div>
+            <div class="border-t border-gray-200 pt-6">
+                <h2 class="text-xl font-bold text-gray-900 mb-4">追加情報（任意）</h2>
+                <p class="text-sm text-gray-600 mb-4">登録後、クリエイターとしても依頼者としても活動できます</p>
+                
+                <div class="space-y-6">
+                    <div>
+                        <label for="bio" class="block text-sm font-medium text-gray-700 mb-2">
+                            自己紹介・事業内容
+                        </label>
+                        <textarea id="bio" 
+                                  name="bio" 
+                                  rows="4" 
+                                  maxlength="1000"
+                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical"
+                                  placeholder="スキルや経験、得意分野、事業内容などを自由に記載してください"><?= h($formData['bio']) ?></textarea>
+                        <p class="text-sm text-gray-500 mt-1">1000文字以内</p>
+                        <?php if (!empty($errors['bio'])): ?>
+                            <p class="mt-2 text-sm text-red-600"><?= h($errors['bio']) ?></p>
+                        <?php endif; ?>
+                    </div>
 
-                        <div>
-                            <label for="location" class="block text-sm font-medium text-gray-700 mb-2">
-                                所在地
-                            </label>
-                            <input type="text" 
-                                   id="location" 
-                                   name="location" 
-                                   value="<?= h($formData['location']) ?>"
-                                   maxlength="100"
-                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                   placeholder="例: 東京都渋谷区">
-                            <?php if (!empty($errors['location'])): ?>
-                                <p class="mt-2 text-sm text-red-600"><?= h($errors['location']) ?></p>
-                            <?php endif; ?>
-                        </div>
+                    <div>
+                        <label for="location" class="block text-sm font-medium text-gray-700 mb-2">
+                            所在地
+                        </label>
+                        <input type="text" 
+                               id="location" 
+                               name="location" 
+                               value="<?= h($formData['location']) ?>"
+                               maxlength="100"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               placeholder="例: 東京都渋谷区">
+                        <?php if (!empty($errors['location'])): ?>
+                            <p class="mt-2 text-sm text-red-600"><?= h($errors['location']) ?></p>
+                        <?php endif; ?>
                     </div>
                 </div>
-            <?php else: ?>
-                <div class="border-t border-gray-200 pt-6">
-                    <h2 class="text-xl font-bold text-gray-900 mb-4">依頼者情報（任意）</h2>
-                    
-                    <div class="space-y-6">
-                        <div>
-                            <label for="bio" class="block text-sm font-medium text-gray-700 mb-2">
-                                会社・事業について
-                            </label>
-                            <textarea id="bio" 
-                                      name="bio" 
-                                      rows="3" 
-                                      maxlength="1000"
-                                      class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical"
-                                      placeholder="会社や事業内容、どのような案件を依頼予定かなどを記載してください"><?= h($formData['bio']) ?></textarea>
-                            <p class="text-sm text-gray-500 mt-1">1000文字以内</p>
-                            <?php if (!empty($errors['bio'])): ?>
-                                <p class="mt-2 text-sm text-red-600"><?= h($errors['bio']) ?></p>
-                            <?php endif; ?>
-                        </div>
-
-                        <div>
-                            <label for="location" class="block text-sm font-medium text-gray-700 mb-2">
-                                所在地
-                            </label>
-                            <input type="text" 
-                                   id="location" 
-                                   name="location" 
-                                   value="<?= h($formData['location']) ?>"
-                                   maxlength="100"
-                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                   placeholder="例: 東京都渋谷区">
-                            <?php if (!empty($errors['location'])): ?>
-                                <p class="mt-2 text-sm text-red-600"><?= h($errors['location']) ?></p>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </div>
-            <?php endif; ?>
+            </div>
 
             <!-- Terms -->
             <div class="flex items-start">
@@ -412,7 +366,7 @@ include 'includes/header.php';
             <div class="border-t border-gray-200 pt-6">
                 <button type="submit" 
                         class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                    <?= $userType === 'client' ? '依頼者登録' : 'クリエイター登録' ?>
+                    新規登録
                 </button>
             </div>
         </form>
