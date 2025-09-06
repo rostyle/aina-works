@@ -110,7 +110,7 @@ include 'includes/header.php';
         <!-- Main Content -->
         <div class="lg:col-span-2">
             <!-- Image Gallery -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mb-8">
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mb-8 relative z-10">
                 <div class="relative">
                     <!-- メイン画像 -->
                     <div class="aspect-w-16 aspect-h-9 bg-gray-100">
@@ -123,7 +123,7 @@ include 'includes/header.php';
                     
                     <!-- 画像カウンター -->
                     <?php if (count($images) > 1): ?>
-                        <div class="absolute top-4 right-4 bg-black bg-opacity-60 text-white px-3 py-1 rounded-full text-sm">
+                        <div class="absolute top-4 right-4 bg-black bg-opacity-60 text-white px-3 py-1 rounded-full text-sm z-20">
                             <span id="current-image-index">1</span> / <?= count($images) ?>
                         </div>
                     <?php endif; ?>
@@ -131,13 +131,13 @@ include 'includes/header.php';
                     <!-- 画像ナビゲーション矢印 -->
                     <?php if (count($images) > 1): ?>
                         <button id="prev-btn" onclick="previousImage()" 
-                                class="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-all">
+                                class="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-all z-20">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                             </svg>
                         </button>
                         <button id="next-btn" onclick="nextImage()" 
-                                class="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-all">
+                                class="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-all z-20">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                             </svg>
@@ -489,77 +489,37 @@ include 'includes/header.php';
                             <span class="font-medium"><?= $work['response_time'] ?>時間以内</span>
                         </div>
                     </div>
-                </div>
-
-                <!-- Creator Stats -->
-                <div class="grid grid-cols-3 gap-4 text-center mb-6">
-                    <div>
-                        <div class="text-lg font-bold text-gray-900"><?= $creatorStats['work_count'] ?></div>
-                        <div class="text-xs text-gray-500">作品数</div>
-                    </div>
-                    <div>
-                        <div class="text-lg font-bold text-gray-900"><?= $creatorStats['completed_jobs'] ?></div>
-                        <div class="text-xs text-gray-500">完了案件</div>
-                    </div>
-                    <div>
-                        <div class="text-lg font-bold text-gray-900">98%</div>
-                        <div class="text-xs text-gray-500">満足度</div>
-                    </div>
-                </div>
-
-                <!-- Action Buttons -->
-                <div class="space-y-3">
-                    <button onclick="toggleLike('work', <?= $work['id'] ?>, this)" 
-                            class="like-btn w-full px-4 py-3 bg-red-50 text-red-600 border border-red-200 font-medium rounded-md hover:bg-red-100 transition-colors"
-                            data-liked="false">
-                        <svg class="h-5 w-5 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                        </svg>
-                        <span class="like-text">この作品をいいね</span>
-                    </button>
-                    <!-- SNSリンクボタン -->
-                    <?php 
-                    $snsLinks = [
-                        'website' => ['url' => $work['website'], 'name' => 'ウェブサイト', 'icon' => '🌐', 'color' => 'bg-gray-600 hover:bg-gray-700'],
-                        'twitter_url' => ['url' => $work['twitter_url'], 'name' => 'Twitter', 'icon' => '🐦', 'color' => 'bg-blue-500 hover:bg-blue-600'],
-                        'instagram_url' => ['url' => $work['instagram_url'], 'name' => 'Instagram', 'icon' => '📷', 'color' => 'bg-pink-500 hover:bg-pink-600'],
-                        'facebook_url' => ['url' => $work['facebook_url'], 'name' => 'Facebook', 'icon' => '👥', 'color' => 'bg-blue-700 hover:bg-blue-800'],
-                        'linkedin_url' => ['url' => $work['linkedin_url'], 'name' => 'LinkedIn', 'icon' => '💼', 'color' => 'bg-blue-800 hover:bg-blue-900'],
-                        'youtube_url' => ['url' => $work['youtube_url'], 'name' => 'YouTube', 'icon' => '🎥', 'color' => 'bg-red-600 hover:bg-red-700'],
-                        'tiktok_url' => ['url' => $work['tiktok_url'], 'name' => 'TikTok', 'icon' => '🎵', 'color' => 'bg-black hover:bg-gray-800']
-                    ];
-                    $hasAnySNS = false;
-                    foreach ($snsLinks as $sns) {
-                        if (!empty($sns['url'])) {
-                            $hasAnySNS = true;
-                            break;
-                        }
-                    }
-                    ?>
                     
-                    <?php if ($hasAnySNS): ?>
-                        <div class="space-y-2">
-                            <h5 class="text-sm font-medium text-gray-900 text-center mb-3">SNSでコンタクト</h5>
-                            <?php foreach ($snsLinks as $key => $sns): ?>
-                                <?php if (!empty($sns['url'])): ?>
-                                    <a href="<?= h($sns['url']) ?>" 
-                                       target="_blank" 
-                                       rel="noopener noreferrer"
-                                       class="w-full px-4 py-3 <?= $sns['color'] ?> text-white font-medium rounded-md transition-colors inline-flex items-center justify-center">
-                                        <span class="mr-2"><?= $sns['icon'] ?></span>
-                                        <?= $sns['name'] ?>で連絡
-                                        <svg class="h-4 w-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                        </svg>
-                                    </a>
-                                <?php endif; ?>
-                            <?php endforeach; ?>
+                    <!-- Creator Stats -->
+                    <div class="grid grid-cols-3 gap-4 text-center mb-6">
+                        <div>
+                            <div class="text-lg font-bold text-gray-900"><?= $creatorStats['work_count'] ?></div>
+                            <div class="text-xs text-gray-500">作品数</div>
                         </div>
-                    <?php else: ?>
+                        <div>
+                            <div class="text-lg font-bold text-gray-900"><?= $creatorStats['completed_jobs'] ?></div>
+                            <div class="text-xs text-gray-500">完了案件</div>
+                        </div>
+                        <div>
+                            <div class="text-lg font-bold text-gray-900">98%</div>
+                            <div class="text-xs text-gray-500">満足度</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="space-y-3">
+                        <button onclick="toggleLike('work', <?= $work['id'] ?>, this)" 
+                                class="like-btn w-full px-4 py-3 bg-red-50 text-red-600 border border-red-200 font-medium rounded-md hover:bg-red-100 transition-colors"
+                                data-liked="false">
+                            <svg class="h-5 w-5 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                            </svg>
+                            <span class="like-text">この作品をいいね</span>
+                        </button>
                         <?php if ($currentUser && $currentUser['id'] == $work['user_id']): ?>
-                            <button disabled class="w-full px-4 py-3 bg-gray-400 text-white font-medium rounded-md cursor-not-allowed inline-flex items-center justify-center">
+                            <button disabled class="w-full px-4 py-3 border border-gray-300 text-gray-400 font-medium rounded-md cursor-not-allowed">
                                 <svg class="h-5 w-5 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-3.582 8-8 8a8.955 8.955 0 01-4.126-.98L3 20l1.98-5.874A8.955 8.955 0 013 12c0-4.418 3.582-8 8-8s8 3.582 8 8z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2V6z" />
                                 </svg>
                                 自分の作品です
                             </button>
@@ -571,135 +531,145 @@ include 'includes/header.php';
                                 チャットを開始
                             </a>
                         <?php endif; ?>
-                    <?php endif; ?>
-                    <a href="<?= url('creator-profile.php?id=' . $work['user_id']) ?>" class="w-full px-4 py-3 border border-gray-300 text-gray-700 font-medium rounded-md hover:bg-gray-50 transition-colors inline-flex items-center justify-center">
-                        <svg class="h-5 w-5 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                        </svg>
-                        プロフィールを見る
-                    </a>
-                    <?php if ($currentUser && $currentUser['id'] == $work['user_id']): ?>
-                        <button disabled class="w-full px-4 py-3 border border-gray-300 text-gray-400 font-medium rounded-md cursor-not-allowed">
+                        <a href="<?= url('creator-profile.php?id=' . $work['user_id']) ?>" class="w-full px-4 py-3 border border-gray-300 text-gray-700 font-medium rounded-md hover:bg-gray-50 transition-colors inline-flex items-center justify-center">
                             <svg class="h-5 w-5 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2V6z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                             </svg>
-                            自分の作品です
-                        </button>
-                    <?php else: ?>
-                        <button onclick="openJobRequestModal()" class="w-full px-4 py-3 border border-gray-300 text-gray-700 font-medium rounded-md hover:bg-gray-50 transition-colors">
-                            <svg class="h-5 w-5 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2V6z" />
-                            </svg>
-                            案件を依頼する
-                        </button>
-                    <?php endif; ?>
-                </div>
-            </div>
-
-            <!-- Skills -->
-            <?php if (!empty($creatorSkills)): ?>
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-                    <h4 class="font-semibold text-gray-900 mb-4">スキル</h4>
-                    <div class="space-y-3">
-                        <?php foreach ($creatorSkills as $skill): ?>
-                            <div>
-                                <div class="flex justify-between text-sm mb-1">
-                                    <span class="text-gray-700"><?= h($skill['name']) ?></span>
-                                    <span class="text-gray-500">
-                                        <?php
-                                        $proficiencyMap = [
-                                            'expert' => '95%',
-                                            'advanced' => '85%',
-                                            'intermediate' => '70%',
-                                            'beginner' => '50%'
-                                        ];
-                                        echo $proficiencyMap[$skill['proficiency']] ?? '70%';
-                                        ?>
-                                    </span>
-                                </div>
-                                <div class="w-full bg-gray-200 rounded-full h-2">
-                                    <div class="bg-blue-600 h-2 rounded-full" style="width: <?= $proficiencyMap[$skill['proficiency']] ?? '70%' ?>"></div>
-                                </div>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
-                </div>
-            <?php endif; ?>
-
-            <!-- Related Works -->
-            <?php if (!empty($relatedWorks)): ?>
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <div class="flex items-center justify-between mb-4">
-                        <h4 class="font-semibold text-gray-900">この作者の他の作品</h4>
-                        <a href="<?= url('creator-profile.php?id=' . $work['user_id']) ?>" 
-                           class="text-sm text-blue-600 hover:text-blue-800 font-medium">
-                            すべて見る →
+                            プロフィールを見る
                         </a>
-                    </div>
-                    <div class="space-y-4">
-                        <?php foreach ($relatedWorks as $relatedWork): ?>
-                            <a href="<?= url('work-detail.php?id=' . $relatedWork['id']) ?>" 
-                               class="block group hover:bg-gray-50 rounded-lg p-3 -m-3 transition-colors">
-                                <div class="flex space-x-4">
-                                    <div class="relative flex-shrink-0">
-                                        <img src="<?= uploaded_asset($relatedWork['main_image']) ?>" 
-                                             alt="<?= h($relatedWork['title']) ?>" 
-                                             class="w-20 h-20 rounded-lg object-cover group-hover:scale-105 transition-transform">
-                                        <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 rounded-lg transition-all"></div>
-                                    </div>
-                                    <div class="flex-1 min-w-0">
-                                        <h5 class="text-sm font-medium text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-2 mb-1">
-                                            <?= h($relatedWork['title']) ?>
-                                        </h5>
-                                        <div class="flex items-center justify-between mb-2">
-                                            <span class="text-sm font-semibold text-gray-900">
-                                                <?= formatPrice($relatedWork['price_min']) ?>〜
-                                            </span>
-                                            <div class="flex items-center">
-                                                <svg class="h-3 w-3 text-yellow-400 fill-current" viewBox="0 0 20 20">
-                                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                                                </svg>
-                                                <span class="text-xs text-gray-500 ml-1">
-                                                    <?= number_format($relatedWork['avg_rating'] ?: 0, 1) ?> (<?= $relatedWork['review_count'] ?: 0 ?>)
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <div class="flex items-center text-xs text-gray-500">
-                                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                                            </svg>
-                                            <?= number_format($relatedWork['view_count'] ?: 0) ?> views
-                                            <span class="mx-1">•</span>
-                                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
-                                            </svg>
-                                            <?= number_format($relatedWork['like_count'] ?: 0) ?>
-                                        </div>
-                                    </div>
-                                </div>
-                            </a>
-                        <?php endforeach; ?>
+                        <?php if (!($currentUser && $currentUser['id'] == $work['user_id'])): ?>
+                            <button onclick="openJobRequestModal()" class="w-full px-4 py-3 border border-gray-300 text-gray-700 font-medium rounded-md hover:bg-gray-50 transition-colors">
+                                <svg class="h-5 w-5 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2V6z" />
+                                </svg>
+                                案件を依頼する
+                            </button>
+                        <?php endif; ?>
                     </div>
                 </div>
-            <?php else: ?>
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <h4 class="font-semibold text-gray-900 mb-4">この作者の他の作品</h4>
-                    <div class="text-center py-8">
-                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
-                        </svg>
-                        <h3 class="mt-2 text-sm font-medium text-gray-900">他の作品はまだありません</h3>
-                        <p class="mt-1 text-sm text-gray-500">この作者の最新作をお楽しみに！</p>
-                        <div class="mt-6">
-                            <a href="<?= url('creator-profile.php?id=' . $work['user_id']) ?>" 
-                               class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
-                                作者のプロフィールを見る
-                            </a>
+
+                <!-- Skills -->
+                <?php if (!empty($creatorSkills)): ?>
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+                        <h4 class="font-semibold text-gray-900 mb-4">スキル</h4>
+                        <div class="space-y-3">
+                            <?php foreach ($creatorSkills as $skill): ?>
+                                <div>
+                                    <div class="flex justify-between text-sm mb-1">
+                                        <span class="text-gray-700"><?= h($skill['name']) ?></span>
+                                        <span class="text-gray-500">
+                                            <?php
+                                            $proficiencyMap = [
+                                                'expert' => '95%',
+                                                'advanced' => '85%',
+                                                'intermediate' => '70%',
+                                                'beginner' => '50%'
+                                            ];
+                                            echo $proficiencyMap[$skill['proficiency']] ?? '70%';
+                                            ?>
+                                        </span>
+                                    </div>
+                                    <div class="w-full bg-gray-200 rounded-full h-2">
+                                        <div class="bg-blue-600 h-2 rounded-full" style="width: <?= $proficiencyMap[$skill['proficiency']] ?? '70%' ?>"></div>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
                         </div>
                     </div>
-                </div>
-            <?php endif; ?>
+                <?php endif; ?>
+
+                <!-- Related Works -->
+                <?php if (!empty($relatedWorks)): ?>
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 relative z-0 overflow-hidden">
+                        <div class="flex items-center justify-between mb-4">
+                            <h4 class="font-semibold text-gray-900">この作者の他の作品</h4>
+                            <a href="<?= url('creator-profile.php?id=' . $work['user_id']) ?>" 
+                               class="text-sm text-blue-600 hover:text-blue-800 font-medium">
+                                すべて見る →
+                            </a>
+                        </div>
+                        <div class="carousel" data-autoplay>
+                            <div class="relative overflow-hidden rounded-lg">
+                                <div class="carousel-track flex transition-transform duration-500">
+                                    <?php foreach ($relatedWorks as $relatedWork): ?>
+                                        <div class="carousel-slide min-w-full">
+                                            <a href="<?= url('work-detail.php?id=' . $relatedWork['id']) ?>" 
+                                               class="block group hover:bg-gray-50 rounded-lg p-3 transition-colors">
+                                                <div class="flex space-x-4">
+                                                    <div class="relative flex-shrink-0">
+                                                        <img src="<?= uploaded_asset($relatedWork['main_image']) ?>" 
+                                                             alt="<?= h($relatedWork['title']) ?>" 
+                                                             class="w-24 h-24 md:w-28 md:h-28 rounded-lg object-cover group-hover:scale-105 transition-transform">
+                                                        <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 rounded-lg transition-all"></div>
+                                                    </div>
+                                                    <div class="flex-1 min-w-0">
+                                                        <h5 class="text-sm font-medium text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-2 mb-1">
+                                                            <?= h($relatedWork['title']) ?>
+                                                        </h5>
+                                                        <div class="flex items-center justify-between mb-2">
+                                                            <span class="text-sm font-semibold text-gray-900">
+                                                                <?= formatPrice($relatedWork['price_min']) ?>〜
+                                                            </span>
+                                                            <div class="flex items-center">
+                                                                <svg class="h-3 w-3 text-yellow-400 fill-current" viewBox="0 0 20 20">
+                                                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                                                </svg>
+                                                                <span class="text-xs text-gray-500 ml-1">
+                                                                    <?= number_format($relatedWork['avg_rating'] ?: 0, 1) ?> (<?= $relatedWork['review_count'] ?: 0 ?>)
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        <div class="flex items-center text-xs text-gray-500">
+                                                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                                            </svg>
+                                                            <?= number_format($relatedWork['view_count'] ?: 0) ?> views
+                                                            <span class="mx-1">•</span>
+                                                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                                                            </svg>
+                                                            <?= number_format($relatedWork['like_count'] ?: 0) ?>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </a>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                                <button class="carousel-prev absolute left-2 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-sm p-2 rounded-full shadow hover:bg-white">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                                </button>
+                                <button class="carousel-next absolute right-2 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-sm p-2 rounded-full shadow hover:bg-white">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                                </button>
+                            </div>
+                            <div class="flex justify-center mt-3 space-x-2">
+                                <?php foreach ($relatedWorks as $i => $_): ?>
+                                    <button class="carousel-indicator w-2 h-2 rounded-full <?= $i === 0 ? 'bg-blue-600' : 'bg-gray-300' ?>"></button>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                    </div>
+                <?php else: ?>
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                        <h4 class="font-semibold text-gray-900 mb-4">この作者の他の作品</h4>
+                        <div class="text-center py-8">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                            </svg>
+                            <h3 class="mt-2 text-sm font-medium text-gray-900">他の作品はまだありません</h3>
+                            <p class="mt-1 text-sm text-gray-500">この作者の最新作をお楽しみに！</p>
+                            <div class="mt-6">
+                                <a href="<?= url('creator-profile.php?id=' . $work['user_id']) ?>" 
+                                   class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                                    作者のプロフィールを見る
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
+            </div>
         </div>
     </div>
 </div>

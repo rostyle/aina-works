@@ -56,15 +56,15 @@ try {
         LIMIT 6
     ", [$creatorId]);
 
-    // レビュー取得
-    $reviews = $db->select("
-        SELECT r.*, u.full_name as reviewer_name, u.profile_image as reviewer_image
-        FROM reviews r
-        JOIN users u ON r.reviewer_id = u.id
-        WHERE r.reviewee_id = ?
-        ORDER BY r.created_at DESC
-        LIMIT 5
-    ", [$creatorId]);
+    // 現在ユーザーのお気に入り状態（クリエイター）
+    $isCreatorLiked = false;
+    if (isLoggedIn()) {
+        $fav = $db->selectOne(
+            "SELECT 1 FROM favorites WHERE user_id = ? AND target_type = 'creator' AND target_id = ?",
+            [$_SESSION['user_id'], $creatorId]
+        );
+        $isCreatorLiked = (bool)$fav;
+    }
 
 } catch (Exception $e) {
     // エラー時はダミーデータを使用
@@ -116,24 +116,7 @@ try {
         ]
     ];
     
-    $reviews = [
-        [
-            'id' => 1,
-            'rating' => 5,
-            'comment' => '非常に高品質な作品を制作していただきました。コミュニケーションも丁寧で、修正対応も迅速でした。',
-            'reviewer_name' => '山田太郎',
-            'reviewer_image' => null,
-            'created_at' => '2024-01-20'
-        ],
-        [
-            'id' => 2,
-            'rating' => 5,
-            'comment' => 'AI技術を駆使した素晴らしいイラストを描いていただきました。期待以上の仕上がりです。',
-            'reviewer_name' => '佐藤花子',
-            'reviewer_image' => null,
-            'created_at' => '2024-01-15'
-        ]
-    ];
+    $isCreatorLiked = false;
 }
 
 $pageTitle = h($creator['full_name']) . ' - クリエイタープロフィール';
@@ -293,35 +276,8 @@ include 'includes/header.php';
                     </div>
                 </div>
             <?php endif; ?>
-
-            <!-- Reviews -->
-            <?php if (!empty($reviews)): ?>
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <h2 class="text-xl font-semibold text-gray-900 mb-6">クライアントレビュー</h2>
-                    
-                    <div class="space-y-6">
-                        <?php foreach ($reviews as $review): ?>
-                            <div class="border-b border-gray-200 last:border-b-0 pb-6 last:pb-0">
-                                <div class="flex items-start space-x-4">
-                                    <img src="<?= uploaded_asset($review['reviewer_image'] ?? 'assets/images/default-avatar.png') ?>" 
-                                         alt="<?= h($review['reviewer_name']) ?>" 
-                                         class="w-12 h-12 rounded-full">
-                                    <div class="flex-1">
-                                        <div class="flex items-center justify-between mb-2">
-                                            <h4 class="font-medium text-gray-900"><?= h($review['reviewer_name']) ?></h4>
-                                            <span class="text-sm text-gray-500"><?= formatDate($review['created_at']) ?></span>
-                                        </div>
-                                        <div class="flex items-center mb-2">
-                                            <?= renderStars($review['rating']) ?>
-                                        </div>
-                                        <p class="text-gray-700"><?= h($review['comment']) ?></p>
-                                    </div>
-                                </div>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
-                </div>
-            <?php endif; ?>
+            
+            <!-- Sidebar -->
         </div>
 
         <!-- Sidebar -->
@@ -359,40 +315,32 @@ include 'includes/header.php';
                 <!-- Action Buttons -->
                 <div class="space-y-3">
                     <?php if ($currentUser && $currentUser['id'] == $creator['id']): ?>
-                        <button disabled class="w-full px-4 py-3 bg-gray-400 text-white font-medium rounded-md cursor-not-allowed">
+                        <button disabled class="w-full px-4 py-3 bg-gray-400 text-white font-medium rounded-md cursor-not-allowed block">
                             <svg class="h-5 w-5 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-3.582 8-8 8a8.955 8.955 0 01-4.126-.98L3 20l1.98-5.874A8.955 8.955 0 013 12c0-4.418 3.582-8 8-8s8 3.582 8 8z" />
                             </svg>
                             自分のプロフィールです
                         </button>
                     <?php else: ?>
-                        <a href="<?= url('chat.php?user_id=' . $creator['id']) ?>" class="w-full px-4 py-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors">
+                        <a href="<?= url('chat.php?user_id=' . $creator['id']) ?>" class="w-full block text-center px-4 py-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors">
                             <svg class="h-5 w-5 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-3.582 8-8 8a8.955 8.955 0 01-4.126-.98L3 20l1.98-5.874A8.955 8.955 0 013 12c0-4.418 3.582-8 8-8s8 3.582 8 8z" />
                             </svg>
                             メッセージを送る
                         </a>
                     <?php endif; ?>
-                    <?php if ($currentUser && $currentUser['id'] == $creator['id']): ?>
-                        <button disabled class="w-full px-4 py-3 border border-gray-300 text-gray-400 font-medium rounded-md cursor-not-allowed">
-                            <svg class="h-5 w-5 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2V6z" />
-                            </svg>
-                            自分のプロフィールです
-                        </button>
-                    <?php else: ?>
-                        <button class="w-full px-4 py-3 border border-gray-300 text-gray-700 font-medium rounded-md hover:bg-gray-50 transition-colors">
-                            <svg class="h-5 w-5 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2V6z" />
-                            </svg>
-                            案件を依頼する
-                        </button>
-                    <?php endif; ?>
-                    <button class="w-full px-4 py-3 border border-gray-300 text-gray-700 font-medium rounded-md hover:bg-gray-50 transition-colors">
-                        <svg class="h-5 w-5 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <?php 
+                    $heartFill = $isCreatorLiked ? 'currentColor' : 'none';
+                    $heartColor = $isCreatorLiked ? 'text-red-500' : 'text-gray-700';
+                    $favLabel = $isCreatorLiked ? 'お気に入り済み' : 'お気に入りに追加';
+                    ?>
+                    <button onclick="toggleLike('creator', <?= (int)$creator['id'] ?>, this)"
+                            class="w-full block text-center px-4 py-3 border border-gray-300 text-gray-700 font-medium rounded-md hover:bg-gray-50 transition-colors like-btn"
+                            data-liked="<?= $isCreatorLiked ? 'true' : 'false' ?>">
+                        <svg class="h-5 w-5 inline mr-2 <?= $heartColor ?>" fill="<?= $heartFill ?>" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                         </svg>
-                        お気に入りに追加
+                        <span class="fav-label"><?= $favLabel ?></span>
                     </button>
                 </div>
             </div>
@@ -451,6 +399,55 @@ include 'includes/header.php';
         </div>
     </div>
 </div>
+
+<script>
+// いいね機能（クリエイタープロフィール）
+async function toggleLike(targetType, targetId, button) {
+    try {
+        const response = await fetch('api/like.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify({
+                target_type: targetType,
+                target_id: targetId
+            })
+        });
+        const result = await response.json();
+        if (result.success) {
+            const svg = button.querySelector('svg');
+            const label = button.querySelector('.fav-label');
+            if (result.liked) {
+                svg.setAttribute('fill', 'currentColor');
+                svg.classList.remove('text-gray-700');
+                svg.classList.add('text-red-500');
+                button.setAttribute('data-liked', 'true');
+                if (label) label.textContent = 'お気に入り済み';
+            } else {
+                svg.setAttribute('fill', 'none');
+                svg.classList.remove('text-red-500');
+                svg.classList.add('text-gray-700');
+                button.setAttribute('data-liked', 'false');
+                if (label) label.textContent = 'お気に入りに追加';
+            }
+            if (typeof showNotification === 'function') {
+                showNotification(result.message, 'success');
+            }
+        } else {
+            if (typeof showNotification === 'function') {
+                showNotification(result.error || 'エラーが発生しました', 'error');
+            }
+        }
+    } catch (error) {
+        console.error('Like toggle error:', error);
+        if (typeof showNotification === 'function') {
+            showNotification('ネットワークエラーが発生しました', 'error');
+        }
+    }
+}
+</script>
 
 <?php include 'includes/footer.php'; ?>
 

@@ -17,7 +17,12 @@ $page = max(1, (int)($_GET['page'] ?? 1));
 $perPage = 12;
 
 // 検索条件構築
-$searchParams = compact('keyword', 'categoryId', 'priceMin', 'priceMax');
+$searchParams = [
+    'keyword' => $keyword,
+    'category_id' => $categoryId,
+    'price_min' => $priceMin,
+    'price_max' => $priceMax,
+];
 $allowedFields = ['keyword', 'category_id', 'price_min', 'price_max'];
 $search = buildSearchConditions($searchParams, $allowedFields);
 
@@ -84,75 +89,44 @@ try {
         }
     }
     
-    // カテゴリ一覧取得
-    $categories = $db->select("
+    // カテゴリ一覧取得（検索条件を反映）
+    $categoryCountSql = "
         SELECT c.*, COUNT(w.id) as work_count 
         FROM categories c 
-        LEFT JOIN works w ON c.id = w.category_id AND w.status = 'published'
+        LEFT JOIN works w ON c.id = w.category_id AND w.status = 'published'";
+    
+    // 検索条件をカテゴリ件数にも適用（カテゴリ自体は除く）
+    $categoryCountParams = [];
+    if (!empty($keyword)) {
+        $categoryCountSql .= " AND (w.title LIKE ? OR w.description LIKE ?)";
+        $categoryCountParams[] = "%$keyword%";
+        $categoryCountParams[] = "%$keyword%";
+    }
+    if (!empty($priceMin)) {
+        $categoryCountSql .= " AND w.price_min >= ?";
+        $categoryCountParams[] = $priceMin;
+    }
+    if (!empty($priceMax)) {
+        $categoryCountSql .= " AND w.price_max <= ?";
+        $categoryCountParams[] = $priceMax;
+    }
+    
+    $categoryCountSql .= "
         WHERE c.is_active = 1 
         GROUP BY c.id 
         ORDER BY c.sort_order ASC
-    ");
+    ";
+    
+    $categories = $db->select($categoryCountSql, $categoryCountParams);
     
 } catch (Exception $e) {
-    // エラー時はダミーデータを使用
-    $total = 2847;
+    // エラー時は空データを使用
+    $total = 0;
     $pagination = calculatePagination($total, $perPage, $page);
-    $works = [
-        [
-            'id' => 1,
-            'title' => 'モダンWebデザイン',
-            'main_image' => 'assets/images/sample-work-1.png',
-            'creator_name' => '田中 美咲',
-            'category_name' => 'AI漫画',
-            'category_color' => '#F59E0B',
-            'avg_rating' => 4.9,
-            'review_count' => 127,
-            'price_min' => 50000,
-            'view_count' => 1520,
-            'like_count' => 234
-        ],
-        [
-            'id' => 2,
-            'title' => 'ブランドアイデンティティ',
-            'main_image' => 'assets/images/sample-work-2.jpg',
-            'creator_name' => '佐藤 健太',
-            'category_name' => 'ロゴ制作',
-            'category_color' => '#EF4444',
-            'avg_rating' => 4.8,
-            'review_count' => 89,
-            'price_min' => 30000,
-            'view_count' => 980,
-            'like_count' => 189
-        ]
-    ];
+    $works = [];
     
-    // ダミーデータ使用時もユーザーのいいね状態を取得
     $userLikes = [];
-    if (isLoggedIn() && !empty($works)) {
-        try {
-            $workIds = array_column($works, 'id');
-            $placeholders = str_repeat('?,', count($workIds) - 1) . '?';
-            $likesResult = $db->select(
-                "SELECT target_id FROM favorites WHERE user_id = ? AND target_type = 'work' AND target_id IN ($placeholders)",
-                array_merge([$_SESSION['user_id']], $workIds)
-            );
-            $userLikes = array_column($likesResult, 'target_id');
-        } catch (Exception $likeException) {
-            // いいね状態の取得に失敗した場合は空配列のまま
-            $userLikes = [];
-        }
-    }
-    
-    $categories = [
-        ['id' => '', 'name' => 'すべて', 'work_count' => 2847],
-        ['id' => 3, 'name' => 'Web制作', 'work_count' => 1250],
-        ['id' => 1, 'name' => 'ロゴ制作', 'work_count' => 890],
-        ['id' => 2, 'name' => 'ライティング', 'work_count' => 670],
-        ['id' => 4, 'name' => '動画編集', 'work_count' => 450],
-        ['id' => 5, 'name' => 'AI漫画', 'work_count' => 320],
-        ['id' => 6, 'name' => '音楽制作', 'work_count' => 280]
-    ];
+    $categories = [];
 }
 
 include 'includes/header.php';

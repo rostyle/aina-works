@@ -98,6 +98,18 @@ try {
     
     $creators = $db->select($creatorsSql, $values);
     
+    // ログイン中ユーザーのクリエイターいいね状態を取得
+    $userCreatorLikes = [];
+    if (isLoggedIn() && !empty($creators)) {
+        $creatorIds = array_column($creators, 'id');
+        $placeholders = str_repeat('?,', count($creatorIds) - 1) . '?';
+        $likesResult = $db->select(
+            "SELECT target_id FROM favorites WHERE user_id = ? AND target_type = 'creator' AND target_id IN ($placeholders)",
+            array_merge([$_SESSION['user_id']], $creatorIds)
+        );
+        $userCreatorLikes = array_column($likesResult, 'target_id');
+    }
+    
     // N+1問題対策：スキルを一括取得
     $creatorIds = array_map(fn($c) => $c['id'], $creators);
     $skillsByCreator = [];
@@ -384,8 +396,15 @@ include 'includes/header.php';
                                         <div class="text-xs text-gray-500">/ プロジェクト</div>
                                     </div>
                                     <div class="flex space-x-2">
-                                        <button class="p-2 text-gray-400 hover:text-red-500 transition-colors">
-                                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <?php 
+                                        $isCreatorLiked = in_array($creator['id'], $userCreatorLikes ?? []);
+                                        $heartFill = $isCreatorLiked ? 'currentColor' : 'none';
+                                        $heartColor = $isCreatorLiked ? 'text-red-500' : 'text-gray-400';
+                                        ?>
+                                        <button onclick="toggleLike('creator', <?= (int)$creator['id'] ?>, this)"
+                                                class="p-2 like-btn transition-colors bg-white/90 rounded-full hover:bg-white"
+                                                data-liked="<?= $isCreatorLiked ? 'true' : 'false' ?>">
+                                            <svg class="h-5 w-5 <?= $heartColor ?>" fill="<?= $heartFill ?>" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                                             </svg>
                                         </button>
@@ -450,6 +469,50 @@ function clearFilters() {
     url.searchParams.delete('location');
     url.searchParams.delete('page');
     window.location.href = url.toString();
+}
+
+// いいね機能（クリエイター）
+async function toggleLike(targetType, targetId, button) {
+    try {
+        const response = await fetch('api/like.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify({
+                target_type: targetType,
+                target_id: targetId
+            })
+        });
+        const result = await response.json();
+        if (result.success) {
+            const svg = button.querySelector('svg');
+            if (result.liked) {
+                svg.setAttribute('fill', 'currentColor');
+                svg.classList.remove('text-gray-400');
+                svg.classList.add('text-red-500');
+                button.setAttribute('data-liked', 'true');
+            } else {
+                svg.setAttribute('fill', 'none');
+                svg.classList.remove('text-red-500');
+                svg.classList.add('text-gray-400');
+                button.setAttribute('data-liked', 'false');
+            }
+            if (typeof showNotification === 'function') {
+                showNotification(result.message, 'success');
+            }
+        } else {
+            if (typeof showNotification === 'function') {
+                showNotification(result.error || 'エラーが発生しました', 'error');
+            }
+        }
+    } catch (error) {
+        console.error('Like toggle error:', error);
+        if (typeof showNotification === 'function') {
+            showNotification('ネットワークエラーが発生しました', 'error');
+        }
+    }
 }
 </script>
 
