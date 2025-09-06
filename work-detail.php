@@ -10,6 +10,9 @@ if (!$workId) {
 // データベース接続
 $db = Database::getInstance();
 
+// 現在のユーザー情報を取得
+$currentUser = getCurrentUser();
+
 try {
     // 作品詳細取得
     $work = $db->selectOne("
@@ -468,12 +471,21 @@ include 'includes/header.php';
                             <?php endforeach; ?>
                         </div>
                     <?php else: ?>
-                        <button class="w-full px-4 py-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors">
-                            <svg class="h-5 w-5 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-3.582 8-8 8a8.955 8.955 0 01-4.126-.98L3 20l1.98-5.874A8.955 8.955 0 013 12c0-4.418 3.582-8 8-8s8 3.582 8 8z" />
-                            </svg>
-                            メッセージを送る
-                        </button>
+                        <?php if ($currentUser && $currentUser['id'] == $work['user_id']): ?>
+                            <button disabled class="w-full px-4 py-3 bg-gray-400 text-white font-medium rounded-md cursor-not-allowed inline-flex items-center justify-center">
+                                <svg class="h-5 w-5 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-3.582 8-8 8a8.955 8.955 0 01-4.126-.98L3 20l1.98-5.874A8.955 8.955 0 013 12c0-4.418 3.582-8 8-8s8 3.582 8 8z" />
+                                </svg>
+                                自分の作品です
+                            </button>
+                        <?php else: ?>
+                            <a href="<?= url('chat.php?user_id=' . $work['user_id']) ?>" class="w-full px-4 py-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors inline-flex items-center justify-center">
+                                <svg class="h-5 w-5 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-3.582 8-8 8a8.955 8.955 0 01-4.126-.98L3 20l1.98-5.874A8.955 8.955 0 013 12c0-4.418 3.582-8 8-8s8 3.582 8 8z" />
+                                </svg>
+                                チャットを開始
+                            </a>
+                        <?php endif; ?>
                     <?php endif; ?>
                     <a href="<?= url('creator-profile.php?id=' . $work['user_id']) ?>" class="w-full px-4 py-3 border border-gray-300 text-gray-700 font-medium rounded-md hover:bg-gray-50 transition-colors inline-flex items-center justify-center">
                         <svg class="h-5 w-5 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -481,12 +493,21 @@ include 'includes/header.php';
                         </svg>
                         プロフィールを見る
                     </a>
-                    <button class="w-full px-4 py-3 border border-gray-300 text-gray-700 font-medium rounded-md hover:bg-gray-50 transition-colors">
-                        <svg class="h-5 w-5 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2V6z" />
-                        </svg>
-                        案件を依頼する
-                    </button>
+                    <?php if ($currentUser && $currentUser['id'] == $work['user_id']): ?>
+                        <button disabled class="w-full px-4 py-3 border border-gray-300 text-gray-400 font-medium rounded-md cursor-not-allowed">
+                            <svg class="h-5 w-5 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2V6z" />
+                            </svg>
+                            自分の作品です
+                        </button>
+                    <?php else: ?>
+                        <button onclick="openJobRequestModal()" class="w-full px-4 py-3 border border-gray-300 text-gray-700 font-medium rounded-md hover:bg-gray-50 transition-colors">
+                            <svg class="h-5 w-5 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2V6z" />
+                            </svg>
+                            案件を依頼する
+                        </button>
+                    <?php endif; ?>
                 </div>
             </div>
 
@@ -598,12 +619,134 @@ include 'includes/header.php';
     </div>
 </div>
 
+<!-- メッセージ送信モーダル -->
+<div id="message-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-900">メッセージを送る</h3>
+                <button onclick="closeMessageModal()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <form id="message-form" onsubmit="sendMessage(event)">
+                <input type="hidden" name="recipient_id" value="<?= $work['user_id'] ?>">
+                <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">件名</label>
+                    <input type="text" name="subject" required 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                           placeholder="件名を入力してください">
+                </div>
+                
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">メッセージ</label>
+                    <textarea name="message" rows="5" required
+                              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              placeholder="メッセージ内容を入力してください"></textarea>
+                </div>
+                
+                <div class="flex space-x-3">
+                    <button type="button" onclick="closeMessageModal()" 
+                            class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors">
+                        キャンセル
+                    </button>
+                    <button type="submit" 
+                            class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+                        送信
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 案件依頼モーダル -->
+<div id="job-request-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-900">案件を依頼する</h3>
+                <button onclick="closeJobRequestModal()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <form id="job-request-form" onsubmit="requestJob(event)">
+                <input type="hidden" name="creator_id" value="<?= $work['user_id'] ?>">
+                <input type="hidden" name="work_id" value="<?= $work['id'] ?>">
+                <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">プロジェクトタイトル</label>
+                        <input type="text" name="project_title" required 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               placeholder="プロジェクトタイトルを入力">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">希望納期</label>
+                        <input type="date" name="deadline" required 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">プロジェクト概要</label>
+                    <textarea name="project_description" rows="3" required
+                              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              placeholder="プロジェクトの概要を入力してください"></textarea>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">予算（最小）</label>
+                        <input type="number" name="budget_min" required min="1"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               placeholder="100000">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">予算（最大）</label>
+                        <input type="number" name="budget_max" required min="1"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               placeholder="500000">
+                    </div>
+                </div>
+                
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">詳細要件</label>
+                    <textarea name="requirements" rows="4"
+                              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              placeholder="詳細な要件や仕様を入力してください（任意）"></textarea>
+                </div>
+                
+                <div class="flex space-x-3">
+                    <button type="button" onclick="closeJobRequestModal()" 
+                            class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors">
+                        キャンセル
+                    </button>
+                    <button type="submit" 
+                            class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+                        依頼を送信
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
 let currentImageIndex = 0;
 const images = <?= json_encode($images) ?>;
 
 function changeImage(src, index) {
-    const assetSrc = `serve.php?file=${encodeURIComponent(src)}`;
+    const assetSrc = `<?= url('serve.php?file=') ?>${encodeURIComponent(src)}`;
     document.getElementById('main-image').src = assetSrc;
     document.getElementById('main-image').onclick = function() { openImageModal(assetSrc); };
     currentImageIndex = index;
@@ -658,10 +801,12 @@ document.addEventListener('keydown', function(e) {
             closeImageModal();
         } else if (e.key === 'ArrowLeft') {
             previousImage();
-            openImageModal(images[currentImageIndex]);
+            const assetSrc = `<?= url('serve.php?file=') ?>${encodeURIComponent(images[currentImageIndex])}`;
+            openImageModal(assetSrc);
         } else if (e.key === 'ArrowRight') {
             nextImage();
-            openImageModal(images[currentImageIndex]);
+            const assetSrc = `<?= url('serve.php?file=') ?>${encodeURIComponent(images[currentImageIndex])}`;
+            openImageModal(assetSrc);
         }
     } else {
         if (e.key === 'ArrowLeft') {
@@ -764,6 +909,103 @@ function showNotification(message, type = 'info') {
         }
     }, 3000);
 }
+
+// メッセージモーダル制御
+function openMessageModal() {
+    document.getElementById('message-modal').classList.remove('hidden');
+    document.getElementById('message-modal').classList.add('flex');
+    document.body.classList.add('overflow-hidden');
+}
+
+function closeMessageModal() {
+    document.getElementById('message-modal').classList.add('hidden');
+    document.getElementById('message-modal').classList.remove('flex');
+    document.body.classList.remove('overflow-hidden');
+    document.getElementById('message-form').reset();
+}
+
+// 案件依頼モーダル制御
+function openJobRequestModal() {
+    document.getElementById('job-request-modal').classList.remove('hidden');
+    document.getElementById('job-request-modal').classList.add('flex');
+    document.body.classList.add('overflow-hidden');
+}
+
+function closeJobRequestModal() {
+    document.getElementById('job-request-modal').classList.add('hidden');
+    document.getElementById('job-request-modal').classList.remove('flex');
+    document.body.classList.remove('overflow-hidden');
+    document.getElementById('job-request-form').reset();
+}
+
+// メッセージ送信
+async function sendMessage(event) {
+    event.preventDefault();
+    
+    const form = event.target;
+    const formData = new FormData(form);
+    
+    try {
+        const response = await fetch('api/send-message.php', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showNotification(result.message, 'success');
+            closeMessageModal();
+        } else {
+            showNotification(result.error || 'エラーが発生しました', 'error');
+        }
+        
+    } catch (error) {
+        console.error('Message send error:', error);
+        showNotification('ネットワークエラーが発生しました', 'error');
+    }
+}
+
+// 案件依頼送信
+async function requestJob(event) {
+    event.preventDefault();
+    
+    const form = event.target;
+    const formData = new FormData(form);
+    
+    try {
+        const response = await fetch('api/request-job.php', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showNotification(result.message, 'success');
+            closeJobRequestModal();
+        } else {
+            showNotification(result.error || 'エラーが発生しました', 'error');
+        }
+        
+    } catch (error) {
+        console.error('Job request error:', error);
+        showNotification('ネットワークエラーが発生しました', 'error');
+    }
+}
+
+// モーダル背景クリックで閉じる
+document.getElementById('message-modal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeMessageModal();
+    }
+});
+
+document.getElementById('job-request-modal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeJobRequestModal();
+    }
+});
 </script>
 
 <?php include 'includes/footer.php'; ?>

@@ -8,28 +8,20 @@ class Database {
     
     private function __construct() {
         try {
-            $dbType = DB_TYPE ?? 'sqlite';
+            // MySQL/MariaDB接続
+            $host = DB_HOST;
+            $dbname = DB_NAME;
+            $username = DB_USER;
+            $password = DB_PASS;
             
-            if ($dbType === 'sqlite') {
-                $dbPath = BASE_PATH . '/' . (DB_PATH ?? 'database.sqlite');
-                $dsn = "sqlite:$dbPath";
-                $this->pdo = new PDO($dsn);
-            } else {
-                // MySQL/MariaDB接続
-                $host = DB_HOST ?? 'localhost';
-                $dbname = DB_NAME ?? 'aina_works';
-                $username = DB_USER ?? 'root';
-                $password = DB_PASS ?? '';
-                
-                $dsn = "mysql:host=$host;dbname=$dbname;charset=utf8mb4";
-                $this->pdo = new PDO($dsn, $username, $password);
-            }
+            $dsn = "mysql:host=$host;dbname=$dbname;charset=utf8mb4";
+            $this->pdo = new PDO($dsn, $username, $password);
             
             $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             $this->pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
             
         } catch (PDOException $e) {
-            if (DEBUG) {
+            if (defined('DEBUG') && DEBUG) {
                 throw new Exception("データベース接続エラー: " . $e->getMessage());
             } else {
                 throw new Exception("データベース接続に失敗しました");

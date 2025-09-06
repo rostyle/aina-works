@@ -153,6 +153,11 @@
                         ['url' => 'creators.php', 'label' => 'クリエイター', 'icon' => 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z'],
                         ['url' => 'jobs.php', 'label' => '案件一覧', 'icon' => 'M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2V6z']
                     ];
+                    
+                    // ログイン済みの場合はチャットリンクを追加
+                    if (isLoggedIn()) {
+                        $navItems[] = ['url' => 'chats.php', 'label' => 'チャット', 'icon' => 'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-3.582 8-8 8a8.955 8.955 0 01-4.126-.98L3 20l1.98-5.874A8.955 8.955 0 013 12c0-4.418 3.582-8 8-8s8 3.582 8 8z'];
+                    }
                     $currentPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
                     ?>
                     
@@ -192,13 +197,13 @@
                         $availableRoles = getUserRoles();
                         ?>
                         <!-- Notifications -->
-                        <button class="relative p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-xl transition-all duration-300" 
-                                title="通知">
+                        <a href="<?= url('chats.php') ?>" class="relative p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-xl transition-all duration-300" 
+                                title="チャット通知" id="notification-button">
                             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5zM11 17H7l-4 4v-4H1V5a2 2 0 012-2h14a2 2 0 012 2v6" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-3.582 8-8 8a8.955 8.955 0 01-4.126-.98L3 20l1.98-5.874A8.955 8.955 0 013 12c0-4.418 3.582-8 8-8s8 3.582 8 8z" />
                             </svg>
-                            <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-                        </button>
+                            <span id="notification-badge" class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center hidden">0</span>
+                        </a>
                         
                         <!-- User Avatar Dropdown -->
                         <div class="relative group">
@@ -491,6 +496,48 @@
                 </div>
             <?php endforeach; ?>
         </div>
+    <?php endif; ?>
+
+    <!-- Notification Update Script -->
+    <?php if (isLoggedIn()): ?>
+    <script>
+        // 未読メッセージ数を更新する関数
+        async function updateNotificationCount() {
+            try {
+                const response = await fetch('<?= url('api/get-unread-count.php') ?>');
+                const result = await response.json();
+                
+                if (result.success) {
+                    const badge = document.getElementById('notification-badge');
+                    const button = document.getElementById('notification-button');
+                    
+                    if (result.unread_count > 0) {
+                        badge.textContent = result.unread_count > 99 ? '99+' : result.unread_count;
+                        badge.classList.remove('hidden');
+                        button.classList.add('text-primary-600');
+                        button.classList.remove('text-gray-400');
+                    } else {
+                        badge.classList.add('hidden');
+                        button.classList.remove('text-primary-600');
+                        button.classList.add('text-gray-400');
+                    }
+                }
+            } catch (error) {
+                console.error('Notification update error:', error);
+            }
+        }
+        
+        // ページ読み込み時に実行
+        document.addEventListener('DOMContentLoaded', function() {
+            updateNotificationCount();
+            
+            // 30秒ごとに未読メッセージ数を更新
+            setInterval(updateNotificationCount, 30000);
+        });
+        
+        // グローバル関数として公開（他のページから呼び出せるように）
+        window.updateNotificationCount = updateNotificationCount;
+    </script>
     <?php endif; ?>
 
     <main class="min-h-screen relative"><?php // メインコンテンツはここから開始 ?>

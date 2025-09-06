@@ -1,12 +1,7 @@
 <?php
 require_once 'config/config.php';
 
-// ログインしていないユーザーはアクセス不可
-if (!isLoggedIn()) {
-    http_response_code(403);
-    echo "Forbidden";
-    exit;
-}
+// 画像ファイルは一般公開（ログイン不要）
 
 $file = $_GET['file'] ?? '';
 

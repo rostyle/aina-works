@@ -44,6 +44,8 @@ temp/
 # Upload files (if they contain sensitive data)
 uploads/*
 !uploads/.gitkeep
+storage/app/uploads/*
+!storage/app/uploads/.gitkeep
 
 # Config files with sensitive data
 config/config.php

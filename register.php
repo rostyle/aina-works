@@ -92,6 +92,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $errors['location'] = '所在地は100文字以内で入力してください。';
         }
 
+        // 利用規約同意チェック
+        if (!isset($_POST['terms']) || $_POST['terms'] !== 'on') {
+            $errors['terms'] = '利用規約およびプライバシーポリシーに同意してください。';
+        }
+
         // エラーがない場合は保存
         if (empty($errors)) {
             try {
@@ -103,8 +108,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $userId = $db->insert("
                     INSERT INTO users (
                         username, email, password_hash, full_name, nickname, user_type, 
-                        bio, location, created_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                        active_role, bio, location
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ", [
                     $username, // メールアドレスから自動生成
                     $formData['email'],
@@ -112,9 +117,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $formData['full_name'],
                     $formData['nickname'],
                     $formData['user_type'],
+                    $formData['user_type'], // active_roleも同じ値に設定
                     $formData['bio'],
                     $formData['location']
                 ]);
+
+                // user_rolesテーブルにもロールを追加
+                $db->insert("
+                    INSERT INTO user_roles (user_id, role, is_enabled) 
+                    VALUES (?, ?, 1)
+                ", [$userId, $formData['user_type']]);
 
                 $db->commit();
 
@@ -127,7 +139,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             } catch (Exception $e) {
                 $db->rollback();
-                $errors['general'] = 'アカウントの作成に失敗しました。再度お試しください。';
+                // デバッグ用：詳細なエラー情報を表示
+                if (defined('DEBUG') && DEBUG) {
+                    $errors['general'] = 'アカウントの作成に失敗しました。エラー: ' . $e->getMessage();
+                } else {
+                    $errors['general'] = 'アカウントの作成に失敗しました。再度お試しください。';
+                }
+                // エラーログに記録
+                error_log("Registration error: " . $e->getMessage() . " - File: " . $e->getFile() . " - Line: " . $e->getLine());
             }
         }
     }

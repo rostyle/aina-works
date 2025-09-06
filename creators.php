@@ -68,17 +68,30 @@ try {
     // クリエイター一覧取得
     $creatorsSql = "
         SELECT u.*, 
-               AVG(r.rating) as avg_rating, 
-               COUNT(DISTINCT r.id) as review_count,
-               COUNT(DISTINCT w.id) as work_count,
-               COUNT(DISTINCT ja.id) as completed_jobs
+               COALESCE(r_stats.avg_rating, 0) as avg_rating, 
+               COALESCE(r_stats.review_count, 0) as review_count,
+               COALESCE(w_stats.work_count, 0) as work_count,
+               COALESCE(ja_stats.completed_jobs, 0) as completed_jobs
         FROM users u
-        LEFT JOIN reviews r ON u.id = r.reviewee_id
-        LEFT JOIN works w ON u.id = w.user_id AND w.status = 'published'
-        LEFT JOIN job_applications ja ON u.id = ja.creator_id AND ja.status = 'accepted'
+        LEFT JOIN (
+            SELECT reviewee_id, AVG(rating) as avg_rating, COUNT(*) as review_count
+            FROM reviews 
+            GROUP BY reviewee_id
+        ) r_stats ON u.id = r_stats.reviewee_id
+        LEFT JOIN (
+            SELECT user_id, COUNT(*) as work_count
+            FROM works 
+            WHERE status = 'published'
+            GROUP BY user_id
+        ) w_stats ON u.id = w_stats.user_id
+        LEFT JOIN (
+            SELECT creator_id, COUNT(*) as completed_jobs
+            FROM job_applications 
+            WHERE status = 'accepted'
+            GROUP BY creator_id
+        ) ja_stats ON u.id = ja_stats.creator_id
         WHERE u.user_type = 'creator' AND u.is_active = 1
         {$whereClause}
-        GROUP BY u.id
         ORDER BY {$orderBy}
         LIMIT {$perPage} OFFSET {$pagination['offset']}
     ";
@@ -122,61 +135,28 @@ try {
     ");
     
 } catch (Exception $e) {
-    // エラー時はダミーデータを使用
-    $total = 2500;
+    // エラーログを記録
+    error_log("Creators page error: " . $e->getMessage());
+    error_log("SQL Query: " . $creatorsSql);
+    error_log("Values: " . print_r($values, true));
+    
+    // エラー時は空の結果を返す
+    $total = 0;
     $pagination = calculatePagination($total, $perPage, $page);
-    $creators = [
-        [
-            'id' => 1,
-            'full_name' => '田中 美咲',
-            'bio' => 'AI漫画クリエイターとして活動しています。Stable DiffusionやMidjourneyを使った作品制作が得意です。',
-            'location' => '東京都',
-            'profile_image' => null,
-            'hourly_rate' => 30000,
-            'experience_years' => 3,
-            'response_time' => 2,
-            'is_pro' => 1,
-            'is_verified' => 1,
-            'avg_rating' => 4.9,
-            'review_count' => 127,
-            'work_count' => 45,
-            'completed_jobs' => 127,
-            'skills' => [
-                ['name' => 'Stable Diffusion', 'category_name' => 'AI漫画', 'category_color' => '#F59E0B'],
-                ['name' => 'Midjourney', 'category_name' => 'AI漫画', 'category_color' => '#F59E0B'],
-                ['name' => 'Photoshop', 'category_name' => 'AI漫画', 'category_color' => '#F59E0B']
-            ]
-        ],
-        [
-            'id' => 2,
-            'full_name' => '佐藤 健太',
-            'bio' => 'グラフィックデザイナーです。ロゴ制作からブランディングまで幅広く対応します。',
-            'location' => '大阪府',
-            'profile_image' => null,
-            'hourly_rate' => 25000,
-            'experience_years' => 5,
-            'response_time' => 4,
-            'is_pro' => 1,
-            'is_verified' => 1,
-            'avg_rating' => 4.8,
-            'review_count' => 89,
-            'work_count' => 32,
-            'completed_jobs' => 89,
-            'skills' => [
-                ['name' => 'Illustrator', 'category_name' => 'ロゴ制作', 'category_color' => '#EF4444'],
-                ['name' => 'Photoshop', 'category_name' => 'ロゴ制作', 'category_color' => '#EF4444'],
-                ['name' => 'ブランディング', 'category_name' => 'ロゴ制作', 'category_color' => '#EF4444']
-            ]
-        ]
-    ];
-    $categories = [
-        ['id' => 1, 'name' => 'ロゴ制作'],
-        ['id' => 2, 'name' => 'ライティング'],
-        ['id' => 3, 'name' => 'Web制作'],
-        ['id' => 4, 'name' => '動画編集'],
-        ['id' => 5, 'name' => 'AI漫画'],
-        ['id' => 6, 'name' => '音楽制作']
-    ];
+    $creators = [];
+    $categories = [];
+    
+    // カテゴリだけは取得を試行
+    try {
+        $categories = $db->select("
+            SELECT * FROM categories 
+            WHERE is_active = 1 
+            ORDER BY sort_order ASC
+        ");
+    } catch (Exception $categoryError) {
+        error_log("Categories fetch error: " . $categoryError->getMessage());
+        $categories = [];
+    }
 }
 
 include 'includes/header.php';

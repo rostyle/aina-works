@@ -79,7 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['apply'])) {
                             INSERT INTO job_applications (
                                 job_id, creator_id, cover_letter, proposed_price, 
                                 proposed_duration, created_at
-                            ) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                            ) VALUES (?, ?, ?, ?, ?, NOW())
                         ", [
                             $jobId, $user['id'], $coverLetter, 
                             $proposedPrice, $proposedDuration

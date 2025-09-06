@@ -1,263 +1,648 @@
--- AiNA Works データベース設計 - 統合版
--- このファイルは全てのテーブル定義とデータを含んでいます
+-- phpMyAdmin SQL Dump
+-- version 5.2.1
+-- https://www.phpmyadmin.net/
+--
+-- ホスト: 127.0.0.1
+-- 生成日時: 2025-09-06 06:34:26
+-- サーバのバージョン： 10.4.32-MariaDB
+-- PHP のバージョン: 8.2.12
 
-CREATE DATABASE IF NOT EXISTS aina_works CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE aina_works;
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+START TRANSACTION;
+SET time_zone = "+00:00";
 
--- ユーザーテーブル
-CREATE TABLE users (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    username VARCHAR(50) UNIQUE NOT NULL,
-    email VARCHAR(100) UNIQUE NOT NULL,
-    password_hash VARCHAR(255) NOT NULL,
-    full_name VARCHAR(100) NOT NULL,
-    nickname VARCHAR(50),
-    user_type ENUM('creator', 'client', 'sales') NOT NULL, -- 主要ロール（後方互換性のため残す）
-    active_role ENUM('creator', 'client', 'sales') NOT NULL, -- 現在アクティブなロール
-    profile_image VARCHAR(255),
-    bio TEXT,
-    location VARCHAR(100),
-    website VARCHAR(255),
-    twitter_url VARCHAR(255),
-    instagram_url VARCHAR(255),
-    facebook_url VARCHAR(255),
-    linkedin_url VARCHAR(255),
-    youtube_url VARCHAR(255),
-    tiktok_url VARCHAR(255),
-    response_time INT DEFAULT 24, -- 時間単位
-    experience_years INT DEFAULT 0,
-    hourly_rate INT DEFAULT 0,
-    is_pro BOOLEAN DEFAULT FALSE,
-    is_verified BOOLEAN DEFAULT FALSE,
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
 
--- ユーザーロールテーブル（複数ロール対応）
-CREATE TABLE user_roles (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    role ENUM('creator', 'client', 'sales') NOT NULL,
-    is_enabled BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    UNIQUE KEY unique_user_role (user_id, role)
-);
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8mb4 */;
 
--- パスワードリセット用テーブル
-CREATE TABLE IF NOT EXISTS password_resets (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    email VARCHAR(100) NOT NULL,
-    token VARCHAR(255) NOT NULL UNIQUE,
-    expires_at TIMESTAMP NOT NULL,
-    used_at TIMESTAMP NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_email (email),
-    INDEX idx_token (token),
-    INDEX idx_expires_at (expires_at)
-);
+--
+-- データベース: `aina_works`
+--
 
--- カテゴリテーブル
-CREATE TABLE categories (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(50) NOT NULL,
-    slug VARCHAR(50) UNIQUE NOT NULL,
-    description TEXT,
-    icon VARCHAR(100),
-    color VARCHAR(7) DEFAULT '#3B82F6',
-    sort_order INT DEFAULT 0,
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+-- --------------------------------------------------------
 
--- スキルテーブル
-CREATE TABLE skills (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(50) NOT NULL,
-    category_id INT,
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL
-);
+--
+-- テーブルの構造 `categories`
+--
 
--- ユーザースキルテーブル
-CREATE TABLE user_skills (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    skill_id INT NOT NULL,
-    proficiency ENUM('beginner', 'intermediate', 'advanced', 'expert') DEFAULT 'intermediate',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (skill_id) REFERENCES skills(id) ON DELETE CASCADE,
-    UNIQUE KEY unique_user_skill (user_id, skill_id)
-);
+CREATE TABLE `categories` (
+  `id` int(11) NOT NULL,
+  `name` varchar(50) NOT NULL,
+  `slug` varchar(50) NOT NULL,
+  `description` text DEFAULT NULL,
+  `icon` varchar(100) DEFAULT NULL,
+  `color` varchar(7) DEFAULT '#3B82F6',
+  `sort_order` int(11) DEFAULT 0,
+  `is_active` tinyint(1) DEFAULT 1,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 作品テーブル
-CREATE TABLE works (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    title VARCHAR(200) NOT NULL,
-    description TEXT,
-    category_id INT,
-    price_min INT DEFAULT 0,
-    price_max INT DEFAULT 0,
-    duration_weeks INT DEFAULT 1,
-    main_image VARCHAR(255),
-    images JSON, -- 複数画像のパス配列
-    tags JSON, -- タグ配列
-    technologies JSON, -- 使用技術配列
-    project_url VARCHAR(255),
-    is_featured BOOLEAN DEFAULT FALSE,
-    view_count INT DEFAULT 0,
-    like_count INT DEFAULT 0,
-    status ENUM('draft', 'published', 'archived') DEFAULT 'draft',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL
-);
+--
+-- テーブルのデータのダンプ `categories`
+--
 
--- 案件テーブル
-CREATE TABLE jobs (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    client_id INT NOT NULL,
-    title VARCHAR(200) NOT NULL,
-    description TEXT NOT NULL,
-    category_id INT,
-    budget_min INT DEFAULT 0,
-    budget_max INT DEFAULT 0,
-    duration_weeks INT DEFAULT 1,
-    required_skills JSON, -- 必要スキル配列
-    location VARCHAR(100),
-    remote_ok BOOLEAN DEFAULT TRUE,
-    urgency ENUM('low', 'medium', 'high') DEFAULT 'medium',
-    applications_count INT DEFAULT 0,
-    status ENUM('open', 'in_progress', 'completed', 'cancelled') DEFAULT 'open',
-    deadline DATE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (client_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL
-);
+INSERT INTO `categories` (`id`, `name`, `slug`, `description`, `icon`, `color`, `sort_order`, `is_active`, `created_at`) VALUES
+(1, 'ロゴ制作', 'logo-design', 'ブランドアイデンティティを表現するロゴデザイン', '🎨', '#EF4444', 1, 1, '2025-08-31 16:48:47'),
+(2, 'ライティング', 'writing', 'コンテンツライティング・コピーライティング', '✍️', '#3B82F6', 2, 1, '2025-08-31 16:48:47'),
+(3, 'Web制作', 'web-development', 'Webサイト・アプリケーション開発', '💻', '#10B981', 3, 1, '2025-08-31 16:48:47'),
+(4, '動画編集', 'video-editing', '動画制作・編集・モーション', '🎬', '#8B5CF6', 4, 1, '2025-08-31 16:48:47'),
+(5, 'AI漫画', 'ai-manga', 'AI技術を活用した漫画・イラスト制作', '🤖', '#F59E0B', 5, 1, '2025-08-31 16:48:47'),
+(6, '音楽制作', 'music-production', '楽曲制作・音響デザイン', '🎵', '#EC4899', 6, 1, '2025-08-31 16:48:47');
 
--- 案件応募テーブル
-CREATE TABLE job_applications (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    job_id INT NOT NULL,
-    creator_id INT NOT NULL,
-    cover_letter TEXT,
-    proposed_price INT,
-    proposed_duration INT,
-    status ENUM('pending', 'accepted', 'rejected', 'withdrawn') DEFAULT 'pending',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE CASCADE,
-    FOREIGN KEY (creator_id) REFERENCES users(id) ON DELETE CASCADE,
-    UNIQUE KEY unique_application (job_id, creator_id)
-);
+-- --------------------------------------------------------
 
--- レビューテーブル
-CREATE TABLE reviews (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    reviewer_id INT NOT NULL,
-    reviewee_id INT NOT NULL,
-    job_id INT,
-    work_id INT,
-    rating INT NOT NULL CHECK (rating >= 1 AND rating <= 5),
-    comment TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (reviewer_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (reviewee_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE SET NULL,
-    FOREIGN KEY (work_id) REFERENCES works(id) ON DELETE SET NULL
-);
+--
+-- テーブルの構造 `chat_messages`
+--
 
--- メッセージテーブル
-CREATE TABLE messages (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    sender_id INT NOT NULL,
-    receiver_id INT NOT NULL,
-    subject VARCHAR(200),
-    content TEXT NOT NULL,
-    is_read BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE
-);
+CREATE TABLE `chat_messages` (
+  `id` int(11) NOT NULL,
+  `room_id` int(11) NOT NULL,
+  `sender_id` int(11) NOT NULL,
+  `message` text NOT NULL,
+  `message_type` varchar(20) DEFAULT 'text',
+  `file_path` varchar(255) DEFAULT NULL,
+  `is_read` tinyint(1) DEFAULT 0,
+  `created_at` datetime DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- お気に入りテーブル
-CREATE TABLE favorites (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    target_type ENUM('work', 'creator') NOT NULL,
-    target_id INT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    UNIQUE KEY unique_favorite (user_id, target_type, target_id)
-);
+--
+-- テーブルのデータのダンプ `chat_messages`
+--
 
--- 初期データ挿入
-INSERT INTO categories (name, slug, description, icon, color, sort_order) VALUES
-('ロゴ制作', 'logo-design', 'ブランドアイデンティティを表現するロゴデザイン', '🎨', '#EF4444', 1),
-('ライティング', 'writing', 'コンテンツライティング・コピーライティング', '✍️', '#3B82F6', 2),
-('Web制作', 'web-development', 'Webサイト・アプリケーション開発', '💻', '#10B981', 3),
-('動画編集', 'video-editing', '動画制作・編集・モーション', '🎬', '#8B5CF6', 4),
-('AI漫画', 'ai-manga', 'AI技術を活用した漫画・イラスト制作', '🤖', '#F59E0B', 5),
-('音楽制作', 'music-production', '楽曲制作・音響デザイン', '🎵', '#EC4899', 6);
+INSERT INTO `chat_messages` (`id`, `room_id`, `sender_id`, `message`, `message_type`, `file_path`, `is_read`, `created_at`) VALUES
+(1, 1, 4, 'あああ', 'text', NULL, 0, '2025-09-06 11:46:05'),
+(2, 2, 4, 'test', 'text', NULL, 0, '2025-09-06 11:54:05'),
+(3, 3, 4, 'ああ', 'text', NULL, 0, '2025-09-06 13:21:45'),
+(4, 2, 4, 'あ', 'text', NULL, 0, '2025-09-06 13:22:00'),
+(5, 4, 5, 'aaaaa', 'text', NULL, 1, '2025-09-06 13:24:44'),
+(6, 4, 5, 'r', 'text', NULL, 1, '2025-09-06 13:24:53'),
+(7, 4, 4, 'a', 'text', NULL, 1, '2025-09-06 13:25:18'),
+(8, 4, 5, 'ww', 'text', NULL, 0, '2025-09-06 13:34:05');
 
-INSERT INTO skills (name, category_id) VALUES
--- ロゴ制作
-('Illustrator', 1), ('Photoshop', 1), ('Figma', 1), ('ブランディング', 1),
--- ライティング
-('SEOライティング', 2), ('コピーライティング', 2), ('記事執筆', 2), ('翻訳', 2),
--- Web制作
-('HTML/CSS', 3), ('JavaScript', 3), ('React', 3), ('PHP', 3), ('WordPress', 3),
--- 動画編集
-('Premiere Pro', 4), ('After Effects', 4), ('Final Cut Pro', 4), ('DaVinci Resolve', 4),
--- AI漫画
-('Stable Diffusion', 5), ('Midjourney', 5), ('ComfyUI', 5), ('Clip Studio', 5),
--- 音楽制作
-('Logic Pro', 6), ('Ableton Live', 6), ('Pro Tools', 6), ('作詞・作曲', 6);
+-- --------------------------------------------------------
 
--- サンプルユーザー（active_roleを追加）
-INSERT INTO users (username, email, password_hash, full_name, user_type, active_role, bio, location, response_time, experience_years, hourly_rate, is_pro, is_verified) VALUES
-('tanaka_misaki', 'tanaka@example.com', '$2y$10$example_hash', '田中 美咲', 'creator', 'creator', 'AI漫画クリエイターとして活動しています。Stable DiffusionやMidjourneyを使った作品制作が得意です。', '東京都', 2, 3, 30000, TRUE, TRUE),
-('sato_kenta', 'sato@example.com', '$2y$10$example_hash', '佐藤 健太', 'creator', 'creator', 'グラフィックデザイナーです。ロゴ制作からブランディングまで幅広く対応します。', '大阪府', 4, 5, 25000, TRUE, TRUE),
-('yamada_hanako', 'yamada@example.com', '$2y$10$example_hash', '山田 花子', 'creator', 'creator', 'Webデザイナー・フロントエンドエンジニアです。', '神奈川県', 6, 4, 40000, TRUE, FALSE);
+--
+-- テーブルの構造 `chat_rooms`
+--
 
--- サンプルユーザーロール（複数ロール対応）
-INSERT INTO user_roles (user_id, role) VALUES
--- 田中さん: クリエイター専業
-(1, 'creator'),
--- 佐藤さん: クリエイターと依頼者の両方
-(2, 'creator'),
-(2, 'client'),
--- 山田さん: クリエイター、依頼者、営業の全ロール
-(3, 'creator'),
-(3, 'client'),
-(3, 'sales');
+CREATE TABLE `chat_rooms` (
+  `id` int(11) NOT NULL,
+  `user1_id` int(11) NOT NULL,
+  `user2_id` int(11) NOT NULL,
+  `created_at` datetime DEFAULT current_timestamp(),
+  `updated_at` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- サンプル作品
-INSERT INTO works (user_id, title, description, category_id, price_min, price_max, duration_weeks, main_image, tags, technologies, is_featured, view_count, like_count, status) VALUES
-(1, 'オリジナルキャラクター制作', 'Stable DiffusionとPhotoshopを組み合わせて制作したオリジナルキャラクター', 5, 80000, 120000, 2, 'assets/images/sample-work-1.png', '["AI漫画", "キャラクター", "オリジナル"]', '["Stable Diffusion", "Photoshop", "ComfyUI"]', TRUE, 1520, 234, 'published'),
-(2, 'ブランドロゴデザイン', 'モダンで印象的なブランドロゴの制作', 1, 50000, 80000, 1, 'assets/images/sample-work-2.jpg', '["ロゴ", "ブランディング", "モダン"]', '["Illustrator", "Photoshop"]', TRUE, 980, 189, 'published'),
-(3, 'コーポレートサイト制作', 'レスポンシブ対応のコーポレートサイト', 3, 150000, 250000, 6, 'assets/images/sample-work-3.jpg', '["Web制作", "レスポンシブ", "コーポレート"]', '["HTML/CSS", "JavaScript", "WordPress"]', FALSE, 756, 92, 'published');
+--
+-- テーブルのデータのダンプ `chat_rooms`
+--
 
--- サンプル案件
-INSERT INTO jobs (client_id, title, description, category_id, budget_min, budget_max, duration_weeks, required_skills, remote_ok, urgency, status) VALUES
-(3, 'ECサイトのUI/UXデザイン', 'オンラインショップのユーザーインターフェース設計', 3, 200000, 300000, 4, '["UI/UX", "Figma", "Webデザイン"]', TRUE, 'medium', 'open'),
-(2, '企業PR動画制作', '会社紹介動画の企画・制作', 4, 150000, 250000, 3, '["動画編集", "Premiere Pro", "企画"]', FALSE, 'high', 'open');
+INSERT INTO `chat_rooms` (`id`, `user1_id`, `user2_id`, `created_at`, `updated_at`) VALUES
+(1, 4, 4, '2025-09-06 11:45:58', '2025-09-06 11:46:05'),
+(2, 4, 1, '2025-09-06 11:54:00', '2025-09-06 13:22:00'),
+(3, 4, 2, '2025-09-06 13:21:42', '2025-09-06 13:21:45'),
+(4, 5, 4, '2025-09-06 13:24:41', '2025-09-06 13:34:05');
 
--- SQLiteの場合のパスワードリセットテーブル（コメントアウト）
--- CREATE TABLE IF NOT EXISTS password_resets (
---     id INTEGER PRIMARY KEY AUTOINCREMENT,
---     email VARCHAR(100) NOT NULL,
---     token VARCHAR(255) NOT NULL UNIQUE,
---     expires_at DATETIME NOT NULL,
---     used_at DATETIME NULL,
---     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
--- );
--- CREATE INDEX IF NOT EXISTS idx_email ON password_resets(email);
--- CREATE INDEX IF NOT EXISTS idx_token ON password_resets(token);
--- CREATE INDEX IF NOT EXISTS idx_expires_at ON password_resets(expires_at);
+-- --------------------------------------------------------
+
+--
+-- テーブルの構造 `favorites`
+--
+
+CREATE TABLE `favorites` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `target_type` enum('work','creator') NOT NULL,
+  `target_id` int(11) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- テーブルの構造 `jobs`
+--
+
+CREATE TABLE `jobs` (
+  `id` int(11) NOT NULL,
+  `client_id` int(11) NOT NULL,
+  `title` varchar(200) NOT NULL,
+  `description` text NOT NULL,
+  `category_id` int(11) DEFAULT NULL,
+  `budget_min` int(11) DEFAULT 0,
+  `budget_max` int(11) DEFAULT 0,
+  `duration_weeks` int(11) DEFAULT 1,
+  `required_skills` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`required_skills`)),
+  `location` varchar(100) DEFAULT NULL,
+  `remote_ok` tinyint(1) DEFAULT 1,
+  `urgency` enum('low','medium','high') DEFAULT 'medium',
+  `applications_count` int(11) DEFAULT 0,
+  `status` enum('open','in_progress','completed','cancelled') DEFAULT 'open',
+  `deadline` date DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- テーブルのデータのダンプ `jobs`
+--
+
+INSERT INTO `jobs` (`id`, `client_id`, `title`, `description`, `category_id`, `budget_min`, `budget_max`, `duration_weeks`, `required_skills`, `location`, `remote_ok`, `urgency`, `applications_count`, `status`, `deadline`, `created_at`, `updated_at`) VALUES
+(1, 3, 'ECサイトのUI/UXデザイン', 'オンラインショップのユーザーインターフェース設計', 3, 200000, 300000, 4, '[\"UI/UX\", \"Figma\", \"Webデザイン\"]', NULL, 1, 'medium', 0, 'open', NULL, '2025-08-31 16:48:47', '2025-08-31 16:48:47'),
+(2, 2, '企業PR動画制作', '会社紹介動画の企画・制作', 4, 150000, 250000, 3, '[\"動画編集\", \"Premiere Pro\", \"企画\"]', NULL, 0, 'high', 0, 'open', NULL, '2025-08-31 16:48:47', '2025-08-31 16:48:47');
+
+-- --------------------------------------------------------
+
+--
+-- テーブルの構造 `job_applications`
+--
+
+CREATE TABLE `job_applications` (
+  `id` int(11) NOT NULL,
+  `job_id` int(11) NOT NULL,
+  `creator_id` int(11) NOT NULL,
+  `cover_letter` text DEFAULT NULL,
+  `proposed_price` int(11) DEFAULT NULL,
+  `proposed_duration` int(11) DEFAULT NULL,
+  `status` enum('pending','accepted','rejected','withdrawn') DEFAULT 'pending',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- テーブルの構造 `messages`
+--
+
+CREATE TABLE `messages` (
+  `id` int(11) NOT NULL,
+  `sender_id` int(11) NOT NULL,
+  `receiver_id` int(11) NOT NULL,
+  `subject` varchar(200) DEFAULT NULL,
+  `content` text NOT NULL,
+  `is_read` tinyint(1) DEFAULT 0,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- テーブルの構造 `reviews`
+--
+
+CREATE TABLE `reviews` (
+  `id` int(11) NOT NULL,
+  `reviewer_id` int(11) NOT NULL,
+  `reviewee_id` int(11) NOT NULL,
+  `job_id` int(11) DEFAULT NULL,
+  `work_id` int(11) DEFAULT NULL,
+  `rating` int(11) NOT NULL CHECK (`rating` >= 1 and `rating` <= 5),
+  `comment` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- テーブルの構造 `skills`
+--
+
+CREATE TABLE `skills` (
+  `id` int(11) NOT NULL,
+  `name` varchar(50) NOT NULL,
+  `category_id` int(11) DEFAULT NULL,
+  `is_active` tinyint(1) DEFAULT 1,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- テーブルのデータのダンプ `skills`
+--
+
+INSERT INTO `skills` (`id`, `name`, `category_id`, `is_active`, `created_at`) VALUES
+(1, 'Illustrator', 1, 1, '2025-08-31 16:48:47'),
+(2, 'Photoshop', 1, 1, '2025-08-31 16:48:47'),
+(3, 'Figma', 1, 1, '2025-08-31 16:48:47'),
+(4, 'ブランディング', 1, 1, '2025-08-31 16:48:47'),
+(5, 'SEOライティング', 2, 1, '2025-08-31 16:48:47'),
+(6, 'コピーライティング', 2, 1, '2025-08-31 16:48:47'),
+(7, '記事執筆', 2, 1, '2025-08-31 16:48:47'),
+(8, '翻訳', 2, 1, '2025-08-31 16:48:47'),
+(9, 'HTML/CSS', 3, 1, '2025-08-31 16:48:47'),
+(10, 'JavaScript', 3, 1, '2025-08-31 16:48:47'),
+(11, 'React', 3, 1, '2025-08-31 16:48:47'),
+(12, 'PHP', 3, 1, '2025-08-31 16:48:47'),
+(13, 'WordPress', 3, 1, '2025-08-31 16:48:47'),
+(14, 'Premiere Pro', 4, 1, '2025-08-31 16:48:47'),
+(15, 'After Effects', 4, 1, '2025-08-31 16:48:47'),
+(16, 'Final Cut Pro', 4, 1, '2025-08-31 16:48:47'),
+(17, 'DaVinci Resolve', 4, 1, '2025-08-31 16:48:47'),
+(18, 'Stable Diffusion', 5, 1, '2025-08-31 16:48:47'),
+(19, 'Midjourney', 5, 1, '2025-08-31 16:48:47'),
+(20, 'ComfyUI', 5, 1, '2025-08-31 16:48:47'),
+(21, 'Clip Studio', 5, 1, '2025-08-31 16:48:47'),
+(22, 'Logic Pro', 6, 1, '2025-08-31 16:48:47'),
+(23, 'Ableton Live', 6, 1, '2025-08-31 16:48:47'),
+(24, 'Pro Tools', 6, 1, '2025-08-31 16:48:47'),
+(25, '作詞・作曲', 6, 1, '2025-08-31 16:48:47');
+
+-- --------------------------------------------------------
+
+--
+-- テーブルの構造 `users`
+--
+
+CREATE TABLE `users` (
+  `id` int(11) NOT NULL,
+  `username` varchar(50) NOT NULL,
+  `email` varchar(100) NOT NULL,
+  `password_hash` varchar(255) NOT NULL,
+  `full_name` varchar(100) NOT NULL,
+  `nickname` varchar(50) DEFAULT NULL,
+  `user_type` enum('creator','client','sales') NOT NULL,
+  `active_role` enum('creator','client','sales','admin') DEFAULT NULL,
+  `profile_image` varchar(255) DEFAULT NULL,
+  `bio` text DEFAULT NULL,
+  `location` varchar(100) DEFAULT NULL,
+  `website` varchar(255) DEFAULT NULL,
+  `twitter_url` varchar(255) DEFAULT NULL,
+  `instagram_url` varchar(255) DEFAULT NULL,
+  `facebook_url` varchar(255) DEFAULT NULL,
+  `linkedin_url` varchar(255) DEFAULT NULL,
+  `youtube_url` varchar(255) DEFAULT NULL,
+  `tiktok_url` varchar(255) DEFAULT NULL,
+  `response_time` int(11) DEFAULT 24,
+  `experience_years` int(11) DEFAULT 0,
+  `hourly_rate` int(11) DEFAULT 0,
+  `is_pro` tinyint(1) DEFAULT 0,
+  `is_verified` tinyint(1) DEFAULT 0,
+  `is_active` tinyint(1) DEFAULT 1,
+  `is_online` tinyint(1) DEFAULT 0,
+  `last_seen` datetime DEFAULT current_timestamp(),
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- テーブルのデータのダンプ `users`
+--
+
+INSERT INTO `users` (`id`, `username`, `email`, `password_hash`, `full_name`, `nickname`, `user_type`, `active_role`, `profile_image`, `bio`, `location`, `website`, `twitter_url`, `instagram_url`, `facebook_url`, `linkedin_url`, `youtube_url`, `tiktok_url`, `response_time`, `experience_years`, `hourly_rate`, `is_pro`, `is_verified`, `is_active`, `is_online`, `last_seen`, `created_at`, `updated_at`) VALUES
+(1, 'tanaka_misaki', 'tanaka@example.com', '$2y$10$example_hash', '田中 美咲', NULL, 'creator', NULL, NULL, 'AI漫画クリエイターとして活動しています。Stable DiffusionやMidjourneyを使った作品制作が得意です。', '東京都', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 2, 3, 30000, 1, 1, 1, 0, '2025-09-06 00:44:03', '2025-08-31 16:48:47', '2025-08-31 16:48:47'),
+(2, 'sato_kenta', 'sato@example.com', '$2y$10$example_hash', '佐藤 健太', NULL, 'creator', NULL, NULL, 'グラフィックデザイナーです。ロゴ制作からブランディングまで幅広く対応します。', '大阪府', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 4, 5, 25000, 1, 1, 1, 0, '2025-09-06 00:44:03', '2025-08-31 16:48:47', '2025-08-31 16:48:47'),
+(3, 'yamada_hanako', 'yamada@example.com', '$2y$10$example_hash', '山田 花子', NULL, 'creator', NULL, NULL, 'Webデザイナー・フロントエンドエンジニアです。', '神奈川県', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 6, 4, 40000, 1, 0, 1, 0, '2025-09-06 00:44:03', '2025-08-31 16:48:47', '2025-08-31 16:48:47'),
+(4, 'rostyle95', 'rostyle95@gmail.com', '$2y$10$3ILDllyesu0GgVvDJk8ezOW83fF1y9J3TV77uZMdoYKQ10NcHVU6i', '奥野隆太', 'Ryu', 'creator', NULL, NULL, '', '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 24, 0, 0, 0, 0, 1, 0, '2025-09-06 11:41:12', '2025-09-06 02:41:12', '2025-09-06 02:41:12'),
+(5, 'rostyle95+1', 'rostyle95+1@gmail.com', '$2y$10$euNCbQnmRM9LBDpmX6kbp.zUYPBIQDrtKcUjv65bVDa2iPkHBp26u', 'test+1', 't', 'creator', 'creator', NULL, '', '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 24, 0, 0, 0, 0, 1, 0, '2025-09-06 13:22:59', '2025-09-06 04:22:59', '2025-09-06 04:22:59');
+
+-- --------------------------------------------------------
+
+--
+-- テーブルの構造 `user_roles`
+--
+
+CREATE TABLE `user_roles` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `role` enum('creator','client','sales','admin') NOT NULL,
+  `is_enabled` tinyint(1) DEFAULT 1,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- テーブルのデータのダンプ `user_roles`
+--
+
+INSERT INTO `user_roles` (`id`, `user_id`, `role`, `is_enabled`, `created_at`) VALUES
+(1, 5, 'creator', 1, '2025-09-06 04:22:59');
+
+-- --------------------------------------------------------
+
+--
+-- テーブルの構造 `user_skills`
+--
+
+CREATE TABLE `user_skills` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `skill_id` int(11) NOT NULL,
+  `proficiency` enum('beginner','intermediate','advanced','expert') DEFAULT 'intermediate',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- テーブルの構造 `works`
+--
+
+CREATE TABLE `works` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `title` varchar(200) NOT NULL,
+  `description` text DEFAULT NULL,
+  `category_id` int(11) DEFAULT NULL,
+  `price_min` int(11) DEFAULT 0,
+  `price_max` int(11) DEFAULT 0,
+  `duration_weeks` int(11) DEFAULT 1,
+  `main_image` varchar(255) DEFAULT NULL,
+  `images` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`images`)),
+  `tags` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`tags`)),
+  `technologies` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`technologies`)),
+  `project_url` varchar(255) DEFAULT NULL,
+  `is_featured` tinyint(1) DEFAULT 0,
+  `view_count` int(11) DEFAULT 0,
+  `like_count` int(11) DEFAULT 0,
+  `status` enum('draft','published','archived') DEFAULT 'draft',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- テーブルのデータのダンプ `works`
+--
+
+INSERT INTO `works` (`id`, `user_id`, `title`, `description`, `category_id`, `price_min`, `price_max`, `duration_weeks`, `main_image`, `images`, `tags`, `technologies`, `project_url`, `is_featured`, `view_count`, `like_count`, `status`, `created_at`, `updated_at`) VALUES
+(1, 1, 'オリジナルキャラクター制作', 'Stable DiffusionとPhotoshopを組み合わせて制作したオリジナルキャラクター', 5, 80000, 120000, 2, 'assets/images/sample-work-1.png', NULL, '[\"AI漫画\", \"キャラクター\", \"オリジナル\"]', '[\"Stable Diffusion\", \"Photoshop\", \"ComfyUI\"]', NULL, 1, 1523, 234, 'published', '2025-08-31 16:48:47', '2025-09-06 04:22:17'),
+(2, 2, 'ブランドロゴデザイン', 'モダンで印象的なブランドロゴの制作', 1, 50000, 80000, 1, 'assets/images/sample-work-2.jpg', NULL, '[\"ロゴ\", \"ブランディング\", \"モダン\"]', '[\"Illustrator\", \"Photoshop\"]', NULL, 1, 981, 189, 'published', '2025-08-31 16:48:47', '2025-09-06 04:22:07'),
+(3, 3, 'コーポレートサイト制作', 'レスポンシブ対応のコーポレートサイト', 3, 150000, 250000, 6, 'assets/images/sample-work-3.jpg', NULL, '[\"Web制作\", \"レスポンシブ\", \"コーポレート\"]', '[\"HTML/CSS\", \"JavaScript\", \"WordPress\"]', NULL, 0, 756, 92, 'published', '2025-08-31 16:48:47', '2025-08-31 16:48:47'),
+(4, 4, 'サムネイル作成', 'サムネイル作成します。', 1, 3300, 5000, 1, '68bba0547498a.jpg', NULL, NULL, NULL, NULL, 0, 7, 0, 'published', '2025-09-06 02:45:40', '2025-09-06 04:24:50');
+
+--
+-- ダンプしたテーブルのインデックス
+--
+
+--
+-- テーブルのインデックス `categories`
+--
+ALTER TABLE `categories`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `slug` (`slug`);
+
+--
+-- テーブルのインデックス `chat_messages`
+--
+ALTER TABLE `chat_messages`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_chat_messages_room` (`room_id`,`created_at`),
+  ADD KEY `idx_chat_messages_sender` (`sender_id`),
+  ADD KEY `idx_chat_messages_unread` (`room_id`,`is_read`,`created_at`);
+
+--
+-- テーブルのインデックス `chat_rooms`
+--
+ALTER TABLE `chat_rooms`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_users` (`user1_id`,`user2_id`),
+  ADD KEY `fk_chat_rooms_user2` (`user2_id`),
+  ADD KEY `idx_chat_rooms_users` (`user1_id`,`user2_id`);
+
+--
+-- テーブルのインデックス `favorites`
+--
+ALTER TABLE `favorites`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_favorite` (`user_id`,`target_type`,`target_id`);
+
+--
+-- テーブルのインデックス `jobs`
+--
+ALTER TABLE `jobs`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `client_id` (`client_id`),
+  ADD KEY `category_id` (`category_id`);
+
+--
+-- テーブルのインデックス `job_applications`
+--
+ALTER TABLE `job_applications`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_application` (`job_id`,`creator_id`),
+  ADD KEY `creator_id` (`creator_id`);
+
+--
+-- テーブルのインデックス `messages`
+--
+ALTER TABLE `messages`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `sender_id` (`sender_id`),
+  ADD KEY `receiver_id` (`receiver_id`);
+
+--
+-- テーブルのインデックス `reviews`
+--
+ALTER TABLE `reviews`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `reviewer_id` (`reviewer_id`),
+  ADD KEY `reviewee_id` (`reviewee_id`),
+  ADD KEY `job_id` (`job_id`),
+  ADD KEY `work_id` (`work_id`);
+
+--
+-- テーブルのインデックス `skills`
+--
+ALTER TABLE `skills`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `category_id` (`category_id`);
+
+--
+-- テーブルのインデックス `users`
+--
+ALTER TABLE `users`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `username` (`username`),
+  ADD UNIQUE KEY `email` (`email`);
+
+--
+-- テーブルのインデックス `user_roles`
+--
+ALTER TABLE `user_roles`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_user_role` (`user_id`,`role`),
+  ADD KEY `user_id` (`user_id`);
+
+--
+-- テーブルのインデックス `user_skills`
+--
+ALTER TABLE `user_skills`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_user_skill` (`user_id`,`skill_id`),
+  ADD KEY `skill_id` (`skill_id`);
+
+--
+-- テーブルのインデックス `works`
+--
+ALTER TABLE `works`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `user_id` (`user_id`),
+  ADD KEY `category_id` (`category_id`);
+
+--
+-- ダンプしたテーブルの AUTO_INCREMENT
+--
+
+--
+-- テーブルの AUTO_INCREMENT `categories`
+--
+ALTER TABLE `categories`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+
+--
+-- テーブルの AUTO_INCREMENT `chat_messages`
+--
+ALTER TABLE `chat_messages`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+
+--
+-- テーブルの AUTO_INCREMENT `chat_rooms`
+--
+ALTER TABLE `chat_rooms`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
+-- テーブルの AUTO_INCREMENT `favorites`
+--
+ALTER TABLE `favorites`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- テーブルの AUTO_INCREMENT `jobs`
+--
+ALTER TABLE `jobs`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- テーブルの AUTO_INCREMENT `job_applications`
+--
+ALTER TABLE `job_applications`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- テーブルの AUTO_INCREMENT `messages`
+--
+ALTER TABLE `messages`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- テーブルの AUTO_INCREMENT `reviews`
+--
+ALTER TABLE `reviews`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- テーブルの AUTO_INCREMENT `skills`
+--
+ALTER TABLE `skills`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=26;
+
+--
+-- テーブルの AUTO_INCREMENT `users`
+--
+ALTER TABLE `users`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
+-- テーブルの AUTO_INCREMENT `user_roles`
+--
+ALTER TABLE `user_roles`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- テーブルの AUTO_INCREMENT `user_skills`
+--
+ALTER TABLE `user_skills`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- テーブルの AUTO_INCREMENT `works`
+--
+ALTER TABLE `works`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
+-- ダンプしたテーブルの制約
+--
+
+--
+-- テーブルの制約 `chat_messages`
+--
+ALTER TABLE `chat_messages`
+  ADD CONSTRAINT `fk_chat_messages_room` FOREIGN KEY (`room_id`) REFERENCES `chat_rooms` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_chat_messages_sender` FOREIGN KEY (`sender_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- テーブルの制約 `chat_rooms`
+--
+ALTER TABLE `chat_rooms`
+  ADD CONSTRAINT `fk_chat_rooms_user1` FOREIGN KEY (`user1_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_chat_rooms_user2` FOREIGN KEY (`user2_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- テーブルの制約 `favorites`
+--
+ALTER TABLE `favorites`
+  ADD CONSTRAINT `favorites_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- テーブルの制約 `jobs`
+--
+ALTER TABLE `jobs`
+  ADD CONSTRAINT `jobs_ibfk_1` FOREIGN KEY (`client_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `jobs_ibfk_2` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`) ON DELETE SET NULL;
+
+--
+-- テーブルの制約 `job_applications`
+--
+ALTER TABLE `job_applications`
+  ADD CONSTRAINT `job_applications_ibfk_1` FOREIGN KEY (`job_id`) REFERENCES `jobs` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `job_applications_ibfk_2` FOREIGN KEY (`creator_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- テーブルの制約 `messages`
+--
+ALTER TABLE `messages`
+  ADD CONSTRAINT `messages_ibfk_1` FOREIGN KEY (`sender_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `messages_ibfk_2` FOREIGN KEY (`receiver_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- テーブルの制約 `reviews`
+--
+ALTER TABLE `reviews`
+  ADD CONSTRAINT `reviews_ibfk_1` FOREIGN KEY (`reviewer_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `reviews_ibfk_2` FOREIGN KEY (`reviewee_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `reviews_ibfk_3` FOREIGN KEY (`job_id`) REFERENCES `jobs` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `reviews_ibfk_4` FOREIGN KEY (`work_id`) REFERENCES `works` (`id`) ON DELETE SET NULL;
+
+--
+-- テーブルの制約 `skills`
+--
+ALTER TABLE `skills`
+  ADD CONSTRAINT `skills_ibfk_1` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`) ON DELETE SET NULL;
+
+--
+-- テーブルの制約 `user_roles`
+--
+ALTER TABLE `user_roles`
+  ADD CONSTRAINT `user_roles_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- テーブルの制約 `user_skills`
+--
+ALTER TABLE `user_skills`
+  ADD CONSTRAINT `user_skills_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `user_skills_ibfk_2` FOREIGN KEY (`skill_id`) REFERENCES `skills` (`id`) ON DELETE CASCADE;
+
+--
+-- テーブルの制約 `works`
+--
+ALTER TABLE `works`
+  ADD CONSTRAINT `works_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `works_ibfk_2` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`) ON DELETE SET NULL;
+COMMIT;
+
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;

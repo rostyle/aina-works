@@ -34,13 +34,21 @@ function asset($path) {
  * アップロードされたアセットのURL生成
  */
 function uploaded_asset($path) {
-    if (empty($path) || strpos($path, 'http') === 0) {
+    if (empty($path)) {
+        return asset('images/default-avatar.png');
+    }
+    
+    // 外部URLの場合はそのまま返す
+    if (strpos($path, 'http') === 0) {
         return $path;
     }
-    // Check for default assets
+    
+    // デフォルトアセットの場合はassets配下のパスを返す
     if (strpos($path, 'assets/images/') === 0) {
         return asset(substr($path, strlen('assets/images/')));
     }
+    
+    // アップロードされたファイルの場合はserve.php経由で返す
     return url('serve.php?file=' . rawurlencode($path));
 }
 
