@@ -63,6 +63,18 @@ try {
     
     $works = $db->select($worksSql, $search['values']);
     
+    // ログイン中のユーザーのいいね状態を取得
+    $userLikes = [];
+    if (isLoggedIn() && !empty($works)) {
+        $workIds = array_column($works, 'id');
+        $placeholders = str_repeat('?,', count($workIds) - 1) . '?';
+        $likesResult = $db->select(
+            "SELECT target_id FROM favorites WHERE user_id = ? AND target_type = 'work' AND target_id IN ($placeholders)",
+            array_merge([$_SESSION['user_id']], $workIds)
+        );
+        $userLikes = array_column($likesResult, 'target_id');
+    }
+    
     // デバッグ: 取得された作品データを確認
     if (DEBUG) {
         echo "<!-- DEBUG: 取得された作品数: " . count($works) . " -->";
@@ -113,6 +125,24 @@ try {
             'like_count' => 189
         ]
     ];
+    
+    // ダミーデータ使用時もユーザーのいいね状態を取得
+    $userLikes = [];
+    if (isLoggedIn() && !empty($works)) {
+        try {
+            $workIds = array_column($works, 'id');
+            $placeholders = str_repeat('?,', count($workIds) - 1) . '?';
+            $likesResult = $db->select(
+                "SELECT target_id FROM favorites WHERE user_id = ? AND target_type = 'work' AND target_id IN ($placeholders)",
+                array_merge([$_SESSION['user_id']], $workIds)
+            );
+            $userLikes = array_column($likesResult, 'target_id');
+        } catch (Exception $likeException) {
+            // いいね状態の取得に失敗した場合は空配列のまま
+            $userLikes = [];
+        }
+    }
+    
     $categories = [
         ['id' => '', 'name' => 'すべて', 'work_count' => 2847],
         ['id' => 3, 'name' => 'Web制作', 'work_count' => 1250],
@@ -293,10 +323,15 @@ include 'includes/header.php';
                                     </span>
                                 </div>
                                 <div class="absolute top-4 right-4 flex space-x-2">
+                                    <?php
+                                    $isLiked = in_array($work['id'], $userLikes);
+                                    $heartFill = $isLiked ? 'currentColor' : 'none';
+                                    $heartColor = $isLiked ? 'text-red-500' : 'text-gray-600';
+                                    ?>
                                     <button onclick="toggleLike('work', <?= $work['id'] ?>, this)" 
                                             class="like-btn p-2 bg-white/90 backdrop-blur-sm rounded-full hover:bg-white transition-colors"
-                                            data-liked="false">
-                                        <svg class="h-4 w-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            data-liked="<?= $isLiked ? 'true' : 'false' ?>">
+                                        <svg class="h-4 w-4 <?= $heartColor ?>" fill="<?= $heartFill ?>" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                                         </svg>
                                     </button>
