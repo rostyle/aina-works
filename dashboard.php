@@ -52,7 +52,7 @@ $recentApplications = $db->select("
 // 最近の案件（依頼者用）
 $recentJobs = $db->select("
     SELECT j.*, c.name as category_name,
-           (SELECT COUNT(*) FROM job_applications WHERE job_id = j.id) as application_count
+           j.applications_count as application_count
     FROM jobs j
     LEFT JOIN categories c ON j.category_id = c.id
     WHERE j.client_id = ?
@@ -154,32 +154,25 @@ include 'includes/header.php';
             <?php if (!empty($recentApplications)): ?>
             <div class="bg-white rounded-lg shadow-sm border border-gray-200">
                 <div class="p-6 border-b border-gray-200">
-                    <h2 class="text-lg font-semibold text-gray-900">最近の応募</h2>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <svg class="h-5 w-5 text-blue-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                            </svg>
+                            <h2 class="text-lg font-semibold text-gray-900">応募した案件（クリエイターとして）</h2>
+                        </div>
+                        <a href="<?= url('job-applications.php') ?>" 
+                           class="text-sm text-blue-600 hover:text-blue-500">
+                            全て見る
+                        </a>
+                    </div>
                 </div>
                 <div class="p-6">
                     <div class="space-y-4">
                         <?php foreach ($recentApplications as $app): ?>
                             <div class="border border-gray-200 rounded-lg p-4">
-                                <div class="flex justify-between items-start mb-2">
+                                <div class="mb-2">
                                     <h3 class="font-semibold text-gray-900"><?= h($app['job_title']) ?></h3>
-                                    <span class="px-2 py-1 text-xs rounded-full 
-                                        <?php
-                                        switch($app['status']) {
-                                            case 'pending': echo 'bg-yellow-100 text-yellow-800'; break;
-                                            case 'accepted': echo 'bg-green-100 text-green-800'; break;
-                                            case 'rejected': echo 'bg-red-100 text-red-800'; break;
-                                            default: echo 'bg-gray-100 text-gray-800';
-                                        }
-                                        ?>">
-                                        <?php
-                                        switch($app['status']) {
-                                            case 'pending': echo '審査中'; break;
-                                            case 'accepted': echo '採用'; break;
-                                            case 'rejected': echo '不採用'; break;
-                                            case 'withdrawn': echo '辞退'; break;
-                                        }
-                                        ?>
-                                    </span>
                                 </div>
                                 <p class="text-sm text-gray-600 mb-2"><?= h($app['client_name']) ?></p>
                                 <p class="text-sm text-gray-900 font-medium">
@@ -198,10 +191,23 @@ include 'includes/header.php';
             <div class="bg-white rounded-lg shadow-sm border border-gray-200">
                 <div class="p-6 border-b border-gray-200">
                     <div class="flex justify-between items-center">
-                        <h2 class="text-lg font-semibold text-gray-900">最近の案件</h2>
-                        <a href="<?= url('post-job.php') ?>" class="text-blue-600 hover:text-blue-500 text-sm font-medium">
-                            新規投稿
-                        </a>
+                        <div class="flex items-center">
+                            <svg class="h-5 w-5 text-green-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2V6z" />
+                            </svg>
+                            <h2 class="text-lg font-semibold text-gray-900">投稿した案件（依頼者として）</h2>
+                        </div>
+                        <div class="flex space-x-3">
+                            <a href="<?= url('job-applications.php') ?>" class="text-blue-600 hover:text-blue-500 text-sm font-medium">
+                                <svg class="h-4 w-4 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 7.89a2 2 0 002.83 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                </svg>
+                                応募管理
+                            </a>
+                            <a href="<?= url('post-job.php') ?>" class="text-blue-600 hover:text-blue-500 text-sm font-medium">
+                                新規投稿
+                            </a>
+                        </div>
                     </div>
                 </div>
                 <div class="p-6">
@@ -238,7 +244,12 @@ include 'includes/header.php';
                                     <p class="text-sm text-gray-900 font-medium">
                                         <?= formatPrice($job['budget_min']) ?> - <?= formatPrice($job['budget_max']) ?>
                                     </p>
-                                    <p class="text-xs text-gray-500"><?= $job['application_count'] ?>件の応募</p>
+                                    <p class="text-xs text-gray-500">
+                                        <a href="<?= url('job-applications.php?job_id=' . $job['id']) ?>" 
+                                           class="text-blue-600 hover:text-blue-500">
+                                            <?= $job['application_count'] ?>件の応募
+                                        </a>
+                                    </p>
                                 </div>
                                 <p class="text-xs text-gray-500 mt-2"><?= timeAgo($job['created_at']) ?></p>
                             </div>
@@ -414,7 +425,6 @@ include 'includes/header.php';
                     </div>
                 </div>
             </div>
-        </div>
         </div>
     </div>
 </section>

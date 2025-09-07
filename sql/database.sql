@@ -72,15 +72,7 @@ CREATE TABLE `chat_messages` (
 -- テーブルのデータのダンプ `chat_messages`
 --
 
-INSERT INTO `chat_messages` (`id`, `room_id`, `sender_id`, `message`, `message_type`, `file_path`, `is_read`, `created_at`) VALUES
-(1, 1, 4, 'あああ', 'text', NULL, 0, '2025-09-06 11:46:05'),
-(2, 2, 4, 'test', 'text', NULL, 0, '2025-09-06 11:54:05'),
-(3, 3, 4, 'ああ', 'text', NULL, 0, '2025-09-06 13:21:45'),
-(4, 2, 4, 'あ', 'text', NULL, 0, '2025-09-06 13:22:00'),
-(5, 4, 5, 'aaaaa', 'text', NULL, 1, '2025-09-06 13:24:44'),
-(6, 4, 5, 'r', 'text', NULL, 1, '2025-09-06 13:24:53'),
-(7, 4, 4, 'a', 'text', NULL, 1, '2025-09-06 13:25:18'),
-(8, 4, 5, 'ww', 'text', NULL, 1, '2025-09-06 13:34:05');
+-- サンプルチャットメッセージは削除されました
 
 -- --------------------------------------------------------
 
@@ -100,11 +92,7 @@ CREATE TABLE `chat_rooms` (
 -- テーブルのデータのダンプ `chat_rooms`
 --
 
-INSERT INTO `chat_rooms` (`id`, `user1_id`, `user2_id`, `created_at`, `updated_at`) VALUES
-(1, 4, 4, '2025-09-06 11:45:58', '2025-09-06 11:46:05'),
-(2, 4, 1, '2025-09-06 11:54:00', '2025-09-06 13:22:00'),
-(3, 4, 2, '2025-09-06 13:21:42', '2025-09-06 13:21:45'),
-(4, 5, 4, '2025-09-06 13:24:41', '2025-09-06 13:34:05');
+-- サンプルチャットルームは削除されました
 
 -- --------------------------------------------------------
 
@@ -124,15 +112,7 @@ CREATE TABLE `favorites` (
 -- テーブルのデータのダンプ `favorites`
 --
 
-INSERT INTO `favorites` (`id`, `user_id`, `target_type`, `target_id`, `created_at`) VALUES
-(2, 4, 'work', 4, '2025-09-06 13:08:43'),
-(3, 4, 'work', 2, '2025-09-06 13:08:46'),
-(5, 4, 'work', 5, '2025-09-06 13:11:15'),
-(6, 5, 'work', 5, '2025-09-06 13:22:50'),
-(7, 5, 'work', 2, '2025-09-06 15:03:28'),
-(8, 5, 'creator', 4, '2025-09-06 16:19:03'),
-(9, 5, 'work', 4, '2025-09-06 16:20:01'),
-(10, 4, 'creator', 2, '2025-09-06 17:26:21');
+-- サンプルお気に入りデータは削除されました
 
 -- --------------------------------------------------------
 
@@ -164,9 +144,8 @@ CREATE TABLE `jobs` (
 -- テーブルのデータのダンプ `jobs`
 --
 
-INSERT INTO `jobs` (`id`, `client_id`, `title`, `description`, `category_id`, `budget_min`, `budget_max`, `duration_weeks`, `required_skills`, `location`, `remote_ok`, `urgency`, `applications_count`, `status`, `deadline`, `created_at`, `updated_at`) VALUES
-(1, 3, 'ECサイトのUI/UXデザイン', 'オンラインショップのユーザーインターフェース設計', 3, 200000, 300000, 4, '[\"UI/UX\", \"Figma\", \"Webデザイン\"]', NULL, 1, 'medium', 0, 'open', NULL, '2025-08-31 16:48:47', '2025-08-31 16:48:47'),
-(2, 2, '企業PR動画制作', '会社紹介動画の企画・制作', 4, 150000, 250000, 3, '[\"動画編集\", \"Premiere Pro\", \"企画\"]', NULL, 0, 'high', 0, 'open', NULL, '2025-08-31 16:48:47', '2025-08-31 16:48:47');
+-- サンプル案件データは削除されました
+-- 実際のクライアントが案件を投稿した際にデータが挿入されます
 
 -- --------------------------------------------------------
 
@@ -223,10 +202,7 @@ CREATE TABLE `reviews` (
 -- テーブルのデータのダンプ `reviews`
 --
 
-INSERT INTO `reviews` (`id`, `reviewer_id`, `reviewee_id`, `job_id`, `work_id`, `rating`, `comment`, `created_at`) VALUES
-(1, 5, 2, NULL, 2, 4, 'aa', '2025-09-06 15:02:55'),
-(2, 5, 2, NULL, 2, 3, 'r', '2025-09-06 15:03:15'),
-(3, 5, 4, NULL, 4, 3, 'a', '2025-09-06 15:06:36');
+-- サンプルレビューデータは削除されました
 
 -- --------------------------------------------------------
 
@@ -314,12 +290,8 @@ CREATE TABLE `users` (
 -- テーブルのデータのダンプ `users`
 --
 
-INSERT INTO `users` (`id`, `username`, `email`, `password_hash`, `full_name`, `nickname`, `user_type`, `active_role`, `profile_image`, `bio`, `location`, `website`, `twitter_url`, `instagram_url`, `facebook_url`, `linkedin_url`, `youtube_url`, `tiktok_url`, `response_time`, `experience_years`, `hourly_rate`, `is_pro`, `is_verified`, `is_active`, `is_online`, `last_seen`, `created_at`, `updated_at`) VALUES
-(1, 'tanaka_misaki', 'tanaka@example.com', '$2y$10$example_hash', '田中 美咲', NULL, 'creator', NULL, NULL, 'AI漫画クリエイターとして活動しています。Stable DiffusionやMidjourneyを使った作品制作が得意です。', '東京都', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 2, 3, 30000, 1, 1, 1, 0, '2025-09-06 00:44:03', '2025-08-31 16:48:47', '2025-08-31 16:48:47'),
-(2, 'sato_kenta', 'sato@example.com', '$2y$10$example_hash', '佐藤 健太', NULL, 'creator', NULL, NULL, 'グラフィックデザイナーです。ロゴ制作からブランディングまで幅広く対応します。', '大阪府', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 4, 5, 25000, 1, 1, 1, 0, '2025-09-06 00:44:03', '2025-08-31 16:48:47', '2025-08-31 16:48:47'),
-(3, 'yamada_hanako', 'yamada@example.com', '$2y$10$example_hash', '山田 花子', NULL, 'creator', NULL, NULL, 'Webデザイナー・フロントエンドエンジニアです。', '神奈川県', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 6, 4, 40000, 1, 0, 1, 0, '2025-09-06 00:44:03', '2025-08-31 16:48:47', '2025-08-31 16:48:47'),
-(4, 'rostyle95', 'rostyle95@gmail.com', '$2y$10$3ILDllyesu0GgVvDJk8ezOW83fF1y9J3TV77uZMdoYKQ10NcHVU6i', '奥野隆太', 'Ryu', 'creator', NULL, NULL, '', '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 24, 0, 0, 0, 0, 1, 0, '2025-09-06 11:41:12', '2025-09-06 02:41:12', '2025-09-06 02:41:12'),
-(5, 'rostyle95+1', 'rostyle95+1@gmail.com', '$2y$10$euNCbQnmRM9LBDpmX6kbp.zUYPBIQDrtKcUjv65bVDa2iPkHBp26u', 'test+1', 't', 'creator', 'creator', '68bc5a6db95a3.png', 'aaaa', '大阪府大阪市中央区伏見町2-2-10 谷ビル5F(北浜駅6番出口)', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 24, 0, 0, 0, 0, 1, 0, '2025-09-06 13:22:59', '2025-09-06 04:22:59', '2025-09-06 15:59:41');
+-- サンプルユーザーデータは削除されました
+-- 実際のユーザー登録時にデータが挿入されます
 
 -- --------------------------------------------------------
 
@@ -339,8 +311,7 @@ CREATE TABLE `user_roles` (
 -- テーブルのデータのダンプ `user_roles`
 --
 
-INSERT INTO `user_roles` (`id`, `user_id`, `role`, `is_enabled`, `created_at`) VALUES
-(1, 5, 'creator', 1, '2025-09-06 04:22:59');
+-- サンプルユーザーロールデータは削除されました
 
 -- --------------------------------------------------------
 
@@ -388,12 +359,8 @@ CREATE TABLE `works` (
 -- テーブルのデータのダンプ `works`
 --
 
-INSERT INTO `works` (`id`, `user_id`, `title`, `description`, `category_id`, `price_min`, `price_max`, `duration_weeks`, `main_image`, `images`, `tags`, `technologies`, `project_url`, `is_featured`, `view_count`, `like_count`, `status`, `created_at`, `updated_at`) VALUES
-(1, 1, 'オリジナルキャラクター制作', 'Stable DiffusionとPhotoshopを組み合わせて制作したオリジナルキャラクター', 5, 80000, 120000, 2, 'assets/images/sample-work-1.png', NULL, '[\"AI漫画\", \"キャラクター\", \"オリジナル\"]', '[\"Stable Diffusion\", \"Photoshop\", \"ComfyUI\"]', NULL, 1, 1528, 234, 'published', '2025-08-31 16:48:47', '2025-09-06 17:26:09'),
-(2, 2, 'ブランドロゴデザイン', 'モダンで印象的なブランドロゴの制作', 1, 50000, 80000, 1, 'assets/images/sample-work-2.jpg', NULL, '[\"ロゴ\", \"ブランディング\", \"モダン\"]', '[\"Illustrator\", \"Photoshop\"]', NULL, 1, 1008, 191, 'published', '2025-08-31 16:48:47', '2025-09-06 15:03:28'),
-(3, 3, 'コーポレートサイト制作', 'レスポンシブ対応のコーポレートサイト', 3, 150000, 250000, 6, 'assets/images/sample-work-3.jpg', NULL, '[\"Web制作\", \"レスポンシブ\", \"コーポレート\"]', '[\"HTML/CSS\", \"JavaScript\", \"WordPress\"]', NULL, 0, 760, 93, 'published', '2025-08-31 16:48:47', '2025-09-06 13:21:50'),
-(4, 4, 'サムネイル作成', 'サムネイル作成します。', 1, 3300, 5000, 1, '68bba0547498a.jpg', NULL, NULL, NULL, NULL, 0, 22, 2, 'published', '2025-09-06 02:45:40', '2025-09-06 16:41:52'),
-(5, 4, 'aaaaa', 'aaaa', 2, 1111, 111111, 0, '68bbfd680f317.jpg', NULL, NULL, NULL, NULL, 0, 21, 2, 'published', '2025-09-06 09:22:48', '2025-09-06 13:55:35');
+-- サンプル作品データは削除されました
+-- 実際のクリエイターが作品を投稿した際にデータが挿入されます
 
 -- --------------------------------------------------------
 
@@ -540,25 +507,25 @@ ALTER TABLE `categories`
 -- テーブルの AUTO_INCREMENT `chat_messages`
 --
 ALTER TABLE `chat_messages`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
 
 --
 -- テーブルの AUTO_INCREMENT `chat_rooms`
 --
 ALTER TABLE `chat_rooms`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
 
 --
 -- テーブルの AUTO_INCREMENT `favorites`
 --
 ALTER TABLE `favorites`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
 
 --
 -- テーブルの AUTO_INCREMENT `jobs`
 --
 ALTER TABLE `jobs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
 
 --
 -- テーブルの AUTO_INCREMENT `job_applications`
@@ -576,7 +543,7 @@ ALTER TABLE `messages`
 -- テーブルの AUTO_INCREMENT `reviews`
 --
 ALTER TABLE `reviews`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
 
 --
 -- テーブルの AUTO_INCREMENT `skills`
@@ -588,13 +555,13 @@ ALTER TABLE `skills`
 -- テーブルの AUTO_INCREMENT `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
 
 --
 -- テーブルの AUTO_INCREMENT `user_roles`
 --
 ALTER TABLE `user_roles`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
 
 --
 -- テーブルの AUTO_INCREMENT `user_skills`
@@ -606,7 +573,7 @@ ALTER TABLE `user_skills`
 -- テーブルの AUTO_INCREMENT `works`
 --
 ALTER TABLE `works`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
 
 --
 -- テーブルの AUTO_INCREMENT `work_likes`
