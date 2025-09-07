@@ -87,13 +87,7 @@ try {
     
     $stories = $db->select($storiesSql, $values);
 
-    // 各作品に仮のクライアント情報と成功データを追加（実際のプロジェクトでは関連テーブルから取得）
-    foreach ($stories as &$story) {
-        $story['client_name'] = '株式会社' . ['サンプル', 'テスト', 'デモ', 'エクサンプル'][array_rand(['サンプル', 'テスト', 'デモ', 'エクサンプル'])];
-        $story['project_duration'] = rand(2, 12) . '週間';
-        $story['client_satisfaction'] = rand(45, 50) / 10; // 4.5-5.0の満足度
-        $story['project_description'] = 'このプロジェクトでは、クライアントの要望に応じて' . $story['title'] . 'を制作しました。';
-    }
+    // 実際のプロジェクトデータを使用（ダミーデータは削除）
 
 } catch (Exception $e) {
     $stories = [];
@@ -205,7 +199,7 @@ include 'includes/header.php';
                     <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-200">
                         <!-- Image -->
                         <div class="aspect-w-16 aspect-h-9">
-                            <img src="<?= h($story['main_image'] ?? asset('images/sample-work-1.png')) ?>" 
+                            <img src="<?= uploaded_asset($story['main_image'] ?? 'assets/images/default-avatar.png') ?>" 
                                  alt="<?= h($story['title']) ?>" 
                                  class="w-full h-48 object-cover">
                         </div>
@@ -231,32 +225,32 @@ include 'includes/header.php';
                                 </a>
                             </h3>
 
-                            <!-- Project Description -->
+                            <!-- Description -->
+                            <?php if ($story['description']): ?>
                             <p class="text-gray-600 text-sm mb-4 line-clamp-2">
-                                <?= h($story['project_description']) ?>
+                                <?= h($story['description']) ?>
                             </p>
+                            <?php endif; ?>
 
                             <!-- Project Stats -->
                             <div class="space-y-2 mb-4">
-                                <div class="flex items-center justify-between text-sm">
-                                    <span class="text-gray-600">プロジェクト期間:</span>
-                                    <span class="font-medium"><?= h($story['project_duration']) ?></span>
-                                </div>
                                 <div class="flex items-center justify-between text-sm">
                                     <span class="text-gray-600">予算:</span>
                                     <span class="font-medium text-green-600">
                                         <?= formatPrice($story['price_min']) ?> 〜 <?= formatPrice($story['price_max']) ?>
                                     </span>
                                 </div>
+                                <?php if ($story['avg_rating']): ?>
                                 <div class="flex items-center justify-between text-sm">
-                                    <span class="text-gray-600">クライアント満足度:</span>
+                                    <span class="text-gray-600">評価:</span>
                                     <div class="flex items-center">
-                                        <?= renderStars($story['client_satisfaction']) ?>
+                                        <?= renderStars($story['avg_rating']) ?>
                                         <span class="ml-1 text-xs text-gray-500">
-                                            (<?= number_format($story['client_satisfaction'] ?? 0, 1) ?>)
+                                            (<?= number_format($story['avg_rating'] ?? 0, 1) ?>)
                                         </span>
                                     </div>
                                 </div>
+                                <?php endif; ?>
                             </div>
 
                             <!-- Client & Creator Info -->
@@ -264,7 +258,7 @@ include 'includes/header.php';
                                 <div class="flex items-center justify-between">
                                     <!-- Creator -->
                                     <div class="flex items-center">
-                                        <img src="<?= h($story['creator_image'] ?? asset('images/default-avatar.png')) ?>" 
+                                        <img src="<?= uploaded_asset($story['creator_image'] ?? 'assets/images/default-avatar.png') ?>" 
                                              alt="<?= h($story['creator_name']) ?>" 
                                              class="w-8 h-8 rounded-full mr-2">
                                         <div>
@@ -280,13 +274,6 @@ include 'includes/header.php';
                                     </a>
                                 </div>
 
-                                <!-- Client -->
-                                <div class="mt-3 pt-3 border-t border-gray-100">
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-xs text-gray-500">クライアント:</span>
-                                        <span class="text-xs font-medium text-gray-700"><?= h($story['client_name']) ?></span>
-                                    </div>
-                                </div>
                             </div>
                         </div>
                     </div>

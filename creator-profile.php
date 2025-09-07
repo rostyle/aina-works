@@ -67,56 +67,10 @@ try {
     }
 
 } catch (Exception $e) {
-    // エラー時はダミーデータを使用
-    $creator = [
-        'id' => 1,
-        'full_name' => '田中 美咲',
-        'bio' => 'AI漫画クリエイターとして活動しています。Stable DiffusionやMidjourneyを使った作品制作が得意で、キャラクターデザインから背景まで幅広く対応可能です。',
-        'location' => '東京都',
-        'profile_image' => null,
-        'hourly_rate' => 30000,
-        'experience_years' => 3,
-        'response_time' => 2,
-        'is_pro' => 1,
-        'is_verified' => 1,
-        'avg_rating' => 4.9,
-        'review_count' => 127,
-        'work_count' => 45,
-        'completed_jobs' => 127,
-        'created_at' => '2021-03-15'
-    ];
-    
-    $skills = [
-        ['name' => 'Stable Diffusion', 'proficiency' => 'expert', 'category_name' => 'AI漫画', 'category_color' => '#F59E0B'],
-        ['name' => 'Midjourney', 'proficiency' => 'expert', 'category_name' => 'AI漫画', 'category_color' => '#F59E0B'],
-        ['name' => 'Photoshop', 'proficiency' => 'advanced', 'category_name' => 'AI漫画', 'category_color' => '#F59E0B'],
-        ['name' => 'ComfyUI', 'proficiency' => 'intermediate', 'category_name' => 'AI漫画', 'category_color' => '#F59E0B']
-    ];
-    
-    $works = [
-        [
-            'id' => 1,
-            'title' => 'AI漫画キャラクターデザイン',
-            'main_image' => 'assets/images/sample-work-1.png',
-            'category_name' => 'AI漫画',
-            'avg_rating' => 4.9,
-            'review_count' => 127,
-            'price_min' => 50000,
-            'view_count' => 1520
-        ],
-        [
-            'id' => 2,
-            'title' => 'ファンタジー背景イラスト',
-            'main_image' => 'assets/images/sample-work-2.jpg',
-            'category_name' => 'AI漫画',
-            'avg_rating' => 4.8,
-            'review_count' => 89,
-            'price_min' => 30000,
-            'view_count' => 980
-        ]
-    ];
-    
-    $isCreatorLiked = false;
+    // エラーログを記録
+    error_log("Creator profile error: " . $e->getMessage());
+    // クリエイター一覧ページにリダイレクト
+    redirect(url('creators.php'));
 }
 
 $pageTitle = h($creator['full_name']) . ' - クリエイタープロフィール';
