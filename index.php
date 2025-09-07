@@ -43,7 +43,6 @@ include 'includes/header.php';
 ?>
 
 <!-- Enhanced Hero Section with Modern Design -->
-<main id="main-content" role="main">
 <section class="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-900 via-primary-800 to-secondary-900 text-white overflow-hidden">
     <!-- Animated Background Elements -->
     <div class="absolute inset-0">
@@ -85,12 +84,12 @@ include 'includes/header.php';
             </p>
             
             <!-- Enhanced Search Bar -->
-            <div class="max-w-3xl mx-auto mb-12 animate-scale-in" style="animation-delay: 0.4s;">
+            <div class="max-w-3xl mx-auto mb-12 animate-scale-in hero-search-container" style="animation-delay: 0.4s;">
                 <form action="<?= url('works.php') ?>" method="GET" class="relative group">
                     <div class="absolute inset-0 bg-gradient-to-r from-primary-500 to-secondary-500 rounded-2xl blur opacity-20 group-hover:opacity-30 transition-opacity duration-500"></div>
-                    <div class="relative bg-white/95 backdrop-blur-lg rounded-2xl p-2 shadow-2xl">
-                        <div class="flex items-center">
-                            <div class="flex-shrink-0 pl-4">
+                    <div class="relative bg-white/95 backdrop-blur-lg rounded-2xl p-2 shadow-2xl hero-search-wrapper">
+                        <div class="flex items-center hero-search-form">
+                            <div class="flex-shrink-0 pl-4 hero-search-icon">
                                 <svg class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                                 </svg>
@@ -100,15 +99,34 @@ include 'includes/header.php';
                                 type="text"
                                 id="hero-search"
                                 name="keyword"
-                                placeholder="スキル、カテゴリ、キーワードで検索..."
+                                placeholder="✨ スキル・カテゴリで検索"
                                 aria-describedby="search-help"
-                                class="flex-1 px-4 py-4 text-lg bg-transparent text-gray-900 placeholder-gray-500 border-0 focus:ring-0 focus:outline-none"
+                                class="flex-1 px-4 py-4 text-lg bg-transparent text-gray-900 placeholder-gray-500 border-0 focus:ring-0 focus:outline-none hero-search-input"
                             />
-                            <button type="submit" class="btn btn-primary btn-lg btn-shimmer mr-2" aria-label="クリエイターを検索">
+                            <script>
+                                // レスポンシブプレースホルダーテキスト
+                                function updatePlaceholder() {
+                                    const input = document.getElementById('hero-search');
+                                    if (window.innerWidth <= 360) {
+                                        input.placeholder = '✨ 検索';
+                                    } else if (window.innerWidth <= 480) {
+                                        input.placeholder = '✨ スキルで検索';
+                                    } else {
+                                        input.placeholder = '✨ スキル・カテゴリで検索';
+                                    }
+                                }
+                                
+                                // 初回実行
+                                updatePlaceholder();
+                                
+                                // リサイズ時に更新
+                                window.addEventListener('resize', updatePlaceholder);
+                            </script>
+                            <button type="submit" class="btn btn-primary btn-lg btn-shimmer mr-2 hero-search-button" aria-label="クリエイターを検索">
                                 <svg class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                                 </svg>
-                                検索
+                                🔍 検索する
                             </button>
                             <div id="search-help" class="sr-only">クリエイターの名前、スキル、専門分野で検索できます</div>
                         </div>
@@ -191,14 +209,14 @@ include 'includes/header.php';
             </p>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mb-12">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-12 categories-grid">
             <?php foreach ($categories as $category): ?>
                 <a href="<?= url('works.php?category_id=' . $category['id']) ?>" 
-                   class="group card hover-lift fade-in-on-scroll">
+                   class="group card hover-lift fade-in-on-scroll category-card">
                     <div class="p-8 text-center">
                         <!-- Enhanced Icon with Gradient Background -->
                         <div class="relative mb-6">
-                            <div class="w-20 h-20 mx-auto rounded-2xl flex items-center justify-center text-3xl transition-all duration-500 group-hover:scale-110 group-hover:rotate-3"
+                            <div class="w-20 h-20 mx-auto rounded-2xl flex items-center justify-center text-3xl transition-all duration-500 group-hover:scale-110 group-hover:rotate-3 category-icon"
                                  style="background: linear-gradient(135deg, <?= h($category['color'] ?? '#3B82F6') ?>15, <?= h($category['color'] ?? '#3B82F6') ?>25); color: <?= h($category['color'] ?? '#3B82F6') ?>;">
                                 <?php
                                 $icons = [
@@ -609,8 +627,8 @@ include 'includes/header.php';
             </div>
         </div>
     </div>
+
 </section>
-</main>
 
 <?php include 'includes/footer.php'; ?>
 

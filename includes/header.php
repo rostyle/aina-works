@@ -59,6 +59,8 @@ $navItems = [
             }
         }
     </script>
+    <link rel="stylesheet" href="<?= asset('css/custom.css') ?>">
+    <meta name="csrf-token" content="<?= generateCsrfToken() ?>">
     <style>
         /* モバイルメニューの確実な最前面表示 */
         #mobile-menu {
@@ -427,5 +429,4 @@ $navItems = [
         });
     });
     </script>
-</body>
-</html>
+
