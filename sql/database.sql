@@ -262,8 +262,6 @@ CREATE TABLE `users` (
   `password_hash` varchar(255) NOT NULL,
   `full_name` varchar(100) NOT NULL,
   `nickname` varchar(50) DEFAULT NULL,
-  `user_type` enum('creator','client','sales') NOT NULL,
-  `active_role` enum('creator','client','sales','admin') DEFAULT NULL,
   `profile_image` varchar(255) DEFAULT NULL,
   `bio` text DEFAULT NULL,
   `location` varchar(100) DEFAULT NULL,
@@ -294,24 +292,6 @@ CREATE TABLE `users` (
 -- 実際のユーザー登録時にデータが挿入されます
 
 -- --------------------------------------------------------
-
---
--- テーブルの構造 `user_roles`
---
-
-CREATE TABLE `user_roles` (
-  `id` int(11) NOT NULL,
-  `user_id` int(11) NOT NULL,
-  `role` enum('creator','client','sales','admin') NOT NULL,
-  `is_enabled` tinyint(1) DEFAULT 1,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- テーブルのデータのダンプ `user_roles`
---
-
--- サンプルユーザーロールデータは削除されました
 
 -- --------------------------------------------------------
 
@@ -460,13 +440,6 @@ ALTER TABLE `users`
   ADD UNIQUE KEY `username` (`username`),
   ADD UNIQUE KEY `email` (`email`);
 
---
--- テーブルのインデックス `user_roles`
---
-ALTER TABLE `user_roles`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `unique_user_role` (`user_id`,`role`),
-  ADD KEY `user_id` (`user_id`);
 
 --
 -- テーブルのインデックス `user_skills`
@@ -557,11 +530,6 @@ ALTER TABLE `skills`
 ALTER TABLE `users`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
 
---
--- テーブルの AUTO_INCREMENT `user_roles`
---
-ALTER TABLE `user_roles`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
 
 --
 -- テーブルの AUTO_INCREMENT `user_skills`

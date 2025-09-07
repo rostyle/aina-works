@@ -1,8 +1,8 @@
 // AiNA Works - Main JavaScript
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Mobile menu functionality
-    initMobileMenu();
+    // Mobile menu functionality - disabled (using header.php implementation)
+    // initMobileMenu();
     
     // Intersection Observer for animations
     initScrollAnimations();
