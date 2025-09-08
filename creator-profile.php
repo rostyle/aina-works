@@ -288,7 +288,7 @@ include 'includes/header.php';
                     $heartColor = $isCreatorLiked ? 'text-red-500' : 'text-gray-700';
                     $favLabel = $isCreatorLiked ? 'お気に入り済み' : 'お気に入りに追加';
                     ?>
-                    <button onclick="toggleLike('creator', <?= (int)$creator['id'] ?>, this)"
+                    <button onclick="toggleFavorite('creator', <?= (int)$creator['id'] ?>, this)"
                             class="w-full block text-center px-4 py-3 border border-gray-300 text-gray-700 font-medium rounded-md hover:bg-gray-50 transition-colors like-btn"
                             data-liked="<?= $isCreatorLiked ? 'true' : 'false' ?>">
                         <svg class="h-5 w-5 inline mr-2 <?= $heartColor ?>" fill="<?= $heartFill ?>" viewBox="0 0 24 24" stroke="currentColor">
@@ -322,58 +322,40 @@ include 'includes/header.php';
                 </div>
             </div>
 
-            <!-- Certifications -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h3 class="font-semibold text-gray-900 mb-4">認定・資格</h3>
-                <div class="space-y-3">
-                    <div class="flex items-center space-x-3">
-                        <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                            <svg class="h-4 w-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                            </svg>
-                        </div>
-                        <div>
-                            <div class="text-sm font-medium text-gray-900">プロ認定クリエイター</div>
-                            <div class="text-xs text-gray-500">2023年12月取得</div>
-                        </div>
-                    </div>
-                    <div class="flex items-center space-x-3">
-                        <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                            <svg class="h-4 w-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                            </svg>
-                        </div>
-                        <div>
-                            <div class="text-sm font-medium text-gray-900">AI技術認定</div>
-                            <div class="text-xs text-gray-500">2023年8月取得</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            
         </div>
     </div>
 </div>
 
 <script>
-// いいね機能（クリエイタープロフィール）
-async function toggleLike(targetType, targetId, button) {
+// お気に入り機能（クリエイタープロフィール）
+async function toggleFavorite(targetType, targetId, button) {
     try {
-        const response = await fetch('api/like.php', {
+        const isFavorited = button.getAttribute('data-liked') === 'true';
+        const response = await fetch('api/favorite.php', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                'X-Requested-With': 'XMLHttpRequest'
             },
             body: JSON.stringify({
+                action: isFavorited ? 'remove' : 'add',
                 target_type: targetType,
                 target_id: targetId
             })
         });
+
+        if (response.status === 401) {
+            const redirectUrl = 'login.php?redirect=' + encodeURIComponent(window.location.href);
+            window.location.href = redirectUrl;
+            return;
+        }
+
         const result = await response.json();
         if (result.success) {
             const svg = button.querySelector('svg');
             const label = button.querySelector('.fav-label');
-            if (result.liked) {
+            if (result.is_favorite) {
                 svg.setAttribute('fill', 'currentColor');
                 svg.classList.remove('text-gray-700');
                 svg.classList.add('text-red-500');
@@ -395,7 +377,7 @@ async function toggleLike(targetType, targetId, button) {
             }
         }
     } catch (error) {
-        console.error('Like toggle error:', error);
+        console.error('Favorite toggle error:', error);
         if (typeof showNotification === 'function') {
             showNotification('ネットワークエラーが発生しました', 'error');
         }

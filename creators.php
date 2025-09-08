@@ -389,19 +389,15 @@ include 'includes/header.php';
                                     </div>
                                 </div>
 
-                                <!-- Price and Actions -->
-                                <div class="flex items-center justify-between">
-                                    <div>
-                                        <div class="text-lg font-bold text-gray-900"><?= formatPrice($creator['hourly_rate']) ?>〜</div>
-                                        <div class="text-xs text-gray-500">/ プロジェクト</div>
-                                    </div>
+                                <!-- Actions -->
+                                <div class="flex items-center justify-end">
                                     <div class="flex space-x-2">
                                         <?php 
                                         $isCreatorLiked = in_array($creator['id'], $userCreatorLikes ?? []);
                                         $heartFill = $isCreatorLiked ? 'currentColor' : 'none';
                                         $heartColor = $isCreatorLiked ? 'text-red-500' : 'text-gray-400';
                                         ?>
-                                        <button onclick="toggleLike('creator', <?= (int)$creator['id'] ?>, this)"
+                                        <button onclick="toggleFavorite('creator', <?= (int)$creator['id'] ?>, this)"
                                                 class="p-2 like-btn transition-colors bg-white/90 rounded-full hover:bg-white"
                                                 data-liked="<?= $isCreatorLiked ? 'true' : 'false' ?>">
                                             <svg class="h-5 w-5 <?= $heartColor ?>" fill="<?= $heartFill ?>" viewBox="0 0 24 24" stroke="currentColor">
@@ -471,24 +467,31 @@ function clearFilters() {
     window.location.href = url.toString();
 }
 
-// いいね機能（クリエイター）
-async function toggleLike(targetType, targetId, button) {
+// お気に入り機能（クリエイター）
+async function toggleFavorite(targetType, targetId, button) {
     try {
-        const response = await fetch('api/like.php', {
+        const isFavorited = button.getAttribute('data-liked') === 'true';
+        const response = await fetch('api/favorite.php', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                'X-Requested-With': 'XMLHttpRequest'
             },
             body: JSON.stringify({
+                action: isFavorited ? 'remove' : 'add',
                 target_type: targetType,
                 target_id: targetId
             })
         });
+        if (response.status === 401) {
+            const redirectUrl = 'login.php?redirect=' + encodeURIComponent(window.location.href);
+            window.location.href = redirectUrl;
+            return;
+        }
         const result = await response.json();
         if (result.success) {
             const svg = button.querySelector('svg');
-            if (result.liked) {
+            if (result.is_favorite) {
                 svg.setAttribute('fill', 'currentColor');
                 svg.classList.remove('text-gray-400');
                 svg.classList.add('text-red-500');
@@ -508,7 +511,7 @@ async function toggleLike(targetType, targetId, button) {
             }
         }
     } catch (error) {
-        console.error('Like toggle error:', error);
+        console.error('Favorite toggle error:', error);
         if (typeof showNotification === 'function') {
             showNotification('ネットワークエラーが発生しました', 'error');
         }
