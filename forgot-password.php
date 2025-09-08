@@ -56,44 +56,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         [$email, $token, $expiresAt]
                     );
                     
-                    // メール送信（PHPMyAdminでの確認用にログ出力）
+                    // パスワードリセットメール送信
                     $resetUrl = url("reset-password.php?token=" . $token);
-                    $emailContent = "
-                    パスワードリセットのリクエストを受け付けました。
-                    
-                    以下のリンクをクリックしてパスワードをリセットしてください：
-                    {$resetUrl}
-                    
-                    このリンクは1時間後に期限切れとなります。
-                    
-                    もしこのリクエストに心当たりがない場合は、このメールを無視してください。
-                    ";
+                    $subject = "【AiNA Works】パスワードリセットのご案内";
+                    $message = "パスワードリセットのリクエストを受け付けました。\n\n";
+                    $message .= "以下のボタンをクリックしてパスワードをリセットしてください。\n\n";
+                    $message .= "このリンクは1時間後に期限切れとなります。\n\n";
+                    $message .= "もしこのリクエストに心当たりがない場合は、このメールを無視してください。\n";
+                    $message .= "あなたのアカウントは安全に保護されています。";
                     
                     // PHPMyAdmin確認用：メール内容をログに記録
                     error_log("=== パスワードリセットメール ===");
                     error_log("宛先: " . $email);
-                    error_log("件名: [AiNA Works] パスワードリセットのご案内");
-                    error_log("内容:\n" . $emailContent);
+                    error_log("件名: " . $subject);
                     error_log("リセットURL: " . $resetUrl);
                     error_log("トークン: " . $token);
                     error_log("有効期限: " . $expiresAt);
                     error_log("========================");
                     
-                    // 実際のメール送信処理（本番環境では有効化）
-                    /*
-                    $subject = "[AiNA Works] パスワードリセットのご案内";
-                    $headers = "From: noreply@ainaworks.com\r\n";
-                    $headers .= "Content-Type: text/plain; charset=UTF-8\r\n";
-                    
-                    if (mail($email, $subject, $emailContent, $headers)) {
+                    // PHPMailerでメール送信
+                    if (sendNotificationMail($email, $subject, $message, $resetUrl, 'パスワードをリセットする')) {
                         $success = true;
                     } else {
                         $errors[] = 'メール送信に失敗しました。再度お試しください。';
                     }
-                    */
-                    
-                    // 開発環境では常に成功とする
-                    $success = true;
                 } else {
                     // セキュリティのため、存在しないメールアドレスでも成功メッセージを表示
                     $success = true;

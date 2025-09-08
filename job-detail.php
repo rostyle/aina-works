@@ -143,6 +143,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_application'])
         $db->commit();
         
         error_log('応募処理成功');
+        
+        // クライアントにメール通知を送信
+        try {
+            $clientEmail = $db->selectOne(
+                "SELECT u.email, u.full_name FROM users u 
+                 INNER JOIN jobs j ON u.id = j.client_id 
+                 WHERE j.id = ?",
+                [$jobId]
+            );
+            
+            if ($clientEmail) {
+                $subject = "【AiNA Works】新しい応募が届きました - {$job['title']}";
+                $message = "お疲れ様です。\n\n";
+                $message .= "あなたの案件「{$job['title']}」に新しい応募が届きました。\n\n";
+                $message .= "応募者: {$user['full_name']}\n";
+                $message .= "提案金額: " . formatPrice($proposedPrice) . "\n";
+                $message .= "提案期間: {$proposedDuration}日\n\n";
+                $message .= "応募メッセージ:\n";
+                $message .= $coverLetter . "\n\n";
+                $message .= "応募の詳細を確認し、受諾または却下の判断をお願いします。";
+                
+                $actionUrl = url('job-applications.php');
+                sendNotificationMail($clientEmail['email'], $subject, $message, $actionUrl, '応募を確認する');
+            }
+        } catch (Exception $e) {
+            error_log('応募通知メール送信エラー: ' . $e->getMessage());
+            // メール送信エラーでも応募処理は継続
+        }
+        
         setFlash('success', '応募を送信しました！');
 
         // 成功時は同ページに戻して成功バナーを表示

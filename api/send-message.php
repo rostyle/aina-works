@@ -52,6 +52,30 @@ try {
     ", [$currentUser['id'], $recipientId, $subject, $message]);
     
     if ($messageId) {
+        // 受信者にメール通知を送信
+        try {
+            $recipientUser = $db->selectOne(
+                "SELECT email, full_name FROM users WHERE id = ?",
+                [$recipientId]
+            );
+            
+            if ($recipientUser) {
+                $emailSubject = "【AiNA Works】新しいメッセージが届きました - {$subject}";
+                $emailMessage = "こんにちは、{$recipientUser['full_name']}さん\n\n";
+                $emailMessage .= "{$currentUser['full_name']}さんから新しいメッセージが届きました。\n\n";
+                $emailMessage .= "件名: {$subject}\n\n";
+                $emailMessage .= "メッセージ:\n";
+                $emailMessage .= $message . "\n\n";
+                $emailMessage .= "返信はプラットフォーム上で行ってください。";
+                
+                $actionUrl = url('chats.php');
+                sendNotificationMail($recipientUser['email'], $emailSubject, $emailMessage, $actionUrl, 'メッセージを確認する');
+            }
+        } catch (Exception $e) {
+            error_log('メッセージ通知メール送信エラー: ' . $e->getMessage());
+            // メール送信エラーでもメッセージ送信は成功として処理
+        }
+        
         jsonResponse([
             'success' => true,
             'message' => 'メッセージを送信しました',

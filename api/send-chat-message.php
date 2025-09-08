@@ -61,6 +61,29 @@ try {
             WHERE cm.id = ?
         ", [$messageId]);
         
+        // 相手にメール通知を送信
+        try {
+            $recipientId = ($chatRoom['user1_id'] == $currentUser['id']) ? $chatRoom['user2_id'] : $chatRoom['user1_id'];
+            $recipient = $db->selectOne("
+                SELECT email, full_name FROM users WHERE id = ?
+            ", [$recipientId]);
+            
+            if ($recipient) {
+                $subject = "【AiNA Works】新しいチャットメッセージが届きました";
+                $emailMessage = "こんにちは、{$recipient['full_name']}さん\n\n";
+                $emailMessage .= "{$currentUser['full_name']}さんからチャットメッセージが届きました。\n\n";
+                $emailMessage .= "メッセージ:\n";
+                $emailMessage .= $message . "\n\n";
+                $emailMessage .= "返信はチャットルームで行ってください。";
+                
+                $actionUrl = url('chats.php');
+                sendNotificationMail($recipient['email'], $subject, $emailMessage, $actionUrl, 'チャットを確認する');
+            }
+        } catch (Exception $e) {
+            error_log('チャット通知メール送信エラー: ' . $e->getMessage());
+            // メール送信エラーでもチャット送信は成功として処理
+        }
+        
         jsonResponse([
             'success' => true,
             'message' => [

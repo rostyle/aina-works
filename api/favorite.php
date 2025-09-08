@@ -109,6 +109,48 @@ try {
             [$user['id'], $targetType, $targetId]
         );
         
+        // 対象者にメール通知を送信
+        try {
+            if ($targetType === 'creator') {
+                $targetUser = $db->selectOne(
+                    "SELECT email, full_name FROM users WHERE id = ?",
+                    [$targetId]
+                );
+                
+                if ($targetUser) {
+                    $subject = "【AiNA Works】あなたがお気に入りに追加されました";
+                    $message = "こんにちは、{$targetUser['full_name']}さん\n\n";
+                    $message .= "{$user['full_name']}さんがあなたをお気に入りに追加しました。\n\n";
+                    $message .= "これは、あなたのプロフィールや作品が評価されている証拠です。\n";
+                    $message .= "今後も素晴らしい作品を作り続けて、多くのクライアントにアピールしましょう！";
+                    
+                    $actionUrl = url('profile.php');
+                    sendNotificationMail($targetUser['email'], $subject, $message, $actionUrl, 'プロフィールを確認する');
+                }
+            } elseif ($targetType === 'work') {
+                $workOwner = $db->selectOne(
+                    "SELECT u.email, u.full_name, w.title FROM users u 
+                     INNER JOIN works w ON u.id = w.user_id 
+                     WHERE w.id = ?",
+                    [$targetId]
+                );
+                
+                if ($workOwner) {
+                    $subject = "【AiNA Works】あなたの作品がお気に入りに追加されました";
+                    $message = "こんにちは、{$workOwner['full_name']}さん\n\n";
+                    $message .= "{$user['full_name']}さんがあなたの作品「{$workOwner['title']}」をお気に入りに追加しました。\n\n";
+                    $message .= "素晴らしい作品が評価されています！\n";
+                    $message .= "引き続き魅力的な作品を投稿して、さらに多くの人にアピールしましょう。";
+                    
+                    $actionUrl = url('works.php');
+                    sendNotificationMail($workOwner['email'], $subject, $message, $actionUrl, 'あなたの作品を見る');
+                }
+            }
+        } catch (Exception $e) {
+            error_log('お気に入り通知メール送信エラー: ' . $e->getMessage());
+            // メール送信エラーでもお気に入り追加は成功として処理
+        }
+        
         echo json_encode(['success' => true, 'message' => 'お気に入りに追加しました', 'is_favorite' => true]);
         
     } else {

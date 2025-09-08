@@ -113,6 +113,29 @@ try {
 
         $db->commit();
 
+        // クリエイターにメール通知を送信（受諾）
+        try {
+            $creatorEmail = $db->selectOne(
+                "SELECT email, full_name FROM users WHERE id = ?",
+                [$application['creator_id']]
+            );
+            
+            if ($creatorEmail) {
+                $subject = "【AiNA Works】応募が受諾されました - {$application['job_title']}";
+                $message = "おめでとうございます！\n\n";
+                $message .= "あなたの応募が受諾されました。\n\n";
+                $message .= "案件名: {$application['job_title']}\n";
+                $message .= "クライアント: {$currentUser['full_name']}\n\n";
+                $message .= "チャットルームが作成されましたので、詳細な打ち合わせを開始してください。\n";
+                $message .= "プロジェクトの成功に向けて頑張りましょう！";
+                
+                $actionUrl = url('chat?user_id=' . $currentUser['id']);
+                sendNotificationMail($creatorEmail['email'], $subject, $message, $actionUrl, 'チャットを開始する');
+            }
+        } catch (Exception $e) {
+            error_log('受諾通知メール送信エラー: ' . $e->getMessage());
+        }
+
         jsonResponse([
             'success' => true,
             'message' => '応募を受諾しました',
@@ -127,6 +150,29 @@ try {
         );
 
         $db->commit();
+
+        // クリエイターにメール通知を送信（却下）
+        try {
+            $creatorEmail = $db->selectOne(
+                "SELECT email, full_name FROM users WHERE id = ?",
+                [$application['creator_id']]
+            );
+            
+            if ($creatorEmail) {
+                $subject = "【AiNA Works】応募結果のお知らせ - {$application['job_title']}";
+                $message = "いつもお疲れ様です。\n\n";
+                $message .= "ご応募いただいた案件について、結果をお知らせします。\n\n";
+                $message .= "案件名: {$application['job_title']}\n";
+                $message .= "結果: 今回は見送りとさせていただきました\n\n";
+                $message .= "今回は残念な結果となりましたが、今後とも AiNA Works をよろしくお願いします。\n";
+                $message .= "他にも多数の案件がございますので、ぜひご検討ください。";
+                
+                $actionUrl = url('jobs.php');
+                sendNotificationMail($creatorEmail['email'], $subject, $message, $actionUrl, '他の案件を見る');
+            }
+        } catch (Exception $e) {
+            error_log('却下通知メール送信エラー: ' . $e->getMessage());
+        }
 
         jsonResponse([
             'success' => true,

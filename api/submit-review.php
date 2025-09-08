@@ -105,6 +105,30 @@ try {
             WHERE work_id = ?
         ", [$workId]);
         
+        // 作品の作者にメール通知を送信
+        try {
+            $creator = $db->selectOne("
+                SELECT email, full_name FROM users WHERE id = ?
+            ", [$work['creator_id']]);
+            
+            if ($creator) {
+                $subject = "【AiNA Works】あなたの作品にレビューが投稿されました";
+                $message = "こんにちは、{$creator['full_name']}さん\n\n";
+                $message .= "{$currentUser['full_name']}さんがあなたの作品「{$work['title']}」にレビューを投稿しました。\n\n";
+                $message .= "評価: " . str_repeat('★', $rating) . str_repeat('☆', 5 - $rating) . " ({$rating}/5)\n\n";
+                $message .= "コメント:\n";
+                $message .= $comment . "\n\n";
+                $message .= "素晴らしいフィードバックをいただきました！\n";
+                $message .= "今後の作品制作の参考にしてください。";
+                
+                $actionUrl = url('work-detail.php?id=' . $workId);
+                sendNotificationMail($creator['email'], $subject, $message, $actionUrl, 'レビューを確認する');
+            }
+        } catch (Exception $e) {
+            error_log('レビュー通知メール送信エラー: ' . $e->getMessage());
+            // メール送信エラーでもレビュー投稿は成功として処理
+        }
+        
         // 成功時はリダイレクト
         $_SESSION['flash_message'] = 'レビューを投稿しました。ありがとうございます！';
         $_SESSION['flash_type'] = 'success';

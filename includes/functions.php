@@ -17,10 +17,13 @@ function h($str) {
  * URL生成
  */
 function url($path = '') {
+    // 本番環境での絶対URL生成
+    $baseUrl = 'https://aina-works.com';
+    
     if (empty($path)) {
-        return './';
+        return $baseUrl . '/';
     }
-    return './' . ltrim($path, '/');
+    return $baseUrl . '/' . ltrim($path, '/');
 }
 
 /**
@@ -550,6 +553,112 @@ function validatePageAccess($pageName) {
     }
     
     return true;
+}
+
+/**
+ * メール送信関数（PHPMailer使用）
+ */
+function sendMail($to, $subject, $body, $isHtml = false) {
+    // Composerのautoloaderを読み込み
+    require_once BASE_PATH . '/vendor/autoload.php';
+    
+    $mail = new PHPMailer\PHPMailer\PHPMailer(true);
+    
+    try {
+        // サーバー設定
+        $mail->isSMTP();
+        $mail->Host       = 'smtp.lolipop.jp';
+        $mail->SMTPAuth   = true;
+        $mail->Username   = 'info@aina-works.com';
+        $mail->Password   = '_V1E-WLL0eAX1pw_';
+        $mail->SMTPSecure = PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS;
+        $mail->Port       = 465;
+        $mail->CharSet    = 'UTF-8';
+        
+        // 送信者設定
+        $mail->setFrom('info@aina-works.com', 'AiNA Works');
+        
+        // 受信者設定
+        if (is_array($to)) {
+            foreach ($to as $email => $name) {
+                if (is_numeric($email)) {
+                    $mail->addAddress($name);
+                } else {
+                    $mail->addAddress($email, $name);
+                }
+            }
+        } else {
+            $mail->addAddress($to);
+        }
+        
+        // メール内容設定
+        $mail->isHTML($isHtml);
+        $mail->Subject = $subject;
+        $mail->Body    = $body;
+        
+        // HTMLメールの場合はテキスト版も設定
+        if ($isHtml) {
+            $mail->AltBody = strip_tags($body);
+        }
+        
+        $mail->send();
+        return true;
+        
+    } catch (PHPMailer\PHPMailer\Exception $e) {
+        error_log("メール送信エラー: " . $mail->ErrorInfo);
+        return false;
+    }
+}
+
+/**
+ * 通知メール送信（共通テンプレート）
+ */
+function sendNotificationMail($to, $subject, $message, $actionUrl = null, $actionText = null) {
+    $body = "
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset=\"UTF-8\">
+    <title>{$subject}</title>
+    <style>
+        body { font-family: 'Hiragino Sans', 'Yu Gothic', 'Meiryo', sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #3B82F6; color: white; padding: 20px; text-align: center; }
+        .content { background: #f8f9fa; padding: 30px; }
+        .footer { background: #6B7280; color: white; padding: 15px; text-align: center; font-size: 14px; }
+        .button { display: inline-block; background: #3B82F6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+        .message { background: white; padding: 20px; border-radius: 5px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <div class=\"container\">
+        <div class=\"header\">
+            <h1>AiNA Works</h1>
+        </div>
+        <div class=\"content\">
+            <div class=\"message\">
+                " . nl2br(h($message)) . "
+            </div>";
+            
+    if ($actionUrl && $actionText) {
+        $body .= "
+            <div style=\"text-align: center;\">
+                <a href=\"{$actionUrl}\" class=\"button\">{$actionText}</a>
+            </div>";
+    }
+    
+    $body .= "
+        </div>
+        <div class=\"footer\">
+            <p>このメールは AiNA Works から自動送信されています。</p>
+            <p>運営：株式会社AiNA</p>
+            <p>お心当たりのない場合は、このメールを破棄してください。</p>
+        </div>
+    </div>
+</body>
+</html>";
+    
+    return sendMail($to, $subject, $body, true);
 }
 ?>
 
