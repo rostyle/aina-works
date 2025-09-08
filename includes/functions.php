@@ -414,5 +414,88 @@ function buildSearchConditions($params, $allowedFields) {
         'where' => !empty($conditions) ? 'WHERE ' . implode(' AND ', $conditions) : ''
     ];
 }
+
+/**
+ * 404エラー表示
+ */
+function show404Error($message = 'ページが見つかりません') {
+    http_response_code(404);
+    
+    // ログに記録
+    error_log("404 Error: " . $_SERVER['REQUEST_URI'] . " - " . $message);
+    
+    // 404ページを表示
+    include BASE_PATH . '/404.php';
+    exit;
+}
+
+/**
+ * 403エラー表示
+ */
+function show403Error($message = 'アクセスが拒否されました') {
+    http_response_code(403);
+    
+    // ログに記録
+    error_log("403 Error: " . $_SERVER['REQUEST_URI'] . " - " . $message);
+    
+    // 404ページを表示（403も同じページで処理）
+    include BASE_PATH . '/404.php';
+    exit;
+}
+
+/**
+ * 500エラー表示
+ */
+function show500Error($message = 'サーバーエラーが発生しました') {
+    http_response_code(500);
+    
+    // ログに記録
+    error_log("500 Error: " . $_SERVER['REQUEST_URI'] . " - " . $message);
+    
+    // 404ページを表示（500も同じページで処理）
+    include BASE_PATH . '/404.php';
+    exit;
+}
+
+/**
+ * ページの存在確認
+ */
+function checkPageExists($pageName) {
+    $pageFile = BASE_PATH . '/' . $pageName . '.php';
+    return file_exists($pageFile);
+}
+
+/**
+ * 許可されたページかチェック
+ */
+function isAllowedPage($pageName) {
+    // 許可されたページのリスト
+    $allowedPages = [
+        'index', 'login', 'register', 'dashboard', 'profile', 'works', 'jobs',
+        'creators', 'creator-profile', 'job-detail', 'work-detail', 'post-job',
+        'edit-job', 'edit-work', 'job-applications', 'favorites', 'chat', 'chats',
+        'success-stories', 'terms', 'privacy', 'forgot-password', 'reset-password',
+        'logout', 'switch-role', 'serve'
+    ];
+    
+    return in_array($pageName, $allowedPages);
+}
+
+/**
+ * ページアクセス制御
+ */
+function validatePageAccess($pageName) {
+    // ページが存在しない場合
+    if (!checkPageExists($pageName)) {
+        show404Error('指定されたページは存在しません');
+    }
+    
+    // 許可されていないページの場合
+    if (!isAllowedPage($pageName)) {
+        show403Error('このページへのアクセスは許可されていません');
+    }
+    
+    return true;
+}
 ?>
 

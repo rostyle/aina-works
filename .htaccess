@@ -2,6 +2,11 @@ Options -Indexes
 Options -MultiViews
 DirectoryIndex index.php
 
+# エラーページ設定
+ErrorDocument 404 /aina_works/404.php
+ErrorDocument 403 /aina_works/404.php
+ErrorDocument 500 /aina_works/404.php
+
 RewriteEngine On
 
 # 直接見られたくないディレクトリをブロック
@@ -33,6 +38,19 @@ RewriteRule ^work/?$ works.php [L,QSA]
 # 拡張子あり（.が含まれる）パスは内部リライトしない
 RewriteCond %{REQUEST_URI} !\.[^/]+$
 # 拡張子なしアクセスを .php へ内部リライト（除外ディレクトリ以外）
+# ファイルが存在しない場合は404エラーを返す
+RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule ^(?!api/|assets/|uploads/|storage/|includes/|config/|sql/)(.+?)/?$ $1.php [L,QSA]
+
+# 存在しないPHPファイルへのアクセスを404エラーに
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_URI} \.php$
+RewriteRule ^(?!api/|assets/|uploads/|storage/|includes/|config/|sql/)(.+)$ - [R=404,L]
+
+# 存在しないディレクトリへのアクセスを404エラーに
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_URI} !^/(api/|assets/|uploads/|storage/|includes/|config/|sql/)
+RewriteRule ^(.*)$ - [R=404,L]
 
 
