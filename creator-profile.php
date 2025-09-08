@@ -25,7 +25,7 @@ try {
         LEFT JOIN reviews r ON u.id = r.reviewee_id
         LEFT JOIN works w ON u.id = w.user_id AND w.status = 'published'
         LEFT JOIN job_applications ja ON u.id = ja.creator_id AND ja.status = 'accepted'
-        WHERE u.id = ? AND u.user_type = 'creator' AND u.is_active = 1
+        WHERE u.id = ? AND u.is_creator = 1 AND u.is_active = 1
         GROUP BY u.id
     ", [$creatorId]);
 

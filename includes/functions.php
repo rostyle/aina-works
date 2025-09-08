@@ -246,6 +246,60 @@ function hasPermission($permission) {
 }
 
 /**
+ * ユーザーがクリエイターとして機能するかチェック
+ */
+function isUserCreator($userId = null) {
+    if ($userId === null) {
+        if (!isLoggedIn()) {
+            return false;
+        }
+        $userId = $_SESSION['user_id'];
+    }
+    
+    $db = Database::getInstance();
+    $result = $db->selectOne(
+        "SELECT is_creator FROM users WHERE id = ? AND is_active = 1",
+        [$userId]
+    );
+    
+    return $result && $result['is_creator'] == 1;
+}
+
+/**
+ * ユーザーが依頼者として機能するかチェック
+ */
+function isUserClient($userId = null) {
+    if ($userId === null) {
+        if (!isLoggedIn()) {
+            return false;
+        }
+        $userId = $_SESSION['user_id'];
+    }
+    
+    $db = Database::getInstance();
+    $result = $db->selectOne(
+        "SELECT is_client FROM users WHERE id = ? AND is_active = 1",
+        [$userId]
+    );
+    
+    return $result && $result['is_client'] == 1;
+}
+
+/**
+ * クリエイタープロフィールを表示するかチェック
+ */
+function shouldShowCreatorProfile($userId = null) {
+    return isUserCreator($userId);
+}
+
+/**
+ * 依頼者プロフィールを表示するかチェック
+ */
+function shouldShowClientProfile($userId = null) {
+    return isUserClient($userId);
+}
+
+/**
  * ロール名を日本語に変換
  */
 function getRoleDisplayName($role) {

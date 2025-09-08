@@ -43,7 +43,7 @@ try {
         FROM works w
         JOIN users u ON w.user_id = u.id
         LEFT JOIN categories c ON w.category_id = c.id
-        WHERE w.status = 'published' AND u.is_active = 1
+        WHERE w.status = 'published' AND u.is_active = 1 AND u.is_creator = 1
         " . ($search['where'] ? 'AND ' . str_replace('WHERE ', '', $search['where']) : '');
     
     $total = $db->selectOne($totalSql, $search['values'])['total'] ?? 0;
@@ -60,7 +60,7 @@ try {
         JOIN users u ON w.user_id = u.id
         LEFT JOIN categories c ON w.category_id = c.id
         LEFT JOIN reviews r ON w.id = r.work_id
-        WHERE w.status = 'published' AND u.is_active = 1
+        WHERE w.status = 'published' AND u.is_active = 1 AND u.is_creator = 1
         " . ($search['where'] ? 'AND ' . str_replace('WHERE ', '', $search['where']) : '') . "
         GROUP BY w.id
         ORDER BY {$orderBy}

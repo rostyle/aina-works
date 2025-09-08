@@ -56,7 +56,7 @@ try {
     $totalSql = "
         SELECT COUNT(DISTINCT u.id) as total
         FROM users u
-        WHERE u.user_type = 'creator' AND u.is_active = 1
+        WHERE u.is_creator = 1 AND u.is_active = 1
         {$whereClause}
     ";
     
@@ -90,7 +90,7 @@ try {
             WHERE status = 'accepted'
             GROUP BY creator_id
         ) ja_stats ON u.id = ja_stats.creator_id
-        WHERE u.user_type = 'creator' AND u.is_active = 1
+        WHERE u.is_creator = 1 AND u.is_active = 1
         {$whereClause}
         ORDER BY {$orderBy}
         LIMIT {$perPage} OFFSET {$pagination['offset']}
