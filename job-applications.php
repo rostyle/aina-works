@@ -242,7 +242,7 @@ include 'includes/header.php';
                                                 応募日: <?= formatDate($app['created_at'], 'Y年m月d日 H:i') ?>
                                             </p>
 
-                                            <div class="flex flex-wrap gap-2">
+                                            <div class="flex flex-wrap gap-2" data-application-actions>
                                                 <a href="<?= url('job-detail.php?id=' . $app['job_id']) ?>"
                                                    class="inline-flex items-center px-3 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors">
                                                     案件詳細
@@ -329,6 +329,25 @@ include 'includes/header.php';
                                                     </svg>
                                                     応募者とチャット
                                                 </a>
+
+                                                <?php if (($app['status'] ?? 'pending') === 'pending'): ?>
+                                                    <button type="button"
+                                                            data-application-id="<?= $app['id'] ?>"
+                                                            data-application-action="accept"
+                                                            class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
+                                                        受諾
+                                                    </button>
+                                                    <button type="button"
+                                                            data-application-id="<?= $app['id'] ?>"
+                                                            data-application-action="reject"
+                                                            class="inline-flex items-center px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors">
+                                                        却下
+                                                    </button>
+                                                <?php else: ?>
+                                                    <span class="inline-flex items-center px-3 py-1 text-xs font-medium rounded-full <?= ($app['status'] === 'accepted') ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700' ?>">
+                                                        <?= ($app['status'] === 'accepted') ? '受諾済み' : (($app['status'] === 'rejected') ? '却下済み' : '処理済み') ?>
+                                                    </span>
+                                                <?php endif; ?>
                                             </div>
                                         </div>
                                     </div>
@@ -342,5 +361,77 @@ include 'includes/header.php';
         <?php endif; ?>
     </div>
 </section>
+
+<?php
+$additionalJs = <<<'JS'
+<script>
+document.addEventListener('click', async function(e) {
+    const target = e.target.closest('[data-application-action]');
+    if (!target) return;
+
+    const action = target.getAttribute('data-application-action');
+    const applicationId = target.getAttribute('data-application-id');
+    if (!applicationId) return;
+
+    if (action === 'reject') {
+        const confirmed = confirm('この応募を却下しますか？');
+        if (!confirmed) return;
+    }
+
+    const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    const formData = new FormData();
+    formData.append('application_id', applicationId);
+    formData.append('action', action);
+    formData.append('csrf_token', csrf);
+
+    // ボタンの二重送信防止
+    target.disabled = true;
+
+    try {
+        const res = await fetch('api/update-application-status.php', {
+            method: 'POST',
+            body: formData
+        });
+        const result = await res.json();
+
+        if (result && result.success) {
+            if (typeof showNotification === 'function') {
+                showNotification(result.message || '操作が完了しました', 'success');
+            }
+
+            if (action === 'accept' && result.redirect_to_chat) {
+                setTimeout(() => { window.location.href = result.redirect_to_chat; }, 800);
+                return;
+            }
+
+            // UI更新：ボタン群をバッジに差し替え
+            const container = target.closest('[data-application-actions]');
+            if (container) {
+                container.querySelectorAll('[data-application-action]').forEach(btn => btn.remove());
+                const badge = document.createElement('span');
+                const accepted = action === 'accept';
+                badge.className = 'inline-flex items-center px-3 py-1 text-xs font-medium rounded-full ' + (accepted ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700');
+                badge.textContent = accepted ? '受諾済み' : '却下済み';
+                container.appendChild(badge);
+            } else {
+                location.reload();
+            }
+        } else {
+            if (typeof showNotification === 'function') {
+                showNotification((result && result.error) || '操作に失敗しました', 'error');
+            }
+            target.disabled = false;
+        }
+    } catch (err) {
+        console.error('update application status error', err);
+        if (typeof showNotification === 'function') {
+            showNotification('ネットワークエラーが発生しました', 'error');
+        }
+        target.disabled = false;
+    }
+});
+</script>
+JS;
+?>
 
 <?php include 'includes/footer.php'; ?>

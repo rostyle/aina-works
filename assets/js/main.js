@@ -423,7 +423,7 @@ function initFilters() {
     // Sort handlers
     sortSelects.forEach(select => {
         select.addEventListener('change', function() {
-            applySorting(this.value);
+            applySorting(this);
         });
     });
     
@@ -499,9 +499,12 @@ function clearAllFilters() {
     hideFilterIndicator();
 }
 
-function applySorting(sortValue) {
+function applySorting(selectEl) {
+    const sortValue = typeof selectEl === 'string' ? selectEl : (selectEl?.name === 'sort' ? selectEl.value : null);
+    if (!sortValue) {
+        return; // 非対象のセレクト変更ではトーストを出さない
+    }
     console.log('Sorting by:', sortValue);
-    // Implementation for sorting results
     showToast(`${sortValue}で並び替えました`, 'info');
 }
 

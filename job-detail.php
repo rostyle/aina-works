@@ -29,6 +29,12 @@ if (!$job) {
 // 必要スキルをデコード
 $requiredSkills = json_decode($job['required_skills'] ?? '[]', true) ?: [];
 
+// 募集関連の指標
+$acceptedCountRow = $db->selectOne("SELECT COUNT(*) as cnt FROM job_applications WHERE job_id = ? AND status = 'accepted'", [$jobId]);
+$acceptedCount = (int)($acceptedCountRow['cnt'] ?? 0);
+$hiringLimit = isset($job['hiring_limit']) ? max(1, (int)$job['hiring_limit']) : 1;
+$isRecruiting = isset($job['is_recruiting']) ? (int)$job['is_recruiting'] : 1; // カラム未導入環境は募集中扱い
+
 $pageTitle = $job['title'];
 $pageDescription = mb_substr($job['description'], 0, 150) . '...';
 
@@ -208,27 +214,84 @@ $showSuccess = isset($_GET['applied']) && $_GET['applied'] == '1';
                                     </svg>
                                     <?= $job['application_count'] ?>件の応募
                                 </span>
+                                <span class="inline-flex items-center">
+                                    <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    採用 <?= $acceptedCount ?>/<?= $hiringLimit ?> 人
+                                </span>
                             </div>
                         </div>
-                        <div class="ml-4">
-                            <span class="px-3 py-1 text-sm rounded-full 
-                                <?php
-                                switch($job['status']) {
-                                    case 'open': echo 'bg-green-100 text-green-800'; break;
-                                    case 'in_progress': echo 'bg-blue-100 text-blue-800'; break;
-                                    case 'completed': echo 'bg-gray-100 text-gray-800'; break;
-                                    case 'cancelled': echo 'bg-red-100 text-red-800'; break;
-                                }
-                                ?>">
-                                <?php
-                                switch($job['status']) {
-                                    case 'open': echo '募集中'; break;
-                                    case 'in_progress': echo '進行中'; break;
-                                    case 'completed': echo '完了'; break;
-                                    case 'cancelled': echo 'キャンセル'; break;
-                                }
-                                ?>
+                        <div class="ml-4 flex flex-col items-end space-y-2">
+                            <?php
+                            // ステータス表示の詳細設定
+                            $statusConfig = [
+                                'open' => [
+                                    'class' => 'bg-green-100 text-green-800 border-2 border-green-300',
+                                    'label' => '募集中',
+                                    'icon' => '<svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>',
+                                    'description' => 'クリエイターからの応募を受け付けています',
+                                    'bgClass' => 'bg-green-50'
+                                ],
+                                'closed' => [
+                                    'class' => 'bg-yellow-100 text-yellow-800 border-2 border-yellow-300',
+                                    'label' => '募集終了',
+                                    'icon' => '<svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path></svg>',
+                                    'description' => '新規応募の受付を終了しました',
+                                    'bgClass' => 'bg-yellow-50'
+                                ],
+                                'contracted' => [
+                                    'class' => 'bg-blue-100 text-blue-800 border-2 border-blue-300',
+                                    'label' => '契約済み',
+                                    'icon' => '<svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>',
+                                    'description' => 'クリエイターとの契約が成立し作業が開始されています',
+                                    'bgClass' => 'bg-blue-50'
+                                ],
+                                'delivered' => [
+                                    'class' => 'bg-purple-100 text-purple-800 border-2 border-purple-300',
+                                    'label' => '納品済み',
+                                    'icon' => '<svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20"><path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"></path></svg>',
+                                    'description' => '作業が完了し成果物が納品されました',
+                                    'bgClass' => 'bg-purple-50'
+                                ],
+                                'cancelled' => [
+                                    'class' => 'bg-red-100 text-red-800 border-2 border-red-300',
+                                    'label' => 'キャンセル',
+                                    'icon' => '<svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>',
+                                    'description' => 'この案件はキャンセルされました',
+                                    'bgClass' => 'bg-red-50'
+                                ],
+                                // 互換性のため
+                                'in_progress' => [
+                                    'class' => 'bg-blue-100 text-blue-800 border-2 border-blue-300',
+                                    'label' => '進行中',
+                                    'icon' => '<svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path></svg>',
+                                    'description' => '作業が進行中です',
+                                    'bgClass' => 'bg-blue-50'
+                                ],
+                                'completed' => [
+                                    'class' => 'bg-gray-100 text-gray-800 border-2 border-gray-300',
+                                    'label' => '完了',
+                                    'icon' => '<svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>',
+                                    'description' => 'プロジェクトが完了しました',
+                                    'bgClass' => 'bg-gray-50'
+                                ]
+                            ];
+                            
+                            $currentStatus = $statusConfig[$job['status']] ?? $statusConfig['open'];
+                            ?>
+                            
+                            <span class="inline-flex items-center px-4 py-2 text-sm font-semibold rounded-full <?= $currentStatus['class'] ?>">
+                                <?= $currentStatus['icon'] ?>
+                                <?= $currentStatus['label'] ?>
                             </span>
+                            
+                            <?php if ($job['status'] === 'open' && $isRecruiting === 0): ?>
+                                <span class="inline-flex items-center px-3 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-800 border border-orange-300">
+                                    <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
+                                    募集停止中
+                                </span>
+                            <?php endif; ?>
                         </div>
                     </div>
 
@@ -261,6 +324,37 @@ $showSuccess = isset($_GET['applied']) && $_GET['applied'] == '1';
                             <p class="text-lg font-semibold text-gray-900">
                                 <?= $job['remote_ok'] ? '可能' : '不可' ?>
                             </p>
+                        </div>
+                    </div>
+
+                    <!-- Status Description -->
+                    <div class="mb-4 p-4 <?= $currentStatus['bgClass'] ?> border border-gray-200 rounded-lg">
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0">
+                                <?= $currentStatus['icon'] ?>
+                            </div>
+                            <div class="ml-3">
+                                <h4 class="text-sm font-medium text-gray-900 mb-1">現在のステータス: <?= $currentStatus['label'] ?></h4>
+                                <p class="text-sm text-gray-700"><?= $currentStatus['description'] ?></p>
+                                
+                                <?php if ($job['status'] === 'open' && $isRecruiting === 0): ?>
+                                    <div class="mt-2 p-2 bg-orange-50 border border-orange-200 rounded">
+                                        <p class="text-xs text-orange-800">
+                                            <svg class="w-3 h-3 mr-1 inline" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
+                                            現在募集を一時停止中です。依頼者が募集を再開するまでお待ちください。
+                                        </p>
+                                    </div>
+                                <?php endif; ?>
+                                
+                                <?php if ($job['status'] === 'open' && $acceptedCount >= $hiringLimit): ?>
+                                    <div class="mt-2 p-2 bg-blue-50 border border-blue-200 rounded">
+                                        <p class="text-xs text-blue-800">
+                                            <svg class="w-3 h-3 mr-1 inline" fill="currentColor" viewBox="0 0 20 20"><path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"></path></svg>
+                                            募集人数に達しました（<?= $acceptedCount ?>/<?= $hiringLimit ?>人）
+                                        </p>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
                         </div>
                     </div>
 
@@ -330,14 +424,46 @@ $showSuccess = isset($_GET['applied']) && $_GET['applied'] == '1';
                     </a>
                 </div>
 
-                <!-- Application Button -->
-                <?php if (isLoggedIn() && getCurrentUser()['user_type'] === 'creator' && $job['status'] === 'open' && !$hasApplied && !$isOwnJob): ?>
+                <!-- Application Button / Client Controls -->
+                <?php if (isLoggedIn() && getCurrentUser()['user_type'] === 'creator' && $job['status'] === 'open' && $isRecruiting && ($acceptedCount < $hiringLimit) && !$hasApplied && !$isOwnJob): ?>
                     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center">
                         <h3 class="text-lg font-semibold text-gray-900 mb-4">この案件に応募</h3>
                         <button id="open-application-modal" 
                                     class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-blue-700 transition-colors">
                                 応募する
                             </button>
+                    </div>
+                <?php elseif (isLoggedIn() && $isOwnJob): ?>
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">募集管理</h3>
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between">
+                                <label for="status_select" class="text-sm text-gray-700">募集状態</label>
+                                <div class="flex items-center space-x-2">
+                                    <select id="status_select" class="px-3 py-2 border border-gray-300 rounded-md text-sm">
+                                        <option value="open" <?= $job['status'] === 'open' ? 'selected' : '' ?>>募集中</option>
+                                        <option value="closed" <?= $job['status'] === 'closed' ? 'selected' : '' ?>>募集終了</option>
+                                        <option value="contracted" <?= $job['status'] === 'contracted' ? 'selected' : '' ?>>契約済み</option>
+                                        <option value="delivered" <?= $job['status'] === 'delivered' ? 'selected' : '' ?>>納品済み</option>
+                                        <option value="cancelled" <?= $job['status'] === 'cancelled' ? 'selected' : '' ?>>キャンセル</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <label for="hiring_limit" class="text-sm text-gray-700">募集人数</label>
+                                <div class="flex items-center space-x-2">
+                                    <input type="number" id="hiring_limit" min="1" value="<?= isset($job['hiring_limit']) ? (int)$job['hiring_limit'] : 1 ?>" class="w-24 px-3 py-2 border border-gray-300 rounded-md">
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-center pt-2">
+                                <?php if ($job['status'] === 'open'): ?>
+                                <a href="<?= url('edit-job.php?id=' . $jobId) ?>" class="text-sm text-blue-600 hover:text-blue-700">案件を編集する</a>
+                                <?php else: ?>
+                                <span class="text-xs text-gray-500">編集は募集中のみ可能です</span>
+                                <?php endif; ?>
+                                <button type="button" id="btn-save-settings" class="px-3 py-2 text-sm rounded-md bg-blue-600 text-white hover:bg-blue-700">保存</button>
+                            </div>
+                        </div>
                     </div>
                 <?php elseif (isLoggedIn() && getCurrentUser()['user_type'] === 'creator' && $hasApplied): ?>
                     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center">
@@ -350,20 +476,6 @@ $showSuccess = isset($_GET['applied']) && $_GET['applied'] == '1';
                         <p class="text-sm text-gray-600 mb-4">この案件には既に応募済みです。</p>
                         <a href="<?= url('dashboard.php') ?>" 
                            class="inline-block bg-gray-600 text-white py-2 px-4 rounded-lg font-semibold hover:bg-gray-700 transition-colors">
-                            応募状況を確認
-                        </a>
-                    </div>
-                <?php elseif (isLoggedIn() && $isOwnJob): ?>
-                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center">
-                        <div class="flex items-center justify-center mb-4">
-                            <svg class="h-12 w-12 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                            </svg>
-                        </div>
-                        <h3 class="text-lg font-semibold text-gray-900 mb-2">あなたの案件です</h3>
-                        <p class="text-sm text-gray-600 mb-4">自分が投稿した案件には応募できません。</p>
-                        <a href="<?= url('job-applications.php?job_id=' . $jobId) ?>" 
-                           class="inline-block bg-blue-600 text-white py-2 px-4 rounded-lg font-semibold hover:bg-blue-700 transition-colors">
                             応募状況を確認
                         </a>
                     </div>
@@ -397,6 +509,55 @@ $showSuccess = isset($_GET['applied']) && $_GET['applied'] == '1';
             </div>
         </div>
     </div>
+<script>
+// 依頼者向け 募集管理操作
+document.addEventListener('DOMContentLoaded', function() {
+    const btnSave = document.getElementById('btn-save-settings');
+    const statusSelect = document.getElementById('status_select');
+    const inputLimit = document.getElementById('hiring_limit');
+    const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+    async function saveSettings() {
+        try {
+            console.log('保存開始');
+            const fd = new FormData();
+            fd.append('job_id', <?= $jobId ?>);
+            fd.append('csrf_token', csrf);
+            if (statusSelect && statusSelect.value) {
+                fd.append('status', statusSelect.value);
+                console.log('ステータス:', statusSelect.value);
+            }
+            const valRaw = inputLimit ? inputLimit.value : '';
+            const valNum = parseInt(valRaw || '1', 10);
+            const finalLimit = isNaN(valNum) ? 1 : Math.max(1, valNum);
+            fd.append('hiring_limit', finalLimit);
+            console.log('募集人数:', finalLimit);
+
+            const res = await fetch('api/update-job-settings.php', { method: 'POST', body: fd });
+            console.log('レスポンス:', res.status);
+            
+            if (!res.ok) {
+                throw new Error('HTTP ' + res.status);
+            }
+            
+            const json = await res.json();
+            console.log('JSON:', json);
+            
+            if (json.success) {
+                alert('更新しました: ' + (json.message || ''));
+                setTimeout(() => location.reload(), 600);
+            } else {
+                alert('エラー: ' + (json.error || '更新に失敗しました'));
+            }
+        } catch (error) {
+            console.error('保存エラー:', error);
+            alert('通信エラー: ' + error.message);
+        }
+    }
+
+    if (btnSave) btnSave.addEventListener('click', saveSettings);
+});
+</script>
 </section>
 
 <!-- Application Modal -->
@@ -562,3 +723,4 @@ document.addEventListener('DOMContentLoaded', function() {
 <?php endif; ?>
 
 <?php include 'includes/footer.php'; ?>
+
