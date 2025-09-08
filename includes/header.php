@@ -162,15 +162,51 @@ $navItems = [
                            class="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors">
                             案件を投稿
                         </a>
-                        <a href="<?= url('profile.php') ?>" 
-                           class="flex items-center space-x-2 text-gray-700 hover:text-primary-600">
-                            <div class="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
-                                <span class="text-primary-600 font-semibold text-sm">
-                                    <?= strtoupper(substr($user['nickname'] ?? $user['full_name'] ?? $user['username'] ?? 'U', 0, 1)) ?>
-                                </span>
+                        
+                        <!-- User Dropdown -->
+                        <div class="relative" id="user-menu">
+                            <button type="button" 
+                                    class="flex items-center space-x-2 text-gray-700 hover:text-primary-600 p-2 rounded-lg hover:bg-gray-50"
+                                    id="user-menu-button"
+                                    onclick="toggleUserMenu()">
+                                <div class="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
+                                    <span class="text-primary-600 font-semibold text-sm">
+                                        <?= strtoupper(substr($user['nickname'] ?? $user['full_name'] ?? $user['username'] ?? 'U', 0, 1)) ?>
+                                    </span>
+                                </div>
+                                <span><?= h($user['nickname'] ?? $user['full_name'] ?? $user['username'] ?? 'ユーザー') ?></span>
+                                <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+                            
+                            <!-- Dropdown Menu -->
+                            <div id="user-menu-dropdown" 
+                                 class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50 hidden">
+                                <a href="<?= url('profile.php') ?>" 
+                                   class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    <svg class="w-4 h-4 mr-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                    </svg>
+                                    プロフィール
+                                </a>
+                                <a href="<?= url('favorites.php') ?>" 
+                                   class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    <svg class="w-4 h-4 mr-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                    </svg>
+                                    お気に入り
+                                </a>
+                                <div class="border-t border-gray-100 my-1"></div>
+                                <a href="<?= url('logout.php') ?>" 
+                                   class="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                                    <svg class="w-4 h-4 mr-3 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                    </svg>
+                                    ログアウト
+                                </a>
                             </div>
-                            <span><?= h($user['nickname'] ?? $user['full_name'] ?? $user['username'] ?? 'ユーザー') ?></span>
-                        </a>
+                        </div>
                     <?php else: ?>
                         <a href="<?= url('login.php') ?>" 
                            class="text-gray-600 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
@@ -201,7 +237,7 @@ $navItems = [
             <div class="absolute top-0 left-0 w-full h-full bg-black/50" onclick="closeMobileMenu()"></div>
             
             <!-- Menu Panel -->
-            <div id="mobile-menu-panel" class="absolute right-0 top-0 h-full w-80 max-w-[85vw] bg-white shadow-xl transform translate-x-full transition-transform duration-300 ease-out flex flex-col overflow-hidden">
+            <div id="mobile-menu-panel" class="absolute right-0 top-0 h-full w-80 max-w-[90vw] bg-white shadow-xl transform translate-x-full transition-transform duration-300 ease-out flex flex-col overflow-hidden">
                 <!-- Header -->
                 <div class="bg-gradient-to-r from-primary-600 to-secondary-600 p-4 text-white">
                     <div class="flex items-center justify-between">
@@ -212,8 +248,8 @@ $navItems = [
                                         <?= strtoupper(substr($user['nickname'] ?? $user['full_name'] ?? $user['username'] ?? 'U', 0, 1)) ?>
                                     </span>
                                 </div>
-                                <div>
-                                    <div class="font-semibold">
+                                <div class="min-w-0 flex-1">
+                                    <div class="font-semibold truncate">
                                         <?= h($user['nickname'] ?? $user['full_name'] ?? $user['username'] ?? 'ユーザー') ?>
                                     </div>
                                     <div class="text-sm text-white/80">AiNA Works</div>
@@ -222,9 +258,9 @@ $navItems = [
                                 <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
                                     <span class="text-white font-bold">AW</span>
                     </div>
-                    <div>
-                                    <div class="font-semibold">AiNA Works</div>
-                                    <div class="text-sm text-white/80">クリエイティブプラットフォーム</div>
+                    <div class="min-w-0 flex-1">
+                                    <div class="font-semibold truncate">AiNA Works</div>
+                                    <div class="text-sm text-white/80 truncate">クリエイティブプラットフォーム</div>
                     </div>
                             <?php endif; ?>
                 </div>
@@ -282,7 +318,7 @@ $navItems = [
                                 <a href="<?= url('success-stories.php') ?>" 
                                    class="flex items-center space-x-3 p-3 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
                                     <svg class="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 713.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 713.138-3.138z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
                                             </svg>
                                     <span class="font-medium">成功事例</span>
                                 </a>
@@ -301,7 +337,7 @@ $navItems = [
                                 <a href="<?= url('logout.php') ?>" 
                                    class="flex items-center space-x-3 p-3 rounded-lg text-red-600 hover:bg-red-50 transition-colors mt-2">
                                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 713-3h4a3 3 0 713 3v1" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                                     </svg>
                                     <span class="font-medium">ログアウト</span>
                                 </a>
@@ -334,7 +370,7 @@ $navItems = [
                             <a href="<?= url('terms.php') ?>" 
                                class="flex items-center space-x-3 p-2 text-sm text-gray-500 hover:text-gray-700 transition-colors">
                                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 712-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                             </svg>
                                 <span>利用規約</span>
                             </a>
@@ -427,6 +463,28 @@ $navItems = [
                 closeMobileMenu();
             }
         });
+    });
+
+    // ユーザーメニュードロップダウン機能
+    function toggleUserMenu() {
+        const dropdown = document.getElementById('user-menu-dropdown');
+        const isHidden = dropdown.classList.contains('hidden');
+        
+        if (isHidden) {
+            dropdown.classList.remove('hidden');
+        } else {
+            dropdown.classList.add('hidden');
+        }
+    }
+
+    // ドロップダウン外をクリックした時に閉じる
+    document.addEventListener('click', function(event) {
+        const userMenu = document.getElementById('user-menu');
+        const dropdown = document.getElementById('user-menu-dropdown');
+        
+        if (userMenu && dropdown && !userMenu.contains(event.target)) {
+            dropdown.classList.add('hidden');
+        }
     });
     </script>
 
