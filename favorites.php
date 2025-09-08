@@ -6,13 +6,13 @@ $pageDescription = 'あなたがお気に入りに登録した作品やクリエ
 
 // ログインチェック
 if (!isLoggedIn()) {
-    redirect(url('login.php'));
+    redirect(url('login'));
 }
 
 $user = getCurrentUser();
 if (!$user) {
     session_destroy();
-    redirect(url('login.php'));
+    redirect(url('login'));
 }
 
 $db = Database::getInstance();
@@ -80,14 +80,14 @@ include 'includes/header.php';
         <!-- Tabs -->
         <div class="mb-8">
             <nav class="flex space-x-8" aria-label="Tabs">
-                <a href="<?= url('favorites.php?tab=works') ?>" 
+                <a href="<?= url('favorites?tab=works') ?>" 
                    class="<?= $tab === 'works' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' ?> whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">
                     お気に入り作品
                     <span class="ml-2 bg-gray-100 text-gray-900 py-0.5 px-2.5 rounded-full text-xs">
                         <?= $favoriteWorksCount ?>
                     </span>
                 </a>
-                <a href="<?= url('favorites.php?tab=creators') ?>" 
+                <a href="<?= url('favorites?tab=creators') ?>" 
                    class="<?= $tab === 'creators' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' ?> whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">
                     お気に入りクリエイター
                     <span class="ml-2 bg-gray-100 text-gray-900 py-0.5 px-2.5 rounded-full text-xs">
@@ -107,7 +107,7 @@ include 'includes/header.php';
                     <h3 class="mt-2 text-sm font-medium text-gray-900">お気に入りの作品がありません</h3>
                     <p class="mt-1 text-sm text-gray-500">気になる作品を見つけてお気に入りに追加しましょう</p>
                     <div class="mt-6">
-                        <a href="<?= url('works.php') ?>" class="btn btn-primary">
+                        <a href="<?= url('work') ?>" class="btn btn-primary">
                             作品を探す
                         </a>
                     </div>
@@ -127,7 +127,7 @@ include 'includes/header.php';
                             <div class="p-4">
                                 <div class="flex justify-between items-start mb-2">
                                     <h3 class="text-lg font-semibold text-gray-900 line-clamp-2">
-                                        <a href="<?= url('work-detail.php?id=' . $work['id']) ?>" class="hover:text-primary-600">
+                                        <a href="<?= url('work-detail?id=' . $work['id']) ?>" class="hover:text-primary-600">
                                             <?= h($work['title']) ?>
                                         </a>
                                     </h3>
@@ -140,7 +140,7 @@ include 'includes/header.php';
                                 </div>
                                 
                                 <p class="text-sm text-gray-600 mb-2">
-                                    by <a href="<?= url('creator-profile.php?id=' . $work['user_id']) ?>" class="text-primary-600 hover:underline">
+                                    by <a href="<?= url('creator-profile?id=' . $work['user_id']) ?>" class="text-primary-600 hover:underline">
                                         <?= h($work['creator_nickname'] ?: $work['creator_name']) ?>
                                     </a>
                                 </p>
@@ -187,7 +187,7 @@ include 'includes/header.php';
                     <h3 class="mt-2 text-sm font-medium text-gray-900">お気に入りのクリエイターがいません</h3>
                     <p class="mt-1 text-sm text-gray-500">気になるクリエイターを見つけてお気に入りに追加しましょう</p>
                     <div class="mt-6">
-                        <a href="<?= url('creators.php') ?>" class="btn btn-primary">
+                        <a href="<?= url('creators') ?>" class="btn btn-primary">
                             クリエイターを探す
                         </a>
                     </div>
@@ -203,7 +203,7 @@ include 'includes/header.php';
                                          class="w-12 h-12 rounded-full object-cover">
                                     <div>
                                         <h3 class="text-lg font-semibold text-gray-900">
-                                            <a href="<?= url('creator-profile.php?id=' . $creator['id']) ?>" class="hover:text-primary-600">
+                                            <a href="<?= url('creator-profile?id=' . $creator['id']) ?>" class="hover:text-primary-600">
                                                 <?= h($creator['nickname'] ?: $creator['full_name']) ?>
                                             </a>
                                         </h3>

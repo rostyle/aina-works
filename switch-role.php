@@ -3,7 +3,7 @@ require_once 'config/config.php';
 
 // ログインチェック
 if (!isLoggedIn()) {
-    redirect(url('login.php'));
+    redirect(url('login'));
 }
 
 // POSTリクエストのみ許可（CSRFトークン付き）またはGETリクエスト（簡単な切り替え用）
@@ -14,7 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // CSRFトークン検証
     if (!verifyCsrfToken($_POST['csrf_token'] ?? '')) {
         setFlash('error', '不正なリクエストです。');
-        redirect(url('dashboard.php'));
+        redirect(url('dashboard'));
     }
     
     $newRole = $_POST['role'] ?? null;
@@ -27,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 if (!$newRole) {
     setFlash('error', 'ロールが指定されていません。');
-    redirect(url('dashboard.php'));
+    redirect(url('dashboard'));
 }
 
 // ロール切り替え実行

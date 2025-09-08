@@ -118,7 +118,7 @@ try {
             'message' => '応募を受諾しました',
             'new_status' => 'accepted',
             'chat_room_id' => $roomId,
-            'redirect_to_chat' => url('chat.php?user_id=' . $application['creator_id'])
+            'redirect_to_chat' => url('chat?user_id=' . $application['creator_id'])
         ]);
     } else { // reject
         $db->update(

@@ -4,7 +4,7 @@ require_once 'config/config.php';
 $workId = (int)($_GET['id'] ?? 0);
 
 if (!$workId) {
-    redirect(url('works.php'));
+    redirect(url('work'));
 }
 
 // データベース接続
@@ -32,7 +32,7 @@ try {
     ", [$workId]);
 
     if (!$work) {
-        redirect(url('works.php'));
+        redirect(url('work'));
     }
 
     // 閲覧数更新
@@ -78,7 +78,7 @@ try {
     }
     
     // エラー時は404ページにリダイレクト
-    redirect(url('works.php'));
+    redirect(url('work'));
 }
 
 $pageTitle = h($work['title']) . ' - 作品詳細';
@@ -98,7 +98,7 @@ include 'includes/header.php';
         <ol class="flex items-center space-x-2 text-sm">
             <li><a href="<?= url() ?>" class="text-gray-500 hover:text-gray-700">ホーム</a></li>
             <li><span class="text-gray-400">/</span></li>
-            <li><a href="<?= url('works.php') ?>" class="text-gray-500 hover:text-gray-700">作品一覧</a></li>
+            <li><a href="<?= url('work') ?>" class="text-gray-500 hover:text-gray-700">作品一覧</a></li>
             <li><span class="text-gray-400">/</span></li>
             <li><span class="text-gray-900 font-medium"><?= h($work['title']) ?></span></li>
         </ol>
@@ -340,11 +340,11 @@ include 'includes/header.php';
                     <div class="text-center py-8">
                         <p class="text-gray-600 mb-4">レビューを投稿するにはログインが必要です</p>
                         <div class="space-x-4">
-                            <a href="<?= url('login.php?redirect=' . urlencode($_SERVER['REQUEST_URI'])) ?>" 
+                            <a href="<?= url('login?redirect=' . urlencode($_SERVER['REQUEST_URI'])) ?>" 
                                class="inline-block px-6 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors">
                                 ログイン
                             </a>
-                            <a href="<?= url('register.php') ?>" 
+                            <a href="<?= url('register') ?>" 
                                class="inline-block px-6 py-2 bg-gray-100 text-gray-700 font-medium rounded-md hover:bg-gray-200 transition-colors">
                                 新規登録
                             </a>
@@ -524,14 +524,14 @@ include 'includes/header.php';
                                 自分の作品です
                             </button>
                         <?php else: ?>
-                            <a href="<?= url('chat.php?user_id=' . $work['user_id']) ?>" class="w-full px-4 py-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors inline-flex items-center justify-center">
+                            <a href="<?= url('chat?user_id=' . $work['user_id']) ?>" class="w-full px-4 py-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors inline-flex items-center justify-center">
                                 <svg class="h-5 w-5 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-3.582 8-8 8a8.955 8.955 0 01-4.126-.98L3 20l1.98-5.874A8.955 8.955 0 013 12c0-4.418 3.582-8 8-8s8 3.582 8 8z" />
                                 </svg>
                                 チャットを開始
                             </a>
                         <?php endif; ?>
-                        <a href="<?= url('creator-profile.php?id=' . $work['user_id']) ?>" class="w-full px-4 py-3 border border-gray-300 text-gray-700 font-medium rounded-md hover:bg-gray-50 transition-colors inline-flex items-center justify-center">
+                        <a href="<?= url('creator-profile?id=' . $work['user_id']) ?>" class="w-full px-4 py-3 border border-gray-300 text-gray-700 font-medium rounded-md hover:bg-gray-50 transition-colors inline-flex items-center justify-center">
                             <svg class="h-5 w-5 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                             </svg>
@@ -583,7 +583,7 @@ include 'includes/header.php';
                     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 relative z-0 overflow-hidden">
                         <div class="flex items-center justify-between mb-4">
                             <h4 class="font-semibold text-gray-900">この作者の他の作品</h4>
-                            <a href="<?= url('creator-profile.php?id=' . $work['user_id']) ?>" 
+                            <a href="<?= url('creator-profile?id=' . $work['user_id']) ?>" 
                                class="text-sm text-blue-600 hover:text-blue-800 font-medium">
                                 すべて見る →
                             </a>
@@ -593,7 +593,7 @@ include 'includes/header.php';
                                 <div class="carousel-track flex transition-transform duration-500">
                                     <?php foreach ($relatedWorks as $relatedWork): ?>
                                         <div class="carousel-slide min-w-full">
-                                            <a href="<?= url('work-detail.php?id=' . $relatedWork['id']) ?>" 
+                                            <a href="<?= url('work-detail?id=' . $relatedWork['id']) ?>" 
                                                class="block group hover:bg-gray-50 rounded-lg p-3 transition-colors">
                                                 <div class="flex space-x-4">
                                                     <div class="relative flex-shrink-0">
@@ -661,7 +661,7 @@ include 'includes/header.php';
                             <h3 class="mt-2 text-sm font-medium text-gray-900">他の作品はまだありません</h3>
                             <p class="mt-1 text-sm text-gray-500">この作者の最新作をお楽しみに！</p>
                             <div class="mt-6">
-                                <a href="<?= url('creator-profile.php?id=' . $work['user_id']) ?>" 
+                                <a href="<?= url('creator-profile?id=' . $work['user_id']) ?>" 
                                    class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
                                     作者のプロフィールを見る
                                 </a>

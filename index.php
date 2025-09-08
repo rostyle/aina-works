@@ -85,7 +85,7 @@ include 'includes/header.php';
             
             <!-- Enhanced Search Bar -->
             <div class="max-w-3xl mx-auto mb-12 animate-scale-in hero-search-container" style="animation-delay: 0.4s;">
-                <form action="<?= url('works.php') ?>" method="GET" class="relative group">
+                <form action="<?= url('work') ?>" method="GET" class="relative group">
                     <div class="absolute inset-0 bg-gradient-to-r from-primary-500 to-secondary-500 rounded-2xl blur opacity-20 group-hover:opacity-30 transition-opacity duration-500"></div>
                     <div class="relative bg-white/95 backdrop-blur-lg rounded-2xl p-2 shadow-2xl hero-search-wrapper">
                         <div class="flex items-center hero-search-form">
@@ -136,14 +136,14 @@ include 'includes/header.php';
 
             <!-- CTA Buttons -->
             <div class="flex flex-col sm:flex-row gap-4 justify-center mb-16 animate-fade-in" style="animation-delay: 0.6s;">
-                <a href="<?= url('register.php?type=creator') ?>" class="btn btn-outline btn-lg btn-shimmer group">
+                <a href="<?= url('register?type=creator') ?>" class="btn btn-outline btn-lg btn-shimmer group">
                     <svg class="h-5 w-5 mr-2 group-hover:rotate-12 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
                     </svg>
                     クリエイター登録
                     <span class="ml-2 group-hover:translate-x-1 transition-transform duration-300">→</span>
                 </a>
-                <a href="<?= url('register.php?type=client') ?>" class="btn btn-secondary btn-lg btn-shimmer group">
+                <a href="<?= url('register?type=client') ?>" class="btn btn-secondary btn-lg btn-shimmer group">
                     <svg class="h-5 w-5 mr-2 group-hover:scale-110 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2V6z" />
                     </svg>
@@ -211,7 +211,7 @@ include 'includes/header.php';
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-12 categories-grid">
             <?php foreach ($categories as $category): ?>
-                <a href="<?= url('works.php?category_id=' . $category['id']) ?>" 
+                <a href="<?= url('work?category_id=' . $category['id']) ?>" 
                    class="group card hover-lift fade-in-on-scroll category-card">
                     <div class="p-8 text-center">
                         <!-- Enhanced Icon with Gradient Background -->
@@ -262,7 +262,7 @@ include 'includes/header.php';
         
         <!-- View All Categories Button -->
         <div class="text-center fade-in-on-scroll">
-            <a href="<?= url('works.php') ?>" class="btn btn-outline btn-lg group">
+            <a href="<?= url('work') ?>" class="btn btn-outline btn-lg group">
                 すべてのカテゴリを見る
                 <svg class="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
@@ -334,7 +334,7 @@ include 'includes/header.php';
                         
                         <!-- View Work Button (appears on hover) -->
                         <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500">
-                            <a href="<?= url('work-detail.php?id=' . $work['id']) ?>" 
+                            <a href="<?= url('work-detail?id=' . $work['id']) ?>" 
                                class="btn btn-primary btn-lg backdrop-blur-lg transform scale-90 group-hover:scale-100 transition-all duration-300">
                                 作品を見る
                             </a>
@@ -344,7 +344,7 @@ include 'includes/header.php';
                     <!-- Enhanced Content -->
                     <div class="p-8">
                         <h3 class="text-xl font-bold text-gray-900 mb-3 group-hover:text-primary-600 transition-colors duration-300">
-                            <a href="<?= url('work-detail.php?id=' . $work['id']) ?>" class="line-clamp-2">
+                            <a href="<?= url('work-detail?id=' . $work['id']) ?>" class="line-clamp-2">
                                 <?= h($work['title']) ?>
                             </a>
                         </h3>
@@ -399,7 +399,7 @@ include 'includes/header.php';
                             </div>
                             <div class="flex items-center">
                                 <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-8 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                                 </svg>
                                 <span><?= $work['review_count'] ?? 0 ?></span>
                             </div>
@@ -411,7 +411,7 @@ include 'includes/header.php';
 
         <!-- View All Button -->
         <div class="text-center fade-in-on-scroll">
-            <a href="<?= url('works.php') ?>" class="btn btn-primary btn-xl btn-shimmer group">
+            <a href="<?= url('work') ?>" class="btn btn-primary btn-xl btn-shimmer group">
                 すべての作品を見る
                 <svg class="ml-3 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
@@ -432,11 +432,11 @@ include 'includes/header.php';
         <div class="text-center mb-16 fade-in-on-scroll">
             <div class="inline-flex items-center px-4 py-2 bg-green-100 text-green-800 rounded-full text-sm font-medium mb-6">
                 <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 01-2 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
                 実績・成果
             </div>
-                                        <h2 id="stats-heading" class="text-display-md md:text-display-lg font-bold text-gray-900 mb-6 text-balance">
+            <h2 id="stats-heading" class="text-display-md md:text-display-lg font-bold text-gray-900 mb-6 text-balance">
                 <span class="text-gradient">AiNA Works</span>の実績
             </h2>
             <p class="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
@@ -573,14 +573,14 @@ include 'includes/header.php';
             </p>
             
             <div class="flex flex-col sm:flex-row gap-6 justify-center mb-16">
-                <a href="<?= url('register.php?type=creator') ?>" class="btn btn-outline btn-xl btn-shimmer group bg-white/10 backdrop-blur-lg border-white/30 text-white hover:bg-white hover:text-primary-600">
+                <a href="<?= url('register?type=creator') ?>" class="btn btn-outline btn-xl btn-shimmer group bg-white/10 backdrop-blur-lg border-white/30 text-white hover:bg-white hover:text-primary-600">
                     <svg class="h-6 w-6 mr-3 group-hover:rotate-12 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
                     </svg>
                     クリエイター登録
                     <span class="ml-3 group-hover:translate-x-1 transition-transform duration-300">→</span>
                 </a>
-                <a href="<?= url('register.php?type=client') ?>" class="btn btn-secondary btn-xl btn-shimmer group">
+                <a href="<?= url('register?type=client') ?>" class="btn btn-secondary btn-xl btn-shimmer group">
                     <svg class="h-6 w-6 mr-3 group-hover:scale-110 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2V6z" />
                     </svg>

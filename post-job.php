@@ -176,19 +176,19 @@ include 'includes/header.php';
                 </p>
                 
                 <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                    <a href="<?= url('login.php') ?>" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors">
+                    <a href="<?= url('login') ?>" class="inline-flex items-center px-6 py-3 border border透明 text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors">
                         <svg class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
                         </svg>
                         ログイン
                     </a>
-                    <a href="<?= url('register.php?type=client') ?>" class="inline-flex items-center px-6 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+                    <a href="<?= url('register?type=client') ?>" class="inline-flex items-center px-6 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors">
                         <svg class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                         </svg>
                         依頼者として新規登録
                     </a>
-                    <a href="<?= url('register.php?type=creator') ?>" class="inline-flex items-center px-6 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+                    <a href="<?= url('register?type=creator') ?>" class="inline-flex items-center px-6 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors">
                         <svg class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
                         </svg>
@@ -396,7 +396,7 @@ include 'includes/header.php';
             <!-- Submit Button -->
             <div class="border-t border-gray-200 pt-8">
                 <div class="flex justify-end space-x-4">
-                    <a href="<?= url('jobs.php') ?>" 
+                    <a href="<?= url('jobs') ?>" 
                        class="px-6 py-3 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors">
                         キャンセル
                     </a>

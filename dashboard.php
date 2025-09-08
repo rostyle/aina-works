@@ -6,14 +6,14 @@ $pageDescription = 'あなたの活動状況を確認';
 
 // ログインチェック
 if (!isLoggedIn()) {
-    redirect(url('login.php'));
+    redirect(url('login'));
 }
 
 $user = getCurrentUser();
 if (!$user) {
     // ユーザー情報が取得できない場合はログアウト
     session_destroy();
-    redirect(url('login.php'));
+    redirect(url('login'));
 }
 
 $currentRole = getCurrentRole();
@@ -161,7 +161,7 @@ include 'includes/header.php';
                             </svg>
                             <h2 class="text-lg font-semibold text-gray-900">応募した案件（クリエイターとして）</h2>
                         </div>
-                        <a href="<?= url('job-applications.php') ?>" 
+                        <a href="<?= url('job-applications') ?>" 
                            class="text-sm text-blue-600 hover:text-blue-500">
                             全て見る
                         </a>
@@ -198,13 +198,13 @@ include 'includes/header.php';
                             <h2 class="text-lg font-semibold text-gray-900">投稿した案件（依頼者として）</h2>
                         </div>
                         <div class="flex space-x-3">
-                            <a href="<?= url('job-applications.php') ?>" class="text-blue-600 hover:text-blue-500 text-sm font-medium">
+                            <a href="<?= url('job-applications') ?>" class="text-blue-600 hover:text-blue-500 text-sm font-medium">
                                 <svg class="h-4 w-4 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 7.89a2 2 0 002.83 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                                 </svg>
                                 応募管理
                             </a>
-                            <a href="<?= url('post-job.php') ?>" class="text-blue-600 hover:text-blue-500 text-sm font-medium">
+                            <a href="<?= url('post-job') ?>" class="text-blue-600 hover:text-blue-500 text-sm font-medium">
                                 新規投稿
                             </a>
                         </div>
@@ -216,7 +216,7 @@ include 'includes/header.php';
                             <div class="border border-gray-200 rounded-lg p-4">
                                 <div class="flex justify-between items-start mb-2">
                                     <h3 class="font-semibold text-gray-900">
-                                        <a href="<?= url('job-detail.php?id=' . $job['id']) ?>" class="hover:text-blue-600">
+                                        <a href="<?= url('job-detail?id=' . $job['id']) ?>" class="hover:text-blue-600">
                                             <?= h($job['title']) ?>
                                         </a>
                                     </h3>
@@ -245,7 +245,7 @@ include 'includes/header.php';
                                         <?= formatPrice($job['budget_min']) ?> - <?= formatPrice($job['budget_max']) ?>
                                     </p>
                                     <p class="text-xs text-gray-500">
-                                        <a href="<?= url('job-applications.php?job_id=' . $job['id']) ?>" 
+                                        <a href="<?= url('job-applications?job_id=' . $job['id']) ?>" 
                                            class="text-blue-600 hover:text-blue-500">
                                             <?= $job['application_count'] ?>件の応募
                                         </a>
@@ -266,7 +266,7 @@ include 'includes/header.php';
                 </div>
                 <div class="p-6">
                     <div class="space-y-4">
-                        <a href="<?= url('edit-work.php') ?>" 
+                        <a href="<?= url('edit-work') ?>" 
                            class="flex items-center p-4 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors">
                             <div class="p-2 bg-blue-100 rounded-lg mr-4">
                                 <svg class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -279,7 +279,7 @@ include 'includes/header.php';
                             </div>
                         </a>
                         
-                        <a href="<?= url('works.php?user=' . $user['id']) ?>" 
+                        <a href="<?= url('work?user=' . $user['id']) ?>" 
                            class="flex items-center p-4 border border-gray-200 rounded-lg hover:border-purple-300 hover:bg-purple-50 transition-colors">
                             <div class="p-2 bg-purple-100 rounded-lg mr-4">
                                 <svg class="h-6 w-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -293,7 +293,7 @@ include 'includes/header.php';
                             </div>
                         </a>
                         
-                        <a href="<?= url('jobs.php') ?>" 
+                        <a href="<?= url('jobs') ?>" 
                            class="flex items-center p-4 border border-gray-200 rounded-lg hover:border-green-300 hover:bg-green-50 transition-colors">
                             <div class="p-2 bg-green-100 rounded-lg mr-4">
                                 <svg class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -306,7 +306,7 @@ include 'includes/header.php';
                             </div>
                         </a>
                         
-                        <a href="<?= url('favorites.php?tab=works') ?>" 
+                        <a href="<?= url('favorites?tab=works') ?>" 
                            class="flex items-center p-4 border border-gray-200 rounded-lg hover:border-pink-300 hover:bg-pink-50 transition-colors">
                             <div class="p-2 bg-pink-100 rounded-lg mr-4">
                                 <svg class="h-6 w-6 text-pink-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -320,7 +320,7 @@ include 'includes/header.php';
                             </div>
                         </a>
                         
-                        <a href="<?= url('chats.php') ?>" 
+                        <a href="<?= url('chats') ?>" 
                            class="flex items-center p-4 border border-gray-200 rounded-lg hover:border-orange-300 hover:bg-orange-50 transition-colors">
                             <div class="p-2 bg-orange-100 rounded-lg mr-4">
                                 <svg class="h-6 w-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -343,7 +343,7 @@ include 'includes/header.php';
                 </div>
                 <div class="p-6">
                     <div class="space-y-4">
-                        <a href="<?= url('post-job.php') ?>" 
+                        <a href="<?= url('post-job') ?>" 
                            class="flex items-center p-4 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors">
                             <div class="p-2 bg-blue-100 rounded-lg mr-4">
                                 <svg class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -356,7 +356,7 @@ include 'includes/header.php';
                             </div>
                         </a>
 
-                        <a href="<?= url('jobs.php?client=' . $user['id']) ?>" 
+                        <a href="<?= url('jobs?client=' . $user['id']) ?>" 
                            class="flex items-center p-4 border border-gray-200 rounded-lg hover:border-purple-300 hover:bg-purple-50 transition-colors">
                             <div class="p-2 bg-purple-100 rounded-lg mr-4">
                                 <svg class="h-6 w-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -370,7 +370,7 @@ include 'includes/header.php';
                             </div>
                         </a>
 
-                        <a href="<?= url('creators.php') ?>" 
+                        <a href="<?= url('creators') ?>" 
                            class="flex items-center p-4 border border-gray-200 rounded-lg hover:border-green-300 hover:bg-green-50 transition-colors">
                             <div class="p-2 bg-green-100 rounded-lg mr-4">
                                 <svg class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -383,7 +383,7 @@ include 'includes/header.php';
                             </div>
                         </a>
 
-                        <a href="<?= url('works.php') ?>" 
+                        <a href="<?= url('work') ?>" 
                            class="flex items-center p-4 border border-gray-200 rounded-lg hover:border-indigo-300 hover:bg-indigo-50 transition-colors">
                             <div class="p-2 bg-indigo-100 rounded-lg mr-4">
                                 <svg class="h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -396,7 +396,7 @@ include 'includes/header.php';
                             </div>
                         </a>
                         
-                        <a href="<?= url('favorites.php?tab=creators') ?>" 
+                        <a href="<?= url('favorites?tab=creators') ?>" 
                            class="flex items-center p-4 border border-gray-200 rounded-lg hover:border-pink-300 hover:bg-pink-50 transition-colors">
                             <div class="p-2 bg-pink-100 rounded-lg mr-4">
                                 <svg class="h-6 w-6 text-pink-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -410,7 +410,7 @@ include 'includes/header.php';
                             </div>
                         </a>
                         
-                        <a href="<?= url('chats.php') ?>" 
+                        <a href="<?= url('chats') ?>" 
                            class="flex items-center p-4 border border-gray-200 rounded-lg hover:border-orange-300 hover:bg-orange-50 transition-colors">
                             <div class="p-2 bg-orange-100 rounded-lg mr-4">
                                 <svg class="h-6 w-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">

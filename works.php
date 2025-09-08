@@ -316,7 +316,7 @@ include 'includes/header.php';
                             
                             <div class="p-6">
                                 <h3 class="text-lg font-semibold text-gray-900 mb-2">
-                                    <a href="<?= url('work-detail.php?id=' . $work['id']) ?>" class="hover:text-blue-600 transition-colors">
+                                    <a href="<?= url('work-detail?id=' . $work['id']) ?>" class="hover:text-blue-600 transition-colors">
                                         <?= h($work['title']) ?>
                                     </a>
                                 </h3>

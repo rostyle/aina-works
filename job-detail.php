@@ -4,7 +4,7 @@ require_once 'config/config.php';
 // 案件ID取得
 $jobId = (int)($_GET['id'] ?? 0);
 if (!$jobId) {
-    redirect(url('jobs.php'));
+    redirect(url('jobs'));
 }
 
 // データベース接続
@@ -23,7 +23,7 @@ $job = $db->selectOne("
 
 if (!$job) {
     setFlash('error', '案件が見つかりません。');
-    redirect(url('jobs.php'));
+    redirect(url('jobs'));
 }
 
 // 必要スキルをデコード
@@ -68,7 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_application'])
     if (!isLoggedIn()) {
         error_log('ログインしていません');
         setFlash('error', 'ログインが必要です。');
-        redirect(url('job-detail.php?id=' . $jobId));
+        redirect(url('job-detail?id=' . $jobId));
     }
 
     $user = getCurrentUser();
@@ -77,13 +77,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_application'])
     // クリエイター以外の応募ブロック
     if ($user['user_type'] !== 'creator') {
         setFlash('error', 'クリエイターのみ応募できます。');
-        redirect(url('job-detail.php?id=' . $jobId));
+        redirect(url('job-detail?id=' . $jobId));
     }
     
     // 自分の案件かチェック
     if ($job['client_id'] == $user['id']) {
         setFlash('error', '自分の案件には応募できません。');
-        redirect(url('job-detail.php?id=' . $jobId));
+        redirect(url('job-detail?id=' . $jobId));
     }
 
     // 入力値取得（数値は下限ガード）
@@ -97,17 +97,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_application'])
     if ($coverLetter === '') {
         error_log('応募メッセージが空です');
         setFlash('error', '応募メッセージを入力してください。');
-        redirect(url('job-detail.php?id=' . $jobId));
+        redirect(url('job-detail?id=' . $jobId));
     }
     if ($proposedPrice <= 0) {
         error_log('提案金額が無効です: ' . $proposedPrice);
         setFlash('error', '提案金額を正しく入力してください。');
-        redirect(url('job-detail.php?id=' . $jobId));
+        redirect(url('job-detail?id=' . $jobId));
     }
     if ($proposedDuration <= 0) {
         error_log('提案期間が無効です: ' . $proposedDuration);
         setFlash('error', '提案期間を正しく入力してください。');
-        redirect(url('job-detail.php?id=' . $jobId));
+        redirect(url('job-detail?id=' . $jobId));
     }
 
     // 重複チェック
@@ -146,7 +146,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_application'])
         setFlash('success', '応募を送信しました！');
 
         // 成功時は同ページに戻して成功バナーを表示
-        redirect(url('job-detail.php?id=' . $jobId . '&applied=1'));
+        redirect(url('job-detail?id=' . $jobId . '&applied=1'));
         
     } catch (Exception $e) {
         error_log('応募処理エラー: ' . $e->getMessage());
@@ -179,7 +179,7 @@ $showSuccess = isset($_GET['applied']) && $_GET['applied'] == '1';
         <?php endif; ?>
         <!-- Back Button -->
         <div class="mb-6">
-            <a href="<?= url('jobs.php') ?>" class="inline-flex items-center text-gray-600 hover:text-blue-600">
+            <a href="<?= url('jobs') ?>" class="inline-flex items-center text-gray-600 hover:text-blue-600">
                 <svg class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
@@ -418,7 +418,7 @@ $showSuccess = isset($_GET['applied']) && $_GET['applied'] == '1';
                             <?php endif; ?>
                         </div>
                     </div>
-                    <a href="<?= url('creator-profile.php?id=' . $job['client_id']) ?>" 
+                    <a href="<?= url('creator-profile?id=' . $job['client_id']) ?>" 
                        class="text-blue-600 hover:text-blue-500 text-sm font-medium">
                         プロフィールを見る
                     </a>
@@ -457,7 +457,7 @@ $showSuccess = isset($_GET['applied']) && $_GET['applied'] == '1';
                             </div>
                             <div class="flex justify-between items-center pt-2">
                                 <?php if ($job['status'] === 'open'): ?>
-                                <a href="<?= url('edit-job.php?id=' . $jobId) ?>" class="text-sm text-blue-600 hover:text-blue-700">案件を編集する</a>
+                                <a href="<?= url('edit-job?id=' . $jobId) ?>" class="text-sm text-blue-600 hover:text-blue-700">案件を編集する</a>
                                 <?php else: ?>
                                 <span class="text-xs text-gray-500">編集は募集中のみ可能です</span>
                                 <?php endif; ?>
@@ -474,7 +474,7 @@ $showSuccess = isset($_GET['applied']) && $_GET['applied'] == '1';
                         </div>
                         <h3 class="text-lg font-semibold text-gray-900 mb-2">応募済み</h3>
                         <p class="text-sm text-gray-600 mb-4">この案件には既に応募済みです。</p>
-                        <a href="<?= url('dashboard.php') ?>" 
+                        <a href="<?= url('dashboard') ?>"
                            class="inline-block bg-gray-600 text-white py-2 px-4 rounded-lg font-semibold hover:bg-gray-700 transition-colors">
                             応募状況を確認
                         </a>
@@ -482,13 +482,13 @@ $showSuccess = isset($_GET['applied']) && $_GET['applied'] == '1';
                 <?php elseif (!isLoggedIn()): ?>
                     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center">
                         <h3 class="text-lg font-semibold text-gray-900 mb-4">応募するにはログインが必要です</h3>
-                        <a href="<?= url('login.php?redirect=' . urlencode('job-detail.php?id=' . $jobId)) ?>" 
+                        <a href="<?= url('login?redirect=' . urlencode('job-detail?id=' . $jobId)) ?>" 
                            class="inline-block bg-blue-600 text-white py-2 px-4 rounded-lg font-semibold hover:bg-blue-700 transition-colors">
                             ログイン
                         </a>
                         <p class="text-sm text-gray-600 mt-2">
                             アカウントをお持ちでない場合は
-                            <a href="<?= url('register.php') ?>" class="text-blue-600 hover:text-blue-500">
+                            <a href="<?= url('register') ?>" class="text-blue-600 hover:text-blue-500">
                                 クリエイター登録
                             </a>
                         </p>
@@ -499,7 +499,7 @@ $showSuccess = isset($_GET['applied']) && $_GET['applied'] == '1';
                         <p class="text-sm text-gray-600">
                             この案件は応募受付を終了しています
                         </p>
-                        <a href="<?= url('jobs.php') ?>" 
+                        <a href="<?= url('jobs') ?>" 
                            class="inline-block bg-gray-600 text-white py-2 px-4 rounded-lg font-semibold hover:bg-gray-700 transition-colors">
                             他の案件を見る
                         </a>

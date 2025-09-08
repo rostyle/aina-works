@@ -5,5 +5,5 @@ require_once 'config/config.php';
 session_destroy();
 
 setFlash('success', 'ログアウトしました。');
-redirect(url('index.php'));
+redirect(url());
 ?>

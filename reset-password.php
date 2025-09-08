@@ -6,7 +6,7 @@ $pageDescription = '新しいパスワードを設定してください';
 
 // 既にログインしている場合はリダイレクト
 if (isLoggedIn()) {
-    redirect(url('dashboard.php'));
+    redirect(url('dashboard'));
 }
 
 $errors = [];
@@ -143,7 +143,7 @@ include 'includes/header.php';
             </div>
             
             <div class="text-center">
-                <a href="<?= url('login.php') ?>" 
+                <a href="<?= url('login') ?>" 
                    class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                     ログインページへ
                 </a>
@@ -263,12 +263,14 @@ include 'includes/header.php';
             </div>
             
             <div class="text-center space-y-4">
-                <a href="<?= url('forgot-password.php') ?>" 
+                <a href="<?= url('forgot-password') ?>" 
+                <a href="<?= url('forgot-password') ?>" 
                    class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                     新しいリセットリンクを取得
                 </a>
                 
-                <a href="<?= url('login.php') ?>" class="font-medium text-blue-600 hover:text-blue-500">
+                <a href="<?= url('login') ?>" class="font-medium text-blue-600 hover:text-blue-500">
+                <a href="<?= url('login') ?>" class="font-medium text-blue-600 hover:text-blue-500">
                     ← ログインページに戻る
                 </a>
             </div>

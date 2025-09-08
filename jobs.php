@@ -230,7 +230,7 @@ include 'includes/header.php';
                 <?= number_format($total) ?>件の案件が見つかりました
             </h2>
             <?php if ($keyword || $categoryId || $budgetMin || $location || $urgency || $status): ?>
-                <a href="<?= url('jobs.php') ?>" class="text-purple-600 hover:text-purple-700 font-medium">
+                <a href="<?= url('jobs') ?>" class="text-purple-600 hover:text-purple-700 font-medium">
                     検索条件をクリア
                 </a>
             <?php endif; ?>
@@ -313,7 +313,7 @@ include 'includes/header.php';
                 </div>
                 <h3 class="text-xl font-semibold text-gray-900 mb-2">案件が見つかりませんでした</h3>
                 <p class="text-gray-600 mb-6">検索条件を変更して再度お試しください。</p>
-                <a href="<?= url('jobs.php') ?>" class="inline-flex items-center px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+                <a href="<?= url('jobs') ?>" class="inline-flex items-center px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
                     すべての案件を見る
                 </a>
             </div>
@@ -349,7 +349,7 @@ include 'includes/header.php';
                                 </div>
                                 
                                 <h3 class="text-lg font-semibold text-gray-900 mb-2 line-clamp-2">
-                                    <a href="<?= url('job-detail.php?id=' . $job['id']) ?>" class="hover:text-purple-600 transition-colors">
+                                    <a href="<?= url('job-detail?id=' . $job['id']) ?>" class="hover:text-purple-600 transition-colors">
                                         <?= h($job['title']) ?>
                                     </a>
                                 </h3>
@@ -489,7 +489,7 @@ include 'includes/header.php';
                                         <span title="<?= $currentStatus['description'] ?>"><?= $currentStatus['description'] ?></span>
                                     </div>
                                 </div>
-                                <a href="<?= url('job-detail.php?id=' . $job['id']) ?>" 
+                                <a href="<?= url('job-detail?id=' . $job['id']) ?>" 
                                    class="inline-flex items-center px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors">
                                     詳細を見る
                                 </a>
@@ -523,7 +523,7 @@ include 'includes/header.php';
                     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                         <div class="flex items-start justify-between mb-3">
                             <h4 class="text-lg font-semibold text-gray-900 line-clamp-1">
-                                <a href="<?= url('job-detail.php?id=' . $job['id']) ?>" class="hover:text-purple-600 transition-colors">
+                                <a href="<?= url('job-detail?id=' . $job['id']) ?>" class="hover:text-purple-600 transition-colors">
                                     <?= h($job['title']) ?>
                                 </a>
                             </h4>
@@ -585,7 +585,7 @@ include 'includes/header.php';
             優秀なクリエイターとのマッチングをサポートします。<br>
             まずは無料で案件を投稿してみませんか？
         </p>
-        <a href="<?= url('post-job.php') ?>" 
+        <a href="<?= url('post-job') ?>" 
            class="inline-flex items-center px-8 py-4 bg-purple-600 text-white text-lg font-semibold rounded-lg hover:bg-purple-700 transition-colors shadow-lg">
             案件を投稿する
             <svg class="ml-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

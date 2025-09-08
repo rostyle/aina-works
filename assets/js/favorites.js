@@ -8,7 +8,7 @@ async function toggleLike(workId, buttonElement) {
         // ボタンを無効化
         buttonElement.disabled = true;
         
-        const response = await fetch('/api/like.php', {
+        const response = await fetch('./api/like.php', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -70,7 +70,7 @@ async function toggleFavorite(targetType, targetId, buttonElement) {
         const isFavorited = buttonElement.classList.contains('favorited');
         const action = isFavorited ? 'remove' : 'add';
         
-        const response = await fetch('/api/favorite.php', {
+        const response = await fetch('./api/favorite.php', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

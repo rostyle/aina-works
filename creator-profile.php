@@ -4,7 +4,7 @@ require_once 'config/config.php';
 $creatorId = (int)($_GET['id'] ?? 0);
 
 if (!$creatorId) {
-    redirect(url('creators.php'));
+    redirect(url('creators'));
 }
 
 // データベース接続
@@ -30,7 +30,7 @@ try {
     ", [$creatorId]);
 
     if (!$creator) {
-        redirect(url('creators.php'));
+        redirect(url('creators'));
     }
 
     // スキル取得
@@ -70,7 +70,7 @@ try {
     // エラーログを記録
     error_log("Creator profile error: " . $e->getMessage());
     // クリエイター一覧ページにリダイレクト
-    redirect(url('creators.php'));
+    redirect(url('creators'));
 }
 
 $pageTitle = h($creator['full_name']) . ' - クリエイタープロフィール';
@@ -85,7 +85,7 @@ include 'includes/header.php';
         <ol class="flex items-center space-x-2 text-sm">
             <li><a href="<?= url() ?>" class="text-gray-500 hover:text-gray-700">ホーム</a></li>
             <li><span class="text-gray-400">/</span></li>
-            <li><a href="<?= url('creators.php') ?>" class="text-gray-500 hover:text-gray-700">クリエイター一覧</a></li>
+            <li><a href="<?= url('creators') ?>" class="text-gray-500 hover:text-gray-700">クリエイター一覧</a></li>
             <li><span class="text-gray-400">/</span></li>
             <li><span class="text-gray-900 font-medium"><?= h($creator['full_name']) ?></span></li>
         </ol>
@@ -198,7 +198,7 @@ include 'includes/header.php';
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
                     <div class="flex justify-between items-center mb-6">
                         <h2 class="text-xl font-semibold text-gray-900">ポートフォリオ</h2>
-                        <a href="<?= url('works.php?creator_id=' . $creator['id']) ?>" class="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                        <a href="<?= url('work?creator_id=' . $creator['id']) ?>" class="text-blue-600 hover:text-blue-700 text-sm font-medium">
                             すべて見る →
                         </a>
                     </div>
@@ -212,7 +212,7 @@ include 'includes/header.php';
                                     <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-opacity duration-300"></div>
                                 </div>
                                 <h3 class="font-medium text-gray-900 mb-1">
-                                    <a href="<?= url('work-detail.php?id=' . $work['id']) ?>" class="hover:text-blue-600 transition-colors">
+                                    <a href="<?= url('work-detail?id=' . $work['id']) ?>" class="hover:text-blue-600 transition-colors">
                                         <?= h($work['title']) ?>
                                     </a>
                                 </h3>
@@ -276,7 +276,7 @@ include 'includes/header.php';
                             自分のプロフィールです
                         </button>
                     <?php else: ?>
-                        <a href="<?= url('chat.php?user_id=' . $creator['id']) ?>" class="w-full block text-center px-4 py-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors">
+                        <a href="<?= url('chat?user_id=' . $creator['id']) ?>" class="w-full block text-center px-4 py-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors">
                             <svg class="h-5 w-5 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-3.582 8-8 8a8.955 8.955 0 01-4.126-.98L3 20l1.98-5.874A8.955 8.955 0 013 12c0-4.418 3.582-8 8-8s8 3.582 8 8z" />
                             </svg>

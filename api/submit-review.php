@@ -63,7 +63,7 @@ try {
     if (!$work) {
         $_SESSION['flash_message'] = '作品が見つかりません';
         $_SESSION['flash_type'] = 'error';
-        header('Location: ../works.php');
+        header('Location: ../work');
         exit;
     }
     
@@ -71,7 +71,7 @@ try {
     if (!isLoggedIn()) {
         $_SESSION['flash_message'] = 'ログインが必要です';
         $_SESSION['flash_type'] = 'error';
-        header('Location: ../login.php');
+        header('Location: ../login');
         exit;
     }
     
@@ -79,7 +79,7 @@ try {
     if ($work['creator_id'] == $currentUser['id']) {
         $_SESSION['flash_message'] = '自分の作品にはレビューできません';
         $_SESSION['flash_type'] = 'error';
-        header('Location: ../work-detail.php?id=' . $workId);
+        header('Location: ../work-detail?id=' . $workId);
         exit;
     }
     
@@ -108,7 +108,7 @@ try {
         // 成功時はリダイレクト
         $_SESSION['flash_message'] = 'レビューを投稿しました。ありがとうございます！';
         $_SESSION['flash_type'] = 'success';
-        header('Location: ../work-detail.php?id=' . $workId);
+        header('Location: ../work-detail?id=' . $workId);
         exit;
     } else {
         jsonResponse(['error' => 'レビューの保存に失敗しました'], 500);

@@ -316,7 +316,7 @@ include 'includes/header.php';
                                          class="w-16 h-16 rounded-full">
                                     <div class="flex-1 min-w-0">
                                         <h3 class="text-lg font-semibold text-gray-900 truncate">
-                                            <a href="<?= url('creator-profile.php?id=' . $creator['id']) ?>" class="hover:text-blue-600 transition-colors">
+                                            <a href="<?= url('creator-profile?id=' . $creator['id']) ?>" class="hover:text-blue-600 transition-colors">
                                                 <?= h($creator['full_name']) ?>
                                             </a>
                                         </h3>
@@ -404,7 +404,7 @@ include 'includes/header.php';
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                                             </svg>
                                         </button>
-                                        <a href="<?= url('creator-profile.php?id=' . $creator['id']) ?>" class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors">
+                                        <a href="<?= url('creator-profile?id=' . $creator['id']) ?>" class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors">
                                             プロフィール
                                         </a>
                                     </div>

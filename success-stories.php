@@ -160,7 +160,7 @@ include 'includes/header.php';
             </button>
 
             <?php if ($categoryId || $sortBy !== 'newest'): ?>
-                <a href="<?= url('success-stories.php') ?>" class="text-green-600 hover:text-green-700 font-medium">
+                <a href="<?= url('success-stories') ?>" class="text-green-600 hover:text-green-700 font-medium">
                     リセット
                 </a>
             <?php endif; ?>
@@ -188,7 +188,7 @@ include 'includes/header.php';
                 </div>
                 <h3 class="text-xl font-semibold text-gray-900 mb-2">成功事例が見つかりませんでした</h3>
                 <p class="text-gray-600 mb-6">条件を変更して再度お試しください。</p>
-                <a href="<?= url('success-stories.php') ?>" class="inline-flex items-center px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                <a href="<?= url('success-stories') ?>" class="inline-flex items-center px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
                     すべての事例を見る
                 </a>
             </div>
@@ -220,7 +220,7 @@ include 'includes/header.php';
 
                             <!-- Title -->
                             <h3 class="text-lg font-semibold text-gray-900 mb-2 line-clamp-2">
-                                <a href="<?= url('work-detail.php?id=' . $story['id']) ?>" class="hover:text-green-600 transition-colors">
+                                <a href="<?= url('work-detail?id=' . $story['id']) ?>" class="hover:text-green-600 transition-colors">
                                     <?= h($story['title']) ?>
                                 </a>
                             </h3>
@@ -268,7 +268,8 @@ include 'includes/header.php';
                                     </div>
 
                                     <!-- View Details -->
-                                    <a href="<?= url('work-detail.php?id=' . $story['id']) ?>" 
+                                    <a href="<?= url('work-detail?id=' . $story['id']) ?>" 
+                                    <a href="<?= url('work-detail?id=' . $story['id']) ?>" 
                                        class="text-green-600 hover:text-green-700 text-sm font-medium">
                                         詳細を見る →
                                     </a>
@@ -395,14 +396,14 @@ include 'includes/header.php';
             あなたのプロジェクトを成功に導きます
         </p>
         <div class="flex flex-col sm:flex-row gap-4 justify-center">
-            <a href="<?= url('post-job.php') ?>" 
+            <a href="<?= url('post-job') ?>" 
                class="inline-flex items-center px-8 py-4 bg-white text-green-600 text-lg font-semibold rounded-lg hover:bg-gray-50 transition-colors shadow-lg">
                 案件を投稿する
                 <svg class="ml-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                 </svg>
             </a>
-            <a href="<?= url('creators.php') ?>" 
+            <a href="<?= url('creators') ?>" 
                class="inline-flex items-center px-8 py-4 border-2 border-white text-white text-lg font-semibold rounded-lg hover:bg-white hover:text-green-600 transition-colors">
                 クリエイターを探す
                 <svg class="ml-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

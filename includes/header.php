@@ -9,12 +9,12 @@ $user = isLoggedIn() ? getCurrentUser() : null;
 
 // ナビゲーションアイテムを定義
 $navItems = [
-    ['url' => 'dashboard.php', 'label' => 'ダッシュボード', 'icon' => 'M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 01-2-2z'],
-    ['url' => 'works.php', 'label' => '作品を探す', 'icon' => 'M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z'],
-    ['url' => 'creators.php', 'label' => 'クリエイター', 'icon' => 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z'],
-    ['url' => 'jobs.php', 'label' => '案件一覧', 'icon' => 'M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2V6z'],
-    ['url' => 'chats.php', 'label' => 'チャット', 'icon' => 'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-8 8a8.955 8.955 0 01-4.126-.98L3 20l1.98-5.874A8.955 8.955 0 013 12c0-4.418 3.582-8 8-8s8 3.582 8 8z'],
-    ['url' => 'job-applications.php', 'label' => '応募管理', 'icon' => 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z']
+    ['url' => 'dashboard', 'label' => 'ダッシュボード', 'icon' => 'M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 01-2-2z'],
+    ['url' => 'work', 'label' => '作品を探す', 'icon' => 'M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z'],
+    ['url' => 'creators', 'label' => 'クリエイター', 'icon' => 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z'],
+    ['url' => 'jobs', 'label' => '案件一覧', 'icon' => 'M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2V6z'],
+    ['url' => 'chats', 'label' => 'チャット', 'icon' => 'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-8 8a8.955 8.955 0 01-4.126-.98L3 20l1.98-5.874A8.955 8.955 0 013 12c0-4.418 3.582-8 8-8s8 3.582 8 8z'],
+    ['url' => 'job-applications', 'label' => '応募管理', 'icon' => 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z']
 ];
 ?>
 
@@ -143,7 +143,7 @@ $navItems = [
             <div class="flex justify-between items-center h-16">
                 <!-- Logo -->
                 <div class="flex items-center">
-                    <a href="<?= url('index.php') ?>" class="flex items-center space-x-3">
+                    <a href="./" class="flex items-center space-x-3">
                         <div class="w-8 h-8 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-lg flex items-center justify-center">
                             <span class="text-white font-bold text-sm">AW</span>
                             </div>
@@ -168,7 +168,7 @@ $navItems = [
                 <!-- Desktop User Menu -->
                 <div class="hidden lg:flex items-center space-x-4">
                     <?php if (isLoggedIn()): ?>
-                        <a href="<?= url('post-job.php') ?>" 
+                        <a href="<?= url('post-job') ?>" 
                            class="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors">
                             案件を投稿
                         </a>
@@ -193,14 +193,14 @@ $navItems = [
                             <!-- Dropdown Menu -->
                             <div id="user-menu-dropdown" 
                                  class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50 hidden">
-                                <a href="<?= url('profile.php') ?>" 
+                                <a href="<?= url('profile') ?>" 
                                    class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                     <svg class="w-4 h-4 mr-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                     </svg>
                                     プロフィール
                                 </a>
-                                <a href="<?= url('favorites.php') ?>" 
+                                <a href="<?= url('favorites') ?>" 
                                    class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                     <svg class="w-4 h-4 mr-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
@@ -208,7 +208,7 @@ $navItems = [
                                     お気に入り
                                 </a>
                                 <div class="border-t border-gray-100 my-1"></div>
-                                <a href="<?= url('logout.php') ?>" 
+                                <a href="<?= url('logout') ?>" 
                                    class="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50">
                                     <svg class="w-4 h-4 mr-3 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -218,11 +218,11 @@ $navItems = [
                             </div>
                         </div>
                     <?php else: ?>
-                        <a href="<?= url('login.php') ?>" 
+                        <a href="<?= url('login') ?>" 
                            class="text-gray-600 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
                             ログイン
                         </a>
-                        <a href="<?= url('register.php') ?>" 
+                        <a href="<?= url('register') ?>" 
                            class="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors">
                             登録
                         </a>
@@ -298,7 +298,7 @@ $navItems = [
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="<?= $item['icon'] ?>" />
                                             </svg>
                                 <span class="font-medium"><?= $item['label'] ?></span>
-                                <?php if (isLoggedIn() && $item['url'] === 'chats.php'): ?>
+                                <?php if (isLoggedIn() && $item['url'] === 'chats'): ?>
                                     <span id="mobile-chat-badge" class="ml-auto w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center hidden">0</span>
                                         <?php endif; ?>
                                     </a>
@@ -309,15 +309,15 @@ $navItems = [
                             <div class="pt-4 mt-4 border-t border-gray-200">
                                 <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">アカウント</h3>
                                 
-                                <a href="<?= url('profile.php') ?>" 
-                                   class="flex items-center space-x-3 p-3 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors <?= strpos($currentPath, 'profile.php') !== false ? 'bg-primary-50 text-primary-600' : '' ?>">
+                                <a href="<?= url('profile') ?>" 
+                                   class="flex items-center space-x-3 p-3 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors <?= strpos($currentPath, 'profile') !== false ? 'bg-primary-50 text-primary-600' : '' ?>">
                                     <svg class="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                                 </svg>
                                     <span class="font-medium">プロフィール</span>
                                 </a>
 
-                                <a href="<?= url('favorites.php') ?>" 
+                                <a href="<?= url('favorites') ?>" 
                                    class="flex items-center space-x-3 p-3 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
                                     <svg class="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
@@ -325,7 +325,7 @@ $navItems = [
                                     <span class="font-medium">お気に入り</span>
                                 </a>
 
-                                <a href="<?= url('success-stories.php') ?>" 
+                                <a href="<?= url('success-stories') ?>" 
                                    class="flex items-center space-x-3 p-3 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
                                     <svg class="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
@@ -336,7 +336,7 @@ $navItems = [
 
                             <!-- Actions Section -->
                             <div class="pt-4 mt-4 border-t border-gray-200">
-                    <a href="<?= url('post-job.php') ?>" 
+                    <a href="<?= url('post-job') ?>" 
                                    class="flex items-center justify-center space-x-2 p-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-lg hover:from-primary-600 hover:to-primary-700 transition-colors">
                                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -344,7 +344,7 @@ $navItems = [
                                     <span class="font-semibold">案件を投稿</span>
                                 </a>
 
-                                <a href="<?= url('logout.php') ?>" 
+                                <a href="<?= url('logout') ?>" 
                                    class="flex items-center space-x-3 p-3 rounded-lg text-red-600 hover:bg-red-50 transition-colors mt-2">
                                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -355,7 +355,7 @@ $navItems = [
                         <?php else: ?>
                             <!-- Guest Actions -->
                             <div class="pt-4 mt-4 border-t border-gray-200 space-y-2">
-                            <a href="<?= url('login.php') ?>" 
+                            <a href="<?= url('login') ?>" 
                                    class="flex items-center justify-center space-x-2 p-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
                                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 713-3h7a3 3 0 713 3v1" />
@@ -363,12 +363,12 @@ $navItems = [
                                     <span class="font-semibold">ログイン</span>
                             </a>
 
-                                <a href="<?= url('register.php?type=creator') ?>" 
+                                <a href="<?= url('register?type=creator') ?>" 
                                    class="flex items-center justify-center space-x-2 p-3 border-2 border-primary-600 text-primary-600 rounded-lg hover:bg-primary-50 transition-colors">
                                     <span class="font-semibold">クリエイター登録</span>
                                 </a>
 
-                                <a href="<?= url('register.php?type=client') ?>" 
+                                <a href="<?= url('register?type=client') ?>" 
                                    class="flex items-center justify-center space-x-2 p-3 border-2 border-secondary-600 text-secondary-600 rounded-lg hover:bg-secondary-50 transition-colors">
                                     <span class="font-semibold">クライアント登録</span>
                                 </a>
@@ -377,7 +377,7 @@ $navItems = [
 
                         <!-- Footer Links -->
                         <div class="pt-4 mt-4 border-t border-gray-200 space-y-2">
-                            <a href="<?= url('terms.php') ?>" 
+                            <a href="<?= url('terms') ?>" 
                                class="flex items-center space-x-3 p-2 text-sm text-gray-500 hover:text-gray-700 transition-colors">
                                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -385,7 +385,7 @@ $navItems = [
                                 <span>利用規約</span>
                             </a>
 
-                            <a href="<?= url('privacy.php') ?>" 
+                            <a href="<?= url('privacy') ?>" 
                                class="flex items-center space-x-3 p-2 text-sm text-gray-500 hover:text-gray-700 transition-colors">
                                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />

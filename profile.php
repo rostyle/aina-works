@@ -3,7 +3,7 @@ require_once 'config/config.php';
 
 // ログインチェック
 if (!isLoggedIn()) {
-    redirect(url('login.php'));
+    redirect(url('login'));
 }
 
 $user = getCurrentUser();

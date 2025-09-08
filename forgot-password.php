@@ -6,7 +6,7 @@ $pageDescription = 'パスワードをリセットするためのメールを送
 
 // 既にログインしている場合はリダイレクト
 if (isLoggedIn()) {
-    redirect(url('dashboard.php'));
+    redirect(url('dashboard'));
 }
 
 $errors = [];
@@ -144,7 +144,7 @@ include 'includes/header.php';
             </div>
             
             <div class="text-center">
-                <a href="<?= url('login.php') ?>" class="font-medium text-blue-600 hover:text-blue-500">
+                <a href="<?= url('login') ?>" class="font-medium text-blue-600 hover:text-blue-500">
                     ← ログインページに戻る
                 </a>
             </div>
@@ -197,7 +197,7 @@ include 'includes/header.php';
                 </div>
 
                 <div class="text-center">
-                    <a href="<?= url('login.php') ?>" class="font-medium text-blue-600 hover:text-blue-500">
+                    <a href="<?= url('login') ?>" class="font-medium text-blue-600 hover:text-blue-500">
                         ← ログインページに戻る
                     </a>
                 </div>

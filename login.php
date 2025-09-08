@@ -6,7 +6,7 @@ $pageDescription = 'AiNA Worksにログインしてください';
 
 // 既にログインしている場合はリダイレクト
 if (isLoggedIn()) {
-    redirect(url('dashboard.php'));
+    redirect(url('dashboard'));
 }
 
 $errors = [];
@@ -50,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     setFlash('success', 'ログインしました。');
                     
                     // リダイレクト先を決定
-                    $redirectUrl = $_GET['redirect'] ?? 'dashboard.php';
+                    $redirectUrl = $_GET['redirect'] ?? 'dashboard';
                     redirect(url($redirectUrl));
                 } else {
                     $errors['general'] = 'メールアドレスまたはパスワードが間違っています。';
@@ -77,7 +77,7 @@ include 'includes/header.php';
             </h2>
             <p class="mt-2 text-center text-sm text-gray-600">
                 アカウントをお持ちでない場合は
-                <a href="<?= url('register.php') ?>" class="font-medium text-blue-600 hover:text-blue-500">
+                <a href="<?= url('register') ?>" class="font-medium text-blue-600 hover:text-blue-500">
                     新規登録
                 </a>
             </p>

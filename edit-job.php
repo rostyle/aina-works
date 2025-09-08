@@ -6,11 +6,11 @@ $db = Database::getInstance();
 
 $jobId = (int)($_GET['id'] ?? 0);
 if (!$jobId) {
-    redirect(url('jobs.php'));
+    redirect(url('jobs'));
 }
 
 if (!isLoggedIn()) {
-    redirect(url('login.php?redirect=' . urlencode('edit-job.php?id=' . $jobId)));
+    redirect(url('login?redirect=' . urlencode('edit-job?id=' . $jobId)));
 }
 
 $currentUser = getCurrentUser();
@@ -18,17 +18,17 @@ $currentUser = getCurrentUser();
 $job = $db->selectOne("SELECT * FROM jobs WHERE id = ?", [$jobId]);
 if (!$job) {
     setFlash('error', '案件が見つかりません');
-    redirect(url('jobs.php'));
+    redirect(url('jobs'));
 }
 
 if ((int)$job['client_id'] !== (int)$currentUser['id']) {
     setFlash('error', 'この案件を編集する権限がありません');
-    redirect(url('job-detail.php?id=' . $jobId));
+    redirect(url('job-detail?id=' . $jobId));
 }
 
 if ($job['status'] !== 'open') {
     setFlash('error', '募集中の案件のみ編集できます');
-    redirect(url('job-detail.php?id=' . $jobId));
+    redirect(url('job-detail?id=' . $jobId));
 }
 
 $categories = $db->select("SELECT * FROM categories WHERE is_active = 1 ORDER BY sort_order ASC");
@@ -87,7 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ]
                 );
                 setFlash('success', '案件を更新しました');
-                redirect(url('job-detail.php?id=' . $jobId));
+                redirect(url('job-detail?id=' . $jobId));
             } catch (Exception $e) {
                 $errors[] = '更新に失敗しました。再度お試しください。';
             }
@@ -167,7 +167,7 @@ include 'includes/header.php';
             </div>
 
             <div class="flex justify-end space-x-3">
-                <a href="<?= url('job-detail.php?id=' . $jobId) ?>" class="px-4 py-2 rounded-lg border border-gray-300 text-gray-700">戻る</a>
+                <a href="<?= url('job-detail?id=' . $jobId) ?>" class="px-4 py-2 rounded-lg border border-gray-300 text-gray-700">戻る</a>
                 <button type="submit" class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700">保存</button>
             </div>
         </form>

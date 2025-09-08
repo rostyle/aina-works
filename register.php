@@ -6,7 +6,7 @@ $pageDescription = 'AiNA Worksに新規登録してクリエイターとして�
 
 // 既にログインしている場合はリダイレクト
 if (isLoggedIn()) {
-    redirect(url('dashboard.php'));
+    redirect(url('dashboard'));
 }
 
 // データベース接続
@@ -128,7 +128,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['user_type'] = 'creator';
 
                 setFlash('success', 'アカウントを作成しました。AiNA Worksへようこそ！');
-                redirect(url('dashboard.php'));
+                redirect(url('dashboard'));
 
             } catch (Exception $e) {
                 $db->rollback();
@@ -160,7 +160,7 @@ include 'includes/header.php';
             </h2>
             <p class="mt-2 text-sm text-gray-600">
                 既にアカウントをお持ちの場合は
-                <a href="<?= url('login.php') ?>" class="font-medium text-blue-600 hover:text-blue-500">
+                <a href="<?= url('login') ?>" class="font-medium text-blue-600 hover:text-blue-500">
                     ログイン
                 </a>
             </p>
@@ -352,9 +352,9 @@ include 'includes/header.php';
                        required
                        class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mt-1">
                 <label for="terms" class="ml-3 text-sm text-gray-700">
-                    <a href="<?= url('terms.php') ?>" class="text-blue-600 hover:text-blue-500">利用規約</a>
+                    <a href="<?= url('terms') ?>" class="text-blue-600 hover:text-blue-500">利用規約</a>
                     および
-                    <a href="<?= url('privacy.php') ?>" class="text-blue-600 hover:text-blue-500">プライバシーポリシー</a>
+                    <a href="<?= url('privacy') ?>" class="text-blue-600 hover:text-blue-500">プライバシーポリシー</a>
                     に同意します <span class="text-red-500">*</span>
                 </label>
                 <?php if (!empty($errors['terms'])): ?>

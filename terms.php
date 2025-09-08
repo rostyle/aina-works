@@ -119,7 +119,7 @@ require_once __DIR__ . '/includes/header.php';
 
         <!-- Back to Top -->
         <div class="text-center mt-8">
-            <a href="<?= url('index.php') ?>" 
+            <a href="<?= url() ?>" 
                class="inline-flex items-center px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-xl transition-all duration-300 hover:scale-105 shadow-lg">
                 <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />

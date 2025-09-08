@@ -3,7 +3,7 @@ require_once 'config/config.php';
 
 // ログイン確認
 if (!isLoggedIn()) {
-    redirect(url('login.php'));
+    redirect(url('login'));
 }
 
 $user = getCurrentUser();
@@ -71,7 +71,7 @@ try {
 
             if (!$job) {
                 setFlash('error', '案件が見つかりません。');
-                redirect(url('dashboard.php'));
+                redirect(url('dashboard'));
             }
 
             $clientApplications = $db->select("
@@ -122,10 +122,10 @@ include 'includes/header.php';
                 <?php if ($user['user_type'] !== 'creator'): ?>
                     <div class="flex space-x-3">
                         <?php if ($jobId): ?>
-                            <a href="<?= url('job-applications.php') ?>"
+                            <a href="<?= url('job-applications') ?>"
                                class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors">全ての応募を見る</a>
                         <?php endif; ?>
-                        <a href="<?= url('dashboard.php') ?>"
+                        <a href="<?= url('dashboard') ?>"
                            class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">ダッシュボード</a>
                     </div>
                 <?php endif; ?>
@@ -182,8 +182,8 @@ include 'includes/header.php';
                 <h3 class="text-lg font-medium text-gray-900 mb-2">応募がありません</h3>
                 <p class="text-gray-600">
                     まだ応募した案件も応募された案件もありません。
-                    <a href="<?= url('jobs.php') ?>" class="text-blue-600 hover:text-blue-500">案件を探す</a>か
-                    <a href="<?= url('post-job.php') ?>" class="text-blue-600 hover:text-blue-500">案件を投稿</a>してみましょう。
+                    <a href="<?= url('jobs') ?>" class="text-blue-600 hover:text-blue-500">案件を探す</a>か
+                    <a href="<?= url('post-job') ?>" class="text-blue-600 hover:text-blue-500">案件を投稿</a>してみましょう。
                 </p>
             </div>
         <?php else: ?>
@@ -216,14 +216,14 @@ include 'includes/header.php';
 
                                         <div class="flex-1">
                                             <h3 class="text-lg font-semibold text-gray-900 mb-2">
-                                                <a href="<?= url('job-detail.php?id=' . $app['job_id']) ?>" class="hover:text-blue-600">
+                                                <a href="<?= url('job-detail?id=' . $app['job_id']) ?>" class="hover:text-blue-600">
                                                     <?= h($app['job_title'] ?? '案件') ?>
                                                 </a>
                                             </h3>
 
                                             <p class="text-sm text-gray-600 mb-2">
                                                 依頼者:
-                                                <a href="<?= url('creator-profile.php?id=' . ($app['client_id'] ?? 0)) ?>"
+                                                <a href="<?= url('creator-profile?id=' . ($app['client_id'] ?? 0)) ?>"
                                                    class="text-blue-600 hover:text-blue-500 font-medium">
                                                     <?= h($app['client_name'] ?? 'Unknown') ?>
                                                 </a>
@@ -243,7 +243,7 @@ include 'includes/header.php';
                                             </p>
 
                                             <div class="flex flex-wrap gap-2" data-application-actions>
-                                                <a href="<?= url('job-detail.php?id=' . $app['job_id']) ?>"
+                                                <a href="<?= url('job-detail?id=' . $app['job_id']) ?>"
                                                    class="inline-flex items-center px-3 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors">
                                                     案件詳細
                                                 </a>
@@ -283,7 +283,7 @@ include 'includes/header.php';
 
                                         <div class="flex-1">
                                             <h3 class="text-lg font-semibold text-gray-900 mb-2">
-                                                <a href="<?= url('creator-profile.php?id=' . ($app['creator_id'] ?? 0)) ?>" class="hover:text-blue-600">
+                                                <a href="<?= url('creator-profile?id=' . ($app['creator_id'] ?? 0)) ?>" class="hover:text-blue-600">
                                                     <?= h($app['creator_name'] ?? 'Unknown') ?>
                                                 </a>
                                             </h3>
@@ -291,7 +291,7 @@ include 'includes/header.php';
                                             <?php if (!$jobId): ?>
                                                 <p class="text-sm text-gray-600 mb-2">
                                                     案件:
-                                                    <a href="<?= url('job-detail.php?id=' . $app['job_id']) ?>" class="text-blue-600 hover:text-blue-500">
+                                                    <a href="<?= url('job-detail?id=' . $app['job_id']) ?>" class="text-blue-600 hover:text-blue-500">
                                                         <?= h($app['job_title'] ?? '案件') ?>
                                                     </a>
                                                 </p>
@@ -312,17 +312,17 @@ include 'includes/header.php';
                                             </p>
 
                                             <div class="flex flex-wrap gap-2">
-                                                <a href="<?= url('creator-profile.php?id=' . ($app['creator_id'] ?? 0)) ?>"
+                                                <a href="<?= url('creator-profile?id=' . ($app['creator_id'] ?? 0)) ?>"
                                                    class="inline-flex items-center px-3 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors">
                                                     プロフィール
                                                 </a>
                                                 <?php if (!$jobId): ?>
-                                                    <a href="<?= url('job-detail.php?id=' . $app['job_id']) ?>"
+                                                    <a href="<?= url('job-detail?id=' . $app['job_id']) ?>"
                                                        class="inline-flex items-center px-3 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors">
                                                         案件詳細
                                                     </a>
                                                 <?php endif; ?>
-                                                <a href="<?= url('chat.php?user_id=' . ($app['creator_id'] ?? 0)) ?>"
+                                                <a href="<?= url('chat?user_id=' . ($app['creator_id'] ?? 0)) ?>"
                                                    class="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors">
                                                     <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />

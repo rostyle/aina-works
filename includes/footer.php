@@ -31,25 +31,25 @@
                 <div>
                     <h3 class="text-lg font-semibold mb-6 text-white">サービス</h3>
                     <ul class="space-y-3">
-                        <li><a href="<?= url('works.php') ?>" class="text-gray-300 hover:text-white transition-colors duration-300 flex items-center group">
+                        <li><a href="<?= url('work') ?>" class="text-gray-300 hover:text-white transition-colors duration-300 flex items-center group">
                             <svg class="w-4 h-4 mr-2 text-gray-500 group-hover:text-primary-400 transition-colors duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                             </svg>
                             作品を探す
                         </a></li>
-                        <li><a href="<?= url('creators.php') ?>" class="text-gray-300 hover:text-white transition-colors duration-300 flex items-center group">
+                        <li><a href="<?= url('creators') ?>" class="text-gray-300 hover:text-white transition-colors duration-300 flex items-center group">
                             <svg class="w-4 h-4 mr-2 text-gray-500 group-hover:text-primary-400 transition-colors duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                             </svg>
                             クリエイター
                         </a></li>
-                        <li><a href="<?= url('jobs.php') ?>" class="text-gray-300 hover:text-white transition-colors duration-300 flex items-center group">
+                        <li><a href="<?= url('jobs') ?>" class="text-gray-300 hover:text-white transition-colors duration-300 flex items-center group">
                             <svg class="w-4 h-4 mr-2 text-gray-500 group-hover:text-primary-400 transition-colors duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                             </svg>
                             案件一覧
                         </a></li>
-                        <li><a href="<?= url('post-job.php') ?>" class="text-gray-300 hover:text-white transition-colors duration-300 flex items-center group">
+                        <li><a href="<?= url('post-job') ?>" class="text-gray-300 hover:text-white transition-colors duration-300 flex items-center group">
                             <svg class="w-4 h-4 mr-2 text-gray-500 group-hover:text-primary-400 transition-colors duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                             </svg>
@@ -62,13 +62,13 @@
                 <div>
                     <h3 class="text-lg font-semibold mb-6 text-white">サポート</h3>
                     <ul class="space-y-3">
-                        <li><a href="<?= url('terms.php') ?>" class="text-gray-300 hover:text-white transition-colors duration-300 flex items-center group">
+                        <li><a href="<?= url('terms') ?>" class="text-gray-300 hover:text-white transition-colors duration-300 flex items-center group">
                             <svg class="w-4 h-4 mr-2 text-gray-500 group-hover:text-primary-400 transition-colors duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                             </svg>
                             利用規約
                         </a></li>
-                        <li><a href="<?= url('privacy.php') ?>" class="text-gray-300 hover:text-white transition-colors duration-300 flex items-center group">
+                        <li><a href="<?= url('privacy') ?>" class="text-gray-300 hover:text-white transition-colors duration-300 flex items-center group">
                             <svg class="w-4 h-4 mr-2 text-gray-500 group-hover:text-primary-400 transition-colors duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                             </svg>
@@ -86,9 +86,9 @@
                     © <?= date('Y') ?> <?= h(SITE_NAME) ?>. All rights reserved.
                 </p>
                         <div class="flex items-center space-x-4 text-sm">
-                            <a href="<?= url('terms.php') ?>" class="text-gray-400 hover:text-white transition-colors duration-300">利用規約</a>
+                            <a href="<?= url('terms') ?>" class="text-gray-400 hover:text-white transition-colors duration-300">利用規約</a>
                             <span class="text-gray-600">•</span>
-                            <a href="<?= url('privacy.php') ?>" class="text-gray-400 hover:text-white transition-colors duration-300">プライバシーポリシー</a>
+                            <a href="<?= url('privacy') ?>" class="text-gray-400 hover:text-white transition-colors duration-300">プライバシーポリシー</a>
                             <!-- <span class="text-gray-600">•</span>
                             <a href="<?= url('contact.php') ?>" class="text-gray-400 hover:text-white transition-colors duration-300">お問い合わせ</a> -->
                         </div>

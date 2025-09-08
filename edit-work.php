@@ -3,7 +3,7 @@ require_once 'config/config.php';
 
 // ログインチェック
 if (!isLoggedIn() || !hasPermission('create_work')) {
-    redirect(url('login.php'));
+    redirect(url('login'));
 }
 
 $user = getCurrentUser();
@@ -32,7 +32,7 @@ if ($isEditMode) {
     if ($existingWork) {
         $formData = array_merge($formData, $existingWork);
     } else {
-        redirect(url('dashboard.php')); // Not found or not owner
+        redirect(url('dashboard')); // Not found or not owner
     }
 }
 
@@ -81,7 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     );
                 }
                 setFlash('success', '作品を保存しました。');
-                redirect(url('work-detail.php?id=' . $workId));
+                redirect(url('work-detail?id=' . $workId));
             } catch (Exception $e) {
                 $errors[] = '作品の保存に失敗しました。';
             }
