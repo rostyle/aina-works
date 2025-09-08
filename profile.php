@@ -57,9 +57,9 @@ $pageTitle = 'プロフィール編集';
 include 'includes/header.php';
 ?>
 
-<section class="py-8 bg-gray-50 min-h-screen">
+<section class="py-4 sm:py-8 bg-gray-50 min-h-screen">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 class="text-3xl font-bold text-gray-900 mb-8">プロフィール編集</h1>
+        <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-6 sm:mb-8 break-words">プロフィール編集</h1>
 
         <?php if ($success): ?>
             <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6" role="alert">
@@ -74,14 +74,14 @@ include 'includes/header.php';
             }
         endif; ?>
 
-        <form method="POST" enctype="multipart/form-data" class="bg-white rounded-lg shadow-sm border border-gray-200 p-8 space-y-6">
+        <form method="POST" enctype="multipart/form-data" class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6">
             <input type="hidden" name="csrf_token" value="<?= h(generateCsrfToken()) ?>">
 
-            <div class="flex items-center space-x-6">
-                <img src="<?= uploaded_asset($user['profile_image'] ?? 'assets/images/default-avatar.png') ?>" alt="プロフィール画像" class="w-24 h-24 rounded-full object-cover">
-                <div>
-                    <label for="profile_image" class="block text-sm font-medium text-gray-700">プロフィール画像を変更</label>
-                    <input type="file" name="profile_image" id="profile_image" class="mt-1 text-sm text-gray-600">
+            <div class="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-6">
+                <img src="<?= uploaded_asset($user['profile_image'] ?? 'assets/images/default-avatar.png') ?>" alt="プロフィール画像" class="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover mx-auto sm:mx-0">
+                <div class="text-center sm:text-left">
+                    <label for="profile_image" class="block text-sm font-medium text-gray-700 mb-2">プロフィール画像を変更</label>
+                    <input type="file" name="profile_image" id="profile_image" class="text-sm text-gray-600 w-full sm:w-auto">
                 </div>
             </div>
 
@@ -100,8 +100,8 @@ include 'includes/header.php';
                 <input type="text" name="location" id="location" value="<?= h($user['location'] ?? '') ?>" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
             </div>
 
-            <div class="flex justify-end">
-                <button type="submit" class="px-6 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">保存</button>
+            <div class="flex justify-end pt-4">
+                <button type="submit" class="w-full sm:w-auto px-6 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">保存</button>
             </div>
         </form>
     </div>
