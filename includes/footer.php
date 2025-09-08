@@ -175,9 +175,14 @@
                 }
                 
                 // Close mobile menu
+                // Close mobile menu using header's close function if available
                 const mobileMenu = document.getElementById('mobile-menu');
                 if (mobileMenu && !mobileMenu.classList.contains('hidden')) {
-                    toggleMobileMenu();
+                    if (typeof closeMobileMenu === 'function') {
+                        closeMobileMenu();
+                    } else if (typeof toggleMobileMenu === 'function') {
+                        toggleMobileMenu();
+                    }
                     return;
                 }
             }

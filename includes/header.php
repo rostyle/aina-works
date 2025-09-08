@@ -124,6 +124,16 @@ $navItems = [
         html.menu-open {
             overscroll-behavior: none;
         }
+
+        /* モバイルメニューのtransformを無効化（custom.cssの競合対策） */
+        #mobile-menu {
+            transform: none !important;
+        }
+
+        #mobile-menu.hidden {
+            display: none !important;
+            transform: none !important;
+        }
     </style>
 </head>
 
@@ -221,7 +231,7 @@ $navItems = [
 
                 <!-- Mobile menu button -->
                 <div class="lg:hidden">
-                    <button type="button" id="mobile-menu-button" 
+                    <button type="button" id="mobile-menu-button" onclick="openMobileMenu()"
                             class="p-2 text-gray-600 hover:text-primary-600 hover:bg-gray-100 rounded-md">
                         <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
@@ -441,12 +451,18 @@ $navItems = [
         // イベントリスナー
         document.addEventListener('DOMContentLoaded', function() {
             // モバイルメニューをbody直下へ移動（スタッキング問題回避）
+            // 既にbody直下にある場合もあるため、安全にappend（移動）
             const existingMobileMenu = document.getElementById('mobile-menu');
             if (existingMobileMenu && existingMobileMenu.parentElement !== document.body) {
                 document.body.appendChild(existingMobileMenu);
             }
+
+            // 開閉時のフォーカス管理・アニメ付与
+            const panel = document.getElementById('mobile-menu-panel');
+            const overlay = existingMobileMenu?.querySelector('.absolute.top-0.left-0');
             const menuButton = document.getElementById('mobile-menu-button');
             if (menuButton) {
+                // 念のためonclickとaddEventListener両方を設定
                 menuButton.addEventListener('click', openMobileMenu);
             }
 
