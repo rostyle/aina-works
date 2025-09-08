@@ -1,0 +1,38 @@
+Options -Indexes
+Options -MultiViews
+DirectoryIndex index.php
+
+RewriteEngine On
+
+# 直接見られたくないディレクトリをブロック
+RewriteRule ^(includes|config|sql)/ - [F,L]
+
+# /works → work/ へ正規化（GET のみ）
+RewriteCond %{REQUEST_METHOD} GET
+RewriteCond %{THE_REQUEST} \s/+(works)(/|\s|\?) [NC]
+RewriteRule ^works/?$ work/ [R=301,L]
+
+# GETリクエスト時のみ、.php を拡張子なしURLへ301リダイレクト（api等は除外）
+RewriteCond %{REQUEST_METHOD} GET
+RewriteCond %{THE_REQUEST} \s[^\s]*\.php [NC]
+RewriteRule ^((?!(api/|assets/|uploads/|storage/|includes/|config/|sql/)).+)\.php$ $1 [R=301,L]
+
+# 既存のファイル/ディレクトリはそのまま配信
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# /xxx/index.php → xxx/ に正規化（GET のみ、除外対象外）
+RewriteCond %{REQUEST_METHOD} GET
+RewriteCond %{THE_REQUEST} \s/+(.*?/)?index\.php[\s?] [NC]
+RewriteRule ^(?!api/|assets/|uploads/|storage/|includes/|config/|sql/)(.+/)?index\.php$ $1 [R=301,L]
+
+# /work を works.php へ内部リライト
+RewriteRule ^work/?$ works.php [L,QSA]
+
+# 拡張子あり（.が含まれる）パスは内部リライトしない
+RewriteCond %{REQUEST_URI} !\.[^/]+$
+# 拡張子なしアクセスを .php へ内部リライト（除外ディレクトリ以外）
+RewriteRule ^(?!api/|assets/|uploads/|storage/|includes/|config/|sql/)(.+?)/?$ $1.php [L,QSA]
+
+
