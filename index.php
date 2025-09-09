@@ -9,7 +9,7 @@ $db = Database::getInstance();
 
 // 統計情報取得
 $stats = [
-    'creators' => $db->selectOne("SELECT COUNT(*) as count FROM users WHERE user_type = 'creator' AND is_active = 1")['count'] ?? 0,
+    'creators' => $db->selectOne("SELECT COUNT(*) as count FROM users WHERE is_creator = 1 AND is_active = 1")['count'] ?? 0,
     'works' => $db->selectOne("SELECT COUNT(*) as count FROM works WHERE status = 'published'")['count'] ?? 0,
     'jobs_completed' => $db->selectOne("SELECT COUNT(*) as count FROM jobs WHERE status = 'completed'")['count'] ?? 0,
     'categories' => $db->selectOne("SELECT COUNT(*) as count FROM categories WHERE is_active = 1")['count'] ?? 0,
@@ -136,6 +136,7 @@ include 'includes/header.php';
 
             <!-- CTA Buttons -->
             <div class="flex flex-col sm:flex-row gap-4 justify-center mb-16 animate-fade-in" style="animation-delay: 0.6s;">
+                <!-- 登録はAiNA側で実施のため、ローカル登録ボタンは非表示
                 <a href="<?= url('register?type=creator') ?>" class="btn btn-outline btn-lg btn-shimmer group">
                     <svg class="h-5 w-5 mr-2 group-hover:rotate-12 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
@@ -150,6 +151,7 @@ include 'includes/header.php';
                     依頼者登録
                     <span class="ml-2 group-hover:translate-x-1 transition-transform duration-300">→</span>
                 </a>
+                -->
             </div>
             
             <!-- Trust Indicators -->
@@ -573,6 +575,7 @@ include 'includes/header.php';
             </p>
             
             <div class="flex flex-col sm:flex-row gap-6 justify-center mb-16">
+                <!-- 登録はAiNA側で実施のため、ローカル登録ボタンは非表示
                 <a href="<?= url('register?type=creator') ?>" class="btn btn-outline btn-xl btn-shimmer group bg-white/10 backdrop-blur-lg border-white/30 text-white hover:bg-white hover:text-primary-600">
                     <svg class="h-6 w-6 mr-3 group-hover:rotate-12 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
@@ -587,6 +590,7 @@ include 'includes/header.php';
                     依頼者登録
                     <span class="ml-3 group-hover:translate-x-1 transition-transform duration-300">→</span>
                 </a>
+                -->
             </div>
             
             <!-- Additional Features -->

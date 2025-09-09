@@ -11,7 +11,7 @@ if (!isLoggedIn()) {
 } else {
     $user = getCurrentUser();
     // クリエイターの場合は案件投稿を制限（必要に応じて）
-    if ($user['user_type'] === 'creator') {
+    if (!empty($user['is_creator'])) {
         $isCreator = true;
     }
 }
@@ -76,7 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // 予算のバリデーション（クリエイターの場合は任意）
         $currentUser = getCurrentUser();
-        $isCreatorUser = $currentUser && $currentUser['user_type'] === 'creator';
+        $isCreatorUser = $currentUser && !empty($currentUser['is_creator']);
         
         if (!$isCreatorUser) {
             // 依頼者の場合は予算必須
@@ -172,7 +172,7 @@ include 'includes/header.php';
                 <h2 class="text-2xl font-bold text-gray-900 mb-4">案件投稿にはログインが必要です</h2>
                 <p class="text-gray-600 mb-8 max-w-2xl mx-auto">
                     AiNA Worksで案件を投稿するには、アカウントが必要です。<br>
-                    既にアカウントをお持ちの場合はログイン、初めての方は新規登録をお願いします。
+                    既にアカウントをお持ちの場合はログインしてください。
                 </p>
                 
                 <div class="flex flex-col sm:flex-row gap-4 justify-center">
@@ -182,18 +182,7 @@ include 'includes/header.php';
                         </svg>
                         ログイン
                     </a>
-                    <a href="<?= url('register?type=client') ?>" class="inline-flex items-center px-6 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors">
-                        <svg class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                        </svg>
-                        依頼者として新規登録
-                    </a>
-                    <a href="<?= url('register?type=creator') ?>" class="inline-flex items-center px-6 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors">
-                        <svg class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                        </svg>
-                        クリエイターとして新規登録
-                    </a>
+                    <!-- 登録導線はAiNA側で実施するため非表示 -->
                 </div>
             </div>
         <?php else: ?>

@@ -239,8 +239,8 @@ include 'includes/header.php';
             <!-- Contact Card -->
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6 sticky top-24">
                 <div class="text-center mb-6">
-                    <div class="text-2xl font-bold text-gray-900 mb-1"><?= formatPrice($creator['hourly_rate']) ?>〜</div>
-                    <div class="text-sm text-gray-500">/ プロジェクト</div>
+                    <div class="text-2xl font-bold text-gray-900 mb-1">お問い合わせください</div>
+                    <div class="text-sm text-gray-500">/ 料金は案件内容により変動します</div>
                 </div>
 
                 <!-- Stats -->

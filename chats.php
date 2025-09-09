@@ -26,9 +26,9 @@ $chatRooms = $db->select("
             ELSE u1.id
         END as other_user_id,
         CASE 
-            WHEN cr.user1_id = ? THEN u2.is_online
-            ELSE u1.is_online
-        END as other_user_online,
+            WHEN cr.user1_id = ? THEN u2.last_seen
+            ELSE u1.last_seen
+        END as other_user_last_seen,
         cm.message as last_message,
         cm.created_at as last_message_time,
         cm.sender_id as last_message_sender_id,
@@ -79,7 +79,8 @@ include 'includes/header.php';
                                 <img src="<?= uploaded_asset($room['other_user_image'] ?? 'assets/images/default-avatar.png') ?>" 
                                      alt="<?= h($room['other_user_name']) ?>" 
                                      class="w-12 h-12 rounded-full">
-                                <div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white <?= $room['other_user_online'] ? 'bg-green-500' : 'bg-gray-400' ?>"></div>
+                                <?php $isOnline = isset($room['other_user_last_seen']) && (time() - strtotime($room['other_user_last_seen'])) <= 300; ?>
+                                <div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white <?= $isOnline ? 'bg-green-500' : 'bg-gray-400' ?>"></div>
                             </div>
                             
                             <div class="flex-1 min-w-0">

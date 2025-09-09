@@ -76,7 +76,7 @@ try {
 
             $clientApplications = $db->select("
                 SELECT ja.*, u.full_name as creator_name, u.profile_image as creator_image,
-                       u.bio as creator_bio, u.experience_years, u.hourly_rate
+                       u.bio as creator_bio, u.experience_years
                 FROM job_applications ja
                 JOIN users u ON ja.creator_id = u.id
                 WHERE ja.job_id = ?
@@ -119,7 +119,7 @@ include 'includes/header.php';
                     <p class="text-gray-600 mt-2">応募した案件と応募された案件を管理できます</p>
                 </div>
 
-                <?php if ($user['user_type'] !== 'creator'): ?>
+                <?php if (empty($user['is_creator'])): ?>
                     <div class="flex space-x-3">
                         <?php if ($jobId): ?>
                             <a href="<?= url('job-applications') ?>"

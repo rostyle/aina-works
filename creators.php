@@ -46,8 +46,9 @@ $orderBy = match($sortBy) {
     'newest' => 'u.created_at DESC',
     'rating' => 'avg_rating DESC',
     'experience' => 'u.experience_years DESC',
-    'price_low' => 'u.hourly_rate ASC',
-    'price_high' => 'u.hourly_rate DESC',
+    // 時給カラム廃止のため料金ソートは無効化（created_atにフォールバック）
+    'price_low' => 'u.created_at DESC',
+    'price_high' => 'u.created_at DESC',
     default => 'u.is_pro DESC, avg_rating DESC, u.created_at DESC'
 };
 

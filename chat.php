@@ -19,7 +19,7 @@ if (!$otherUserId) {
 
 // 相手のユーザー情報を取得
 $otherUser = $db->selectOne("
-    SELECT id, full_name, profile_image, is_online, last_seen
+    SELECT id, full_name, profile_image, last_seen
     FROM users 
     WHERE id = ? AND is_active = 1
 ", [$otherUserId]);
@@ -82,9 +82,12 @@ include 'includes/header.php';
                 <div>
                     <h1 class="text-xl font-semibold text-gray-900"><?= h($otherUser['full_name']) ?></h1>
                     <div class="flex items-center space-x-2">
-                        <div class="w-2 h-2 rounded-full <?= $otherUser['is_online'] ? 'bg-green-500' : 'bg-gray-400' ?>"></div>
+                        <?php 
+                        $isOnline = isset($otherUser['last_seen']) && (time() - strtotime($otherUser['last_seen'])) <= 300; // 5分以内
+                        ?>
+                        <div class="w-2 h-2 rounded-full <?= $isOnline ? 'bg-green-500' : 'bg-gray-400' ?>"></div>
                         <span class="text-sm text-gray-500">
-                            <?= $otherUser['is_online'] ? 'オンライン' : 'オフライン' ?>
+                            <?= $isOnline ? 'オンライン' : ('最終: ' . timeAgo($otherUser['last_seen'])) ?>
                         </span>
                     </div>
                 </div>
@@ -106,7 +109,7 @@ include 'includes/header.php';
             <?php if (empty($messages)): ?>
                 <div class="text-center text-gray-500 py-8">
                     <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-3.582 8-8 8a8.955 8.955 0 01-4.126-.98L3 20l1.98-5.874A8.955 8.955 0 013 12c0-4.418 3.582-8 8-8s8 3.582 8 8z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-3.582 8-8 8a8.955 8.955 0 01-4.126-.98L3 20l1.98-5.874A8.955 8.955 0 013 12c0-4.418 3.582-8 8-8s9 3.582 9 8z" />
                     </svg>
                     <p>まだメッセージがありません</p>
                     <p class="text-sm">メッセージを送信して会話を始めましょう</p>

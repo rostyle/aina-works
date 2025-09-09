@@ -18,7 +18,7 @@ try {
     $work = $db->selectOne("
         SELECT w.*, u.full_name as creator_name, u.profile_image as creator_image, 
                u.bio as creator_bio, u.location as creator_location, u.response_time,
-               u.experience_years, u.hourly_rate, u.is_pro, u.is_verified,
+               u.experience_years, u.is_pro, u.is_verified,
                u.website, u.twitter_url, u.instagram_url, u.facebook_url, 
                u.linkedin_url, u.youtube_url, u.tiktok_url,
                c.name as category_name, c.color as category_color,
@@ -344,10 +344,7 @@ include 'includes/header.php';
                                class="inline-block px-6 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors">
                                 ログイン
                             </a>
-                            <a href="<?= url('register') ?>" 
-                               class="inline-block px-6 py-2 bg-gray-100 text-gray-700 font-medium rounded-md hover:bg-gray-200 transition-colors">
-                                新規登録
-                            </a>
+                            <!-- ローカル新規登録は無効化 -->
                         </div>
                     </div>
                 </div>
@@ -480,10 +477,7 @@ include 'includes/header.php';
                             <span class="block text-gray-400">経験年数</span>
                             <span class="font-medium"><?= $work['experience_years'] ?>年</span>
                         </div>
-                        <div>
-                            <span class="block text-gray-400">時給目安</span>
-                            <span class="font-medium"><?= formatPrice($work['hourly_rate']) ?></span>
-                        </div>
+                        
                         <div>
                             <span class="block text-gray-400">返信時間</span>
                             <span class="font-medium"><?= $work['response_time'] ?>時間以内</span>

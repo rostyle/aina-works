@@ -222,10 +222,7 @@ $navItems = [
                            class="text-gray-600 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
                             ログイン
                         </a>
-                        <a href="<?= url('register') ?>" 
-                           class="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors">
-                            登録
-                        </a>
+                        <!-- 登録リンクはAPI経由のみのため非表示 -->
                     <?php endif; ?>
                 </div>
 
@@ -355,14 +352,15 @@ $navItems = [
                         <?php else: ?>
                             <!-- Guest Actions -->
                             <div class="pt-4 mt-4 border-t border-gray-200 space-y-2">
-                            <a href="<?= url('login') ?>" 
+                                <a href="<?= url('login') ?>" 
                                    class="flex items-center justify-center space-x-2 p-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
                                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 713-3h7a3 3 0 713 3v1" />
-                                </svg>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                                    </svg>
                                     <span class="font-semibold">ログイン</span>
-                            </a>
+                                </a>
 
+                                <!-- 登録はAiNA側で行うため、ローカル登録導線は非表示
                                 <a href="<?= url('register?type=creator') ?>" 
                                    class="flex items-center justify-center space-x-2 p-3 border-2 border-primary-600 text-primary-600 rounded-lg hover:bg-primary-50 transition-colors">
                                     <span class="font-semibold">クリエイター登録</span>
@@ -372,6 +370,7 @@ $navItems = [
                                    class="flex items-center justify-center space-x-2 p-3 border-2 border-secondary-600 text-secondary-600 rounded-lg hover:bg-secondary-50 transition-colors">
                                     <span class="font-semibold">クライアント登録</span>
                                 </a>
+                                -->
                             </div>
                         <?php endif; ?>
 

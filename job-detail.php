@@ -49,7 +49,7 @@ if (isLoggedIn()) {
     $isOwnJob = ($job['client_id'] == $currentUser['id']);
     
     // クリエイターの場合、応募済みかチェック
-    if ($currentUser['user_type'] === 'creator') {
+    if (!empty($currentUser['is_creator'])) {
         $existingApplication = $db->selectOne(
             "SELECT id FROM job_applications WHERE job_id = ? AND creator_id = ?",
             [$jobId, $currentUser['id']]
@@ -75,7 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_application'])
     error_log('ユーザー情報: ' . print_r($user, true));
 
     // クリエイター以外の応募ブロック
-    if ($user['user_type'] !== 'creator') {
+    if (empty($user['is_creator'])) {
         setFlash('error', 'クリエイターのみ応募できます。');
         redirect(url('job-detail?id=' . $jobId));
     }
@@ -454,7 +454,7 @@ $showSuccess = isset($_GET['applied']) && $_GET['applied'] == '1';
                 </div>
 
                 <!-- Application Button / Client Controls -->
-                <?php if (isLoggedIn() && getCurrentUser()['user_type'] === 'creator' && $job['status'] === 'open' && $isRecruiting && ($acceptedCount < $hiringLimit) && !$hasApplied && !$isOwnJob): ?>
+                <?php if (isLoggedIn() && !empty(getCurrentUser()['is_creator']) && $job['status'] === 'open' && $isRecruiting && ($acceptedCount < $hiringLimit) && !$hasApplied && !$isOwnJob): ?>
                     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center">
                         <h3 class="text-lg font-semibold text-gray-900 mb-4">この案件に応募</h3>
                         <button id="open-application-modal" 
@@ -494,7 +494,7 @@ $showSuccess = isset($_GET['applied']) && $_GET['applied'] == '1';
                             </div>
                         </div>
                     </div>
-                <?php elseif (isLoggedIn() && getCurrentUser()['user_type'] === 'creator' && $hasApplied): ?>
+                <?php elseif (isLoggedIn() && !empty(getCurrentUser()['is_creator']) && $hasApplied): ?>
                     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center">
                         <div class="flex items-center justify-center mb-4">
                             <svg class="h-12 w-12 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -515,12 +515,7 @@ $showSuccess = isset($_GET['applied']) && $_GET['applied'] == '1';
                            class="inline-block bg-blue-600 text-white py-2 px-4 rounded-lg font-semibold hover:bg-blue-700 transition-colors">
                             ログイン
                         </a>
-                        <p class="text-sm text-gray-600 mt-2">
-                            アカウントをお持ちでない場合は
-                            <a href="<?= url('register') ?>" class="text-blue-600 hover:text-blue-500">
-                                クリエイター登録
-                            </a>
-                        </p>
+                        <!-- ローカル登録は無効化。ログインのみ案内 -->
                     </div>
                 <?php elseif ($job['status'] !== 'open'): ?>
                     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center">
@@ -590,7 +585,7 @@ document.addEventListener('DOMContentLoaded', function() {
 </section>
 
 <!-- Application Modal -->
-<?php if (isLoggedIn() && getCurrentUser()['user_type'] === 'creator' && $job['status'] === 'open' && !$hasApplied && !$isOwnJob): ?>
+<?php if (isLoggedIn() && !empty(getCurrentUser()['is_creator']) && $job['status'] === 'open' && !$hasApplied && !$isOwnJob): ?>
 <div id="application-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden" role="dialog" aria-modal="true">
     <div class="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
         <div class="mt-3">

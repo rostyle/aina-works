@@ -17,13 +17,11 @@ function h($str) {
  * URL生成
  */
 function url($path = '') {
-    // 本番環境での絶対URL生成
-    $baseUrl = 'https://aina-works.com';
-    
+    // 相対パスでの URL 生成（ローカル・本番環境両対応）
     if (empty($path)) {
-        return $baseUrl . '/';
+        return './';
     }
-    return $baseUrl . '/' . ltrim($path, '/');
+    return './' . ltrim($path, '/');
 }
 
 /**
@@ -132,12 +130,15 @@ function isLoggedIn() {
 /**
  * 現在のユーザー取得
  */
-function getCurrentUser() {
+function getCurrentUser($forceRefresh = false) {
     if (!isLoggedIn()) {
         return null;
     }
     
     static $user = null;
+    if ($forceRefresh) {
+        $user = null;
+    }
     if ($user === null) {
         $db = Database::getInstance();
         $result = $db->selectOne(
@@ -170,32 +171,15 @@ function getUserRoles($userId = null) {
 }
 
 /**
- * 現在のアクティブロール取得
+ * 現在のアクティブロール取得（簡素化版）
  */
 function getCurrentRole() {
     if (!isLoggedIn()) {
         return null;
     }
     
-    // セッションにactive_roleが設定されていればそれを使用
-    if (isset($_SESSION['active_role']) && !empty($_SESSION['active_role'])) {
-        return $_SESSION['active_role'];
-    }
-    
-    // なければユーザーのactive_roleを取得
-    $user = getCurrentUser();
-    if ($user && isset($user['active_role']) && !empty($user['active_role'])) {
-        $_SESSION['active_role'] = $user['active_role'];
-        return $user['active_role'];
-    }
-    
-    // デフォルトロールを設定
-    if ($user && isset($user['user_type'])) {
-        $_SESSION['active_role'] = $user['user_type'];
-        return $user['user_type'];
-    }
-    
-    return null;
+    // API認証ユーザーはデフォルトで'member'
+    return 'member';
 }
 
 /**
@@ -211,16 +195,9 @@ function switchRole($newRole) {
         return false;
     }
     
-    // セッションのロールを更新
+    // セッションのロールを更新（DBカラムは廃止のためセッションのみ）
     $_SESSION['active_role'] = $newRole;
-    
-    // データベースのactive_roleも更新
-    $db = Database::getInstance();
-    $db->update(
-        "UPDATE users SET active_role = ? WHERE id = ?",
-        [$newRole, $_SESSION['user_id']]
-    );
-    
+
     return true;
 }
 
@@ -238,9 +215,9 @@ function hasPermission($permission) {
     // 基本的な権限チェック（現在のアクティブロールに基づく）
     switch ($permission) {
         case 'create_work':
-            return $currentRole === 'creator';
+            return isUserCreator();
         case 'post_job':
-            return in_array($currentRole, ['client', 'sales']);
+            return isUserClient() || $currentRole === 'sales';
         case 'admin':
             return $currentRole === 'admin';
         default:
@@ -528,7 +505,7 @@ function checkPageExists($pageName) {
 function isAllowedPage($pageName) {
     // 許可されたページのリスト
     $allowedPages = [
-        'index', 'login', 'register', 'dashboard', 'profile', 'works', 'jobs',
+        'index', 'login', 'dashboard', 'profile', 'works', 'jobs',
         'creators', 'creator-profile', 'job-detail', 'work-detail', 'post-job',
         'edit-job', 'edit-work', 'job-applications', 'favorites', 'chat', 'chats',
         'success-stories', 'terms', 'privacy', 'forgot-password', 'reset-password',
@@ -659,6 +636,336 @@ function sendNotificationMail($to, $subject, $message, $actionUrl = null, $actio
 </html>";
     
     return sendMail($to, $subject, $body, true);
+}
+
+/**
+ * AiNA API認証
+ */
+function authenticateWithAinaApi($email, $password = null) {
+    $apiUrl = AINA_API_BASE_URL . '/get-user-info';
+    $apiKey = AINA_API_KEY;
+    
+    if (empty($apiKey)) {
+        error_log('AiNA API認証エラー: APIキーが設定されていません');
+        return [
+            'success' => false, 
+            'message' => 'システム設定エラーです。管理者にお問い合わせください。',
+            'error_type' => 'config_error'
+        ];
+    }
+    
+    $postData = json_encode([
+        'email' => $email,
+        'password' => $password
+    ]);
+    
+    $response = null;
+    $httpStatus = 0;
+    
+    // cURL を優先使用
+    if (function_exists('curl_init')) {
+        $ch = curl_init($apiUrl);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'X-API-KEY: ' . $apiKey,
+            'Content-Type: application/json',
+            'Accept: application/json'
+        ]);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
+        // 環境により自己署名証明書で失敗する場合があるため、検証はデフォルト有効のまま
+        // 必要であれば本番以外でのみ無効化するなどの制御を追加
+        $response = curl_exec($ch);
+        if ($response === false) {
+            error_log('AiNA API cURLエラー: ' . curl_error($ch));
+        }
+        $httpStatus = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+    }
+    
+    // フォールバック: allow_url_fopenが有効ならfile_get_contents
+    if ($response === null && ini_get('allow_url_fopen')) {
+        $options = [
+            'http' => [
+                'method' => 'POST',
+                'header' => [
+                    'X-API-KEY: ' . $apiKey,
+                    'Content-Type: application/json',
+                    'Accept: application/json'
+                ],
+                'content' => $postData,
+                'timeout' => 30
+            ]
+        ];
+        $context = stream_context_create($options);
+        $response = @file_get_contents($apiUrl, false, $context);
+        // HTTPステータスは取得できないケースが多い
+    }
+    
+    if ($response === false || $response === null) {
+        $error = error_get_last();
+        error_log('AiNA API接続エラー: ' . ($error['message'] ?? 'Unknown error'));
+        return [
+            'success' => false, 
+            'message' => 'AiNA サーバーに接続できませんでした。しばらく時間をおいて再度お試しください。',
+            'error_type' => 'connection_error'
+        ];
+    }
+    
+    if ($httpStatus >= 400) {
+        error_log('AiNA API HTTPエラー: Status ' . $httpStatus . ' Response: ' . $response);
+        return [
+            'success' => false,
+            'message' => 'サーバーエラーが発生しました。時間をおいて再試行してください。',
+            'error_type' => 'http_error'
+        ];
+    }
+    
+    $data = json_decode($response, true);
+    
+    if (!$data) {
+        error_log('AiNA API応答エラー: JSONデコードに失敗 - ' . $response);
+        return [
+            'success' => false, 
+            'message' => 'サーバーからの応答が正しくありません。管理者にお問い合わせください。',
+            'error_type' => 'response_error'
+        ];
+    }
+    
+    if (!isset($data['result'])) {
+        error_log('AiNA API応答エラー: resultフィールドが存在しません - ' . json_encode($data));
+        return [
+            'success' => false, 
+            'message' => 'サーバーからの応答形式が正しくありません。',
+            'error_type' => 'response_format_error'
+        ];
+    }
+    
+    if ($data['result'] !== 'success') {
+        $errorMessage = $data['message'] ?? 'ログインに失敗しました。';
+        error_log('AiNA API認証失敗: ' . $errorMessage);
+        
+        // エラーメッセージをユーザーフレンドリーに変換
+        if (strpos($errorMessage, 'password') !== false || strpos($errorMessage, 'パスワード') !== false) {
+            return [
+                'success' => false, 
+                'message' => 'メールアドレスまたはパスワードが正しくありません。',
+                'error_type' => 'auth_failed'
+            ];
+        } elseif (strpos($errorMessage, 'user not found') !== false || strpos($errorMessage, 'ユーザーが見つかりません') !== false) {
+            return [
+                'success' => false, 
+                'message' => '入力されたメールアドレスは登録されていません。AiNA マイページでアカウントを確認してください。',
+                'error_type' => 'user_not_found'
+            ];
+        } else {
+            return [
+                'success' => false, 
+                'message' => $errorMessage,
+                'error_type' => 'auth_failed'
+            ];
+        }
+    }
+    
+    if (empty($data['users']) || !is_array($data['users'])) {
+        error_log('AiNA API応答エラー: usersデータが存在しないか不正です - ' . json_encode($data));
+        return [
+            'success' => false, 
+            'message' => 'ユーザー情報を取得できませんでした。',
+            'error_type' => 'user_data_error'
+        ];
+    }
+    
+    $user = $data['users'][0];
+    
+    // 必要なフィールドの存在確認
+    $requiredFields = ['id', 'name', 'email', 'status_id'];
+    foreach ($requiredFields as $field) {
+        if (!isset($user[$field])) {
+            error_log('AiNA API応答エラー: 必要なフィールド ' . $field . ' が存在しません - ' . json_encode($user));
+            return [
+                'success' => false, 
+                'message' => 'ユーザー情報が不完全です。管理者にお問い合わせください。',
+                'error_type' => 'incomplete_user_data'
+            ];
+        }
+    }
+    
+    return ['success' => true, 'user' => $user];
+}
+
+/**
+ * ユーザー認証の検証
+ */
+function validateUserAccess($user) {
+    // ステータス確認（アクティブ会員のみ）
+    $userStatus = (int)($user['status_id'] ?? 0);
+    if (!in_array($userStatus, ALLOWED_STATUSES)) {
+        error_log('ユーザーアクセス拒否: 非アクティブステータス - User ID: ' . $user['id'] . ', Status: ' . $userStatus);
+        return [
+            'valid' => false, 
+            'message' => 'アカウントが非アクティブです。AiNA マイページでアカウント状況を確認してください。',
+            'error_type' => 'inactive_account'
+        ];
+    }
+    
+    // ランク確認
+    $userRank = trim($user['rank'] ?? '');
+    if (!in_array($userRank, ALLOWED_RANKS)) {
+        error_log('ユーザーアクセス拒否: 不適切なランク - User ID: ' . $user['id'] . ', Rank: ' . $userRank);
+        return [
+            'valid' => false, 
+            'message' => 'メンバープラン以上の会員のみご利用いただけます。現在のプラン: ' . ($userRank ?: '未設定') . '。プランのアップグレードについては AiNA マイページをご確認ください。',
+            'error_type' => 'insufficient_plan'
+        ];
+    }
+    
+    return ['valid' => true];
+}
+
+/**
+ * ユーザーの作成または更新（API認証のみ）
+ */
+function createOrUpdateUser($apiUser) {
+    try {
+        $db = Database::getInstance();
+        
+        // 必要なフィールドの確認
+        if (empty($apiUser['id']) || empty($apiUser['email']) || empty($apiUser['name'])) {
+            error_log('ユーザー作成エラー: 必要なフィールドが不足 - ' . json_encode($apiUser));
+            return false;
+        }
+        
+        // 既存ユーザーの確認（aina_user_idまたはemailで）
+        $existingUser = $db->selectOne(
+            "SELECT id FROM users WHERE aina_user_id = ? OR email = ?",
+            [$apiUser['id'], $apiUser['email']]
+        );
+        
+        if ($existingUser) {
+            // 既存ユーザーの更新
+            $updateSql = "UPDATE users SET 
+                email = ?,
+                full_name = ?, 
+                aina_user_id = ?, 
+                password_hash = NULL,
+                is_active = 1,
+                updated_at = NOW()
+                WHERE id = ?";
+            
+            $affected = $db->update($updateSql, [
+                $apiUser['email'],
+                $apiUser['name'],
+                $apiUser['id'],
+                $existingUser['id']
+            ]);
+            
+            if ($affected === 0) {
+                error_log('ユーザー更新警告: 更新対象が見つからない - User ID: ' . $existingUser['id']);
+            }
+            
+            $userId = $existingUser['id'];
+            error_log('ユーザー更新成功: User ID: ' . $userId . ', AiNA ID: ' . $apiUser['id']);
+        } else {
+            // 新規ユーザーの作成
+            $insertSql = "INSERT INTO users (
+                email, 
+                full_name, 
+                aina_user_id, 
+                password_hash,
+                is_active,
+                created_at,
+                updated_at
+            ) VALUES (?, ?, ?, NULL, 1, NOW(), NOW())";
+            
+            $userId = $db->insert($insertSql, [
+                $apiUser['email'],
+                $apiUser['name'],
+                $apiUser['id']
+            ]);
+            
+            if (!$userId) {
+                error_log('ユーザー作成エラー: INSERTが失敗 - ' . json_encode($apiUser));
+                return false;
+            }
+            
+            error_log('新規ユーザー作成成功: User ID: ' . $userId . ', AiNA ID: ' . $apiUser['id']);
+        }
+        
+        return $userId;
+    } catch (Exception $e) {
+        error_log('ユーザー作成例外エラー: ' . $e->getMessage() . ' - ' . json_encode($apiUser));
+        return false;
+    }
+}
+
+/**
+ * APIログイン処理（簡素化版）
+ */
+function performApiLogin($email, $password) {
+    // 入力値の検証
+    if (empty($email) || empty($password)) {
+        return [
+            'success' => false, 
+            'message' => 'メールアドレスとパスワードを入力してください。',
+            'error_type' => 'validation_error'
+        ];
+    }
+    
+    // API認証
+    $authResult = authenticateWithAinaApi($email, $password);
+    if (!$authResult['success']) {
+        return [
+            'success' => false, 
+            'message' => $authResult['message'],
+            'error_type' => $authResult['error_type'] ?? 'auth_error'
+        ];
+    }
+    
+    $apiUser = $authResult['user'];
+    
+    // ユーザーアクセス検証
+    $validation = validateUserAccess($apiUser);
+    if (!$validation['valid']) {
+        return [
+            'success' => false, 
+            'message' => $validation['message'],
+            'error_type' => $validation['error_type'] ?? 'access_denied'
+        ];
+    }
+    
+    // ユーザー作成/更新
+    $userId = createOrUpdateUser($apiUser);
+    if (!$userId) {
+        error_log('ログイン失敗: ユーザー情報保存エラー - Email: ' . $email . ', AiNA ID: ' . $apiUser['id']);
+        return [
+            'success' => false, 
+            'message' => 'ユーザー情報の保存に失敗しました。しばらく時間をおいて再度お試しください。',
+            'error_type' => 'database_error'
+        ];
+    }
+    
+    // セッション設定（パスワードは保持しない）
+    try {
+        $_SESSION['user_id'] = $userId;
+        $_SESSION['aina_user_id'] = $apiUser['id'];
+        $_SESSION['user_rank'] = $apiUser['rank'] ?? '';
+        $_SESSION['user_status'] = $apiUser['status_id'];
+        $_SESSION['login_time'] = time();
+        
+        error_log('ログイン成功: User ID: ' . $userId . ', Email: ' . $email . ', AiNA ID: ' . $apiUser['id']);
+        
+        return ['success' => true, 'user_id' => $userId];
+    } catch (Exception $e) {
+        error_log('セッション設定エラー: ' . $e->getMessage() . ' - User ID: ' . $userId);
+        return [
+            'success' => false, 
+            'message' => 'ログイン処理中にエラーが発生しました。再度お試しください。',
+            'error_type' => 'session_error'
+        ];
+    }
 }
 ?>
 

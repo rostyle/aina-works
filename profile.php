@@ -7,6 +7,10 @@ if (!isLoggedIn()) {
 }
 
 $user = getCurrentUser();
+if (!$user) {
+    setFlash('error', 'ユーザー情報が見つかりません。再度ログインしてください。');
+    redirect(url('login'));
+}
 $db = Database::getInstance();
 $errors = [];
 $success = false;
@@ -20,6 +24,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $fullName = trim($_POST['full_name'] ?? '');
         $bio = trim($_POST['bio'] ?? '');
         $location = trim($_POST['location'] ?? '');
+        $website = trim($_POST['website'] ?? '');
+        $twitter = trim($_POST['twitter_url'] ?? '');
+        $instagram = trim($_POST['instagram_url'] ?? '');
+        $facebook = trim($_POST['facebook_url'] ?? '');
+        $linkedin = trim($_POST['linkedin_url'] ?? '');
+        $youtube = trim($_POST['youtube_url'] ?? '');
+        $tiktok = trim($_POST['tiktok_url'] ?? '');
+        $experienceYears = isset($_POST['experience_years']) && $_POST['experience_years'] !== '' ? (int)$_POST['experience_years'] : (int)($user['experience_years'] ?? 0);
+        $responseTime = isset($_POST['response_time']) && $_POST['response_time'] !== '' ? (int)$_POST['response_time'] : (int)($user['response_time'] ?? 24);
         $isCreator = isset($_POST['is_creator']) ? 1 : 0;
         $isClient = isset($_POST['is_client']) ? 1 : 0;
 
@@ -34,7 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         // 画像アップロード処理
-        $profileImagePath = $user['profile_image'];
+        $profileImagePath = $user['profile_image'] ?? null;
         if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] === UPLOAD_ERR_OK) {
             try {
                 $profileImagePath = uploadFile($_FILES['profile_image']);
@@ -46,42 +59,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (empty($errors)) {
             try {
                 $db->beginTransaction();
+                $userId = (int)($_SESSION['user_id'] ?? 0);
+                if ($userId <= 0) {
+                    throw new Exception('ユーザーIDが不正です');
+                }
+                
+                // デバッグ用ログ（本番環境では削除）
+                if (defined('DEBUG') && DEBUG) {
+                    error_log("Profile update values - experience_years: " . $experienceYears . ", response_time: " . $responseTime);
+                }
                 
                 // ユーザー情報を更新
                 $db->update(
-                    "UPDATE users SET full_name = ?, bio = ?, location = ?, profile_image = ?, is_creator = ?, is_client = ? WHERE id = ?",
-                    [$fullName, $bio, $location, $profileImagePath, $isCreator, $isClient, $user['id']]
+                    "UPDATE users SET full_name = ?, bio = ?, location = ?, website = ?, twitter_url = ?, instagram_url = ?, facebook_url = ?, linkedin_url = ?, youtube_url = ?, tiktok_url = ?, experience_years = ?, response_time = ?, profile_image = ?, is_creator = ?, is_client = ? WHERE id = ?",
+                    [$fullName, $bio, $location, $website, $twitter, $instagram, $facebook, $linkedin, $youtube, $tiktok, $experienceYears, $responseTime, $profileImagePath, $isCreator, $isClient, $userId]
                 );
                 
                 // user_rolesテーブルを更新
                 // 既存のロールを削除
-                $db->delete("DELETE FROM user_roles WHERE user_id = ?", [$user['id']]);
+                $db->delete("DELETE FROM user_roles WHERE user_id = ?", [$userId]);
                 
                 // 新しいロールを追加
                 if ($isCreator) {
-                    $db->insert("INSERT INTO user_roles (user_id, role, is_enabled) VALUES (?, 'creator', 1)", [$user['id']]);
+                    $db->insert("INSERT INTO user_roles (user_id, role, is_enabled) VALUES (?, 'creator', 1)", [$userId]);
                 }
                 if ($isClient) {
-                    $db->insert("INSERT INTO user_roles (user_id, role, is_enabled) VALUES (?, 'client', 1)", [$user['id']]);
+                    $db->insert("INSERT INTO user_roles (user_id, role, is_enabled) VALUES (?, 'client', 1)", [$userId]);
                 }
                 
-                // active_roleを更新（現在のロールが無効になった場合は最初の有効なロールに変更）
+                // active_role カラム廃止のため、セッションのみ更新
                 $currentRole = getCurrentRole();
                 $availableRoles = [];
                 if ($isCreator) $availableRoles[] = 'creator';
                 if ($isClient) $availableRoles[] = 'client';
-                
+
                 if (!in_array($currentRole, $availableRoles) && !empty($availableRoles)) {
-                    $newActiveRole = $availableRoles[0];
-                    $db->update("UPDATE users SET active_role = ? WHERE id = ?", [$newActiveRole, $user['id']]);
-                    $_SESSION['active_role'] = $newActiveRole;
+                    $_SESSION['active_role'] = $availableRoles[0];
                 }
                 
                 $db->commit();
                 $success = true;
                 setFlash('success', 'プロフィールを更新しました。');
-                // 更新されたユーザー情報を再取得
-                $user = $db->selectOne("SELECT * FROM users WHERE id = ?", [$user['id']]);
+                // 更新後のキャッシュを破棄して再取得
+                $user = getCurrentUser(true);
             } catch (Exception $e) {
                 $db->rollback();
                 $errors[] = 'プロフィールの更新に失敗しました: ' . $e->getMessage();
@@ -140,6 +160,49 @@ include 'includes/header.php';
             <div>
                 <label for="location" class="block text-sm font-medium text-gray-700">所在地</label>
                 <input type="text" name="location" id="location" value="<?= h($user['location'] ?? '') ?>" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+            </div>
+
+            <div>
+                <label for="website" class="block text-sm font-medium text-gray-700">Webサイト</label>
+                <input type="url" name="website" id="website" value="<?= h($user['website'] ?? '') ?>" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="https://example.com">
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label for="twitter_url" class="block text-sm font-medium text-gray-700">X(Twitter)</label>
+                    <input type="url" name="twitter_url" id="twitter_url" value="<?= h($user['twitter_url'] ?? '') ?>" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="https://x.com/">
+                </div>
+                <div>
+                    <label for="instagram_url" class="block text-sm font-medium text-gray-700">Instagram</label>
+                    <input type="url" name="instagram_url" id="instagram_url" value="<?= h($user['instagram_url'] ?? '') ?>" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="https://instagram.com/">
+                </div>
+                <div>
+                    <label for="facebook_url" class="block text-sm font-medium text-gray-700">Facebook</label>
+                    <input type="url" name="facebook_url" id="facebook_url" value="<?= h($user['facebook_url'] ?? '') ?>" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="https://facebook.com/">
+                </div>
+                <div>
+                    <label for="linkedin_url" class="block text-sm font-medium text-gray-700">LinkedIn</label>
+                    <input type="url" name="linkedin_url" id="linkedin_url" value="<?= h($user['linkedin_url'] ?? '') ?>" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="https://linkedin.com/in/">
+                </div>
+                <div>
+                    <label for="youtube_url" class="block text-sm font-medium text-gray-700">YouTube</label>
+                    <input type="url" name="youtube_url" id="youtube_url" value="<?= h($user['youtube_url'] ?? '') ?>" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="https://youtube.com/@">
+                </div>
+                <div>
+                    <label for="tiktok_url" class="block text-sm font-medium text-gray-700">TikTok</label>
+                    <input type="url" name="tiktok_url" id="tiktok_url" value="<?= h($user['tiktok_url'] ?? '') ?>" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="https://tiktok.com/@">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label for="experience_years" class="block text-sm font-medium text-gray-700">経験年数</label>
+                    <input type="number" min="0" name="experience_years" id="experience_years" value="<?= (int)($user['experience_years'] ?? 0) ?>" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                </div>
+                <div>
+                    <label for="response_time" class="block text-sm font-medium text-gray-700">平均レスポンス時間（時間）</label>
+                    <input type="number" min="1" name="response_time" id="response_time" value="<?= (int)($user['response_time'] ?? 24) ?>" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                </div>
             </div>
 
             <div class="border-t pt-6">

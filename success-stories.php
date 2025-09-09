@@ -44,7 +44,7 @@ try {
     // 統計情報取得
     $stats = [
         'total_projects' => $db->selectOne("SELECT COUNT(*) as count FROM jobs WHERE status = 'completed'")['count'] ?? 0,
-        'total_creators' => $db->selectOne("SELECT COUNT(*) as count FROM users WHERE user_type = 'creator' AND is_active = 1")['count'] ?? 0,
+        'total_creators' => $db->selectOne("SELECT COUNT(*) as count FROM users WHERE is_creator = 1 AND is_active = 1")['count'] ?? 0,
         'avg_satisfaction' => 4.8, // 仮の数値
         'total_budget' => $db->selectOne("SELECT SUM(budget_max) as total FROM jobs WHERE status = 'completed'")['total'] ?? 0,
     ];
