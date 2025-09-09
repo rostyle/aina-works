@@ -636,6 +636,9 @@ function sendNotificationMail($to, $subject, $message, $actionUrl = null, $actio
         .footer { background: #6B7280; color: white; padding: 15px; text-align: center; font-size: 14px; }
         .button { display: inline-block; background: #3B82F6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
         .message { background: white; padding: 20px; border-radius: 5px; margin: 20px 0; }
+        a { color: #3B82F6; text-decoration: underline; }
+        .footer a { color: #E5E7EB; text-decoration: underline; }
+        .button a { color: white; text-decoration: none; }
     </style>
 </head>
 <body>
@@ -663,7 +666,7 @@ function sendNotificationMail($to, $subject, $message, $actionUrl = null, $actio
         <div class=\"footer\">
             <p>このメールは AiNA Works から自動送信されています。</p>
             <p>運営：株式会社AiNA</p>
-            <p><a href=\"" . url('', true) . "\" style=\"color: #E5E7EB; text-decoration: underline;\">AiNA Works</a> | <a href=\"" . url('privacy.php', true) . "\" style=\"color: #E5E7EB; text-decoration: underline;\">プライバシーポリシー</a> | <a href=\"" . url('terms.php', true) . "\" style=\"color: #E5E7EB; text-decoration: underline;\">利用規約</a></p>
+            <p><a href=\"" . url('', true) . "\">AiNA Works</a> | <a href=\"" . url('privacy.php', true) . "\">プライバシーポリシー</a> | <a href=\"" . url('terms.php', true) . "\">利用規約</a></p>
             <p>お心当たりのない場合は、このメールを破棄してください。</p>
         </div>
     </div>

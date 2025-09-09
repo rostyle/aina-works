@@ -76,7 +76,7 @@ function convertUrlsToLinks($text) {
             $href = 'https://' . $url;
         }
         
-        return '<a href="' . h($href) . '" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline">' . h($url) . '</a>';
+        return '<a href="' . h($href) . '" target="_blank" rel="noopener noreferrer" class="text-white hover:text-gray-200 underline">' . h($url) . '</a>';
     }, $text);
 }
 
@@ -204,7 +204,7 @@ function convertUrlsToLinks(text) {
             href = 'https://' + url;
         }
         
-        return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline">${url}</a>`;
+        return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="text-white hover:text-gray-200 underline">${url}</a>`;
     });
 }
 
