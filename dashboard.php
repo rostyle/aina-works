@@ -83,8 +83,17 @@ include 'includes/header.php';
 
         <!-- Stats Cards - ダッシュボード統計（SP省スペース: 2列） -->
         <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
+            <style>
+            @media (prefers-color-scheme: dark) {
+                .dashboard-card { background-color: #ffffff !important; border-color: #e5e7eb !important; }
+                .dashboard-card .text-gray-900 { color: #111827 !important; }
+                .dashboard-card .text-gray-500 { color: #6b7280 !important; }
+                .dashboard-card .text-gray-600 { color: #4b5563 !important; }
+                .dashboard-card .border-gray-200 { border-color: #e5e7eb !important; }
+            }
+            </style>
             <!-- 公開作品 -->
-            <div class="bg-white rounded-lg shadow-sm p-4 md:p-6 border border-gray-200">
+            <div class="bg-white rounded-lg shadow-sm p-4 md:p-6 border border-gray-200 dashboard-card">
                 <div class="flex items-center">
                     <div class="p-2 bg-blue-100 rounded-lg">
                         <svg class="h-5 w-5 md:h-6 md:w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -100,7 +109,7 @@ include 'includes/header.php';
             </div>
 
             <!-- 投稿案件 -->
-            <div class="bg-white rounded-lg shadow-sm p-4 md:p-6 border border-gray-200">
+            <div class="bg-white rounded-lg shadow-sm p-4 md:p-6 border border-gray-200 dashboard-card">
                 <div class="flex items-center">
                     <div class="p-2 bg-purple-100 rounded-lg">
                         <svg class="h-5 w-5 md:h-6 md:w-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -116,7 +125,7 @@ include 'includes/header.php';
             </div>
 
             <!-- お気に入り -->
-            <div class="bg-white rounded-lg shadow-sm p-4 md:p-6 border border-gray-200">
+            <div class="bg-white rounded-lg shadow-sm p-4 md:p-6 border border-gray-200 dashboard-card">
                 <div class="flex items-center">
                     <div class="p-2 bg-red-100 rounded-lg">
                         <svg class="h-5 w-5 md:h-6 md:w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -132,7 +141,7 @@ include 'includes/header.php';
             </div>
 
             <!-- アクティビティ -->
-            <div class="bg-white rounded-lg shadow-sm p-4 md:p-6 border border-gray-200">
+            <div class="bg-white rounded-lg shadow-sm p-4 md:p-6 border border-gray-200 dashboard-card">
                 <div class="flex items-center">
                     <div class="p-2 bg-green-100 rounded-lg">
                         <svg class="h-5 w-5 md:h-6 md:w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -60,6 +60,7 @@ $navItems = [
         }
     </script>
     <link rel="stylesheet" href="<?= asset('css/custom.css') ?>">
+    <meta name="theme-color" content="#ffffff">
     <meta name="csrf-token" content="<?= generateCsrfToken() ?>">
     <style>
         /* モバイルメニューの確実な最前面表示 */
@@ -133,6 +134,24 @@ $navItems = [
         #mobile-menu.hidden {
             display: none !important;
             transform: none !important;
+        }
+        
+        /* ダークモード環境での自動反転抑止（全体はライト基調を維持） */
+        :root { color-scheme: light; }
+        @media (prefers-color-scheme: dark) {
+            html, body { background-color: #f9fafb; color: #111827; }
+            header, .bg-white { background-color: #ffffff !important; }
+            .bg-gray-50 { background-color: #f9fafb !important; }
+            input, select, textarea { 
+                background-color: #ffffff !important; 
+                color: #111827 !important; 
+                border-color: #e5e7eb !important;
+            }
+            .text-gray-900, .text-gray-800, .text-gray-700 { color: #111827 !important; }
+            /* Card等のコンポーネントをライト基調に固定 */
+            .card { background-color: #ffffff !important; border-color: #e5e7eb !important; }
+            .badge-primary { background-color: #dbeafe !important; color: #1e40af !important; }
+            .badge-secondary { background-color: #f3e8ff !important; color: #6b21a8 !important; }
         }
     </style>
 </head>

@@ -227,7 +227,7 @@ include 'includes/header.php';
                     </summary>
                     <div class="p-4 border-t border-gray-200">
                         <div class="grid grid-cols-2 gap-3">
-                            <select name="category_id" class="px-2 py-2 text-sm border border-gray-300 rounded-md bg-white">
+                            <select name="category_id" class="px-2 py-2 text-sm border border-gray-300 rounded-md bg-white text-gray-900">
                                 <option value="">カテゴリ</option>
                                 <?php foreach ($categories as $category): ?>
                                     <option value="<?= h($category['id']) ?>" <?= $categoryId == $category['id'] ? 'selected' : '' ?>>
@@ -235,27 +235,27 @@ include 'includes/header.php';
                                     </option>
                                 <?php endforeach; ?>
                             </select>
-                            <select name="status" class="px-2 py-2 text-sm border border-gray-300 rounded-md bg-white">
+                            <select name="status" class="px-2 py-2 text-sm border border-gray-300 rounded-md bg-white text-gray-900">
                                 <option value="">ステータス</option>
                                 <option value="open" <?= $status == 'open' ? 'selected' : '' ?>>募集中</option>
                                 <option value="in_progress" <?= $status == 'in_progress' ? 'selected' : '' ?>>進行中</option>
                                 <option value="completed" <?= $status == 'completed' ? 'selected' : '' ?>>完了</option>
                                 <option value="closed" <?= $status == 'closed' ? 'selected' : '' ?>>募集終了</option>
                             </select>
-                            <select name="budget_min" class="px-2 py-2 text-sm border border-gray-300 rounded-md bg-white">
+                            <select name="budget_min" class="px-2 py-2 text-sm border border-gray-300 rounded-md bg-white text-gray-900">
                                 <option value="">予算下限</option>
                                 <option value="10000" <?= $budgetMin == '10000' ? 'selected' : '' ?>>1万円〜</option>
                                 <option value="50000" <?= $budgetMin == '50000' ? 'selected' : '' ?>>5万円〜</option>
                                 <option value="100000" <?= $budgetMin == '100000' ? 'selected' : '' ?>>10万円〜</option>
                                 <option value="300000" <?= $budgetMin == '300000' ? 'selected' : '' ?>>30万円〜</option>
                             </select>
-                            <select name="urgency" class="px-2 py-2 text-sm border border-gray-300 rounded-md bg-white">
+                            <select name="urgency" class="px-2 py-2 text-sm border border-gray-300 rounded-md bg-white text-gray-900">
                                 <option value="">緊急度</option>
                                 <option value="low" <?= $urgency == 'low' ? 'selected' : '' ?>>低</option>
                                 <option value="medium" <?= $urgency == 'medium' ? 'selected' : '' ?>>中</option>
                                 <option value="high" <?= $urgency == 'high' ? 'selected' : '' ?>>高</option>
                             </select>
-                            <select name="sort" class="px-2 py-2 text-sm border border-gray-300 rounded-md bg-white col-span-2">
+                            <select name="sort" class="px-2 py-2 text-sm border border-gray-300 rounded-md bg-white text-gray-900 col-span-2">
                                 <option value="newest" <?= $sortBy == 'newest' ? 'selected' : '' ?>>新着順</option>
                                 <option value="budget_high" <?= $sortBy == 'budget_high' ? 'selected' : '' ?>>予算が高い順</option>
                                 <option value="budget_low" <?= $sortBy == 'budget_low' ? 'selected' : '' ?>>予算が安い順</option>
@@ -264,8 +264,8 @@ include 'includes/header.php';
                             </select>
                         </div>
                         <div class="flex gap-2 mt-4">
-                            <button type="submit" class="flex-1 px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-md">適用</button>
-                            <a href="<?= url('jobs') ?>" class="flex-1 px-4 py-2 bg-gray-100 text-gray-800 text-center text-sm font-medium rounded-md border border-gray-300">クリア</a>
+                            <button type="submit" class="flex-1 px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-md hover:bg-purple-700 transition-colors">適用</button>
+                            <a href="<?= url('jobs') ?>" class="flex-1 px-4 py-2 bg-gray-100 text-gray-800 text-center text-sm font-medium rounded-md border border-gray-300 hover:bg-gray-200 transition-colors">クリア</a>
                         </div>
                     </div>
                 </details>
