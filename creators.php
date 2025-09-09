@@ -68,7 +68,33 @@ try {
     
     // クリエイター一覧取得
     $creatorsSql = "
-        SELECT u.*, 
+        SELECT u.id,
+               u.aina_user_id,
+               u.name,
+               u.username,
+               u.email,
+               u.full_name,
+               u.nickname,
+               u.profile_image,
+               u.bio,
+               u.location,
+               u.website,
+               u.twitter_url,
+               u.instagram_url,
+               u.facebook_url,
+               u.linkedin_url,
+               u.youtube_url,
+               u.tiktok_url,
+               u.response_time,
+               u.experience_years,
+               u.is_pro,
+               u.is_verified,
+               u.is_active,
+               u.last_seen,
+               u.created_at,
+               u.updated_at,
+               u.is_creator,
+               u.is_client,
                COALESCE(r_stats.avg_rating, 0) as avg_rating, 
                COALESCE(r_stats.review_count, 0) as review_count,
                COALESCE(w_stats.work_count, 0) as work_count,
@@ -93,11 +119,20 @@ try {
         ) ja_stats ON u.id = ja_stats.creator_id
         WHERE u.is_creator = 1 AND u.is_active = 1
         {$whereClause}
+        GROUP BY u.id
         ORDER BY {$orderBy}
         LIMIT {$perPage} OFFSET {$pagination['offset']}
     ";
     
     $creators = $db->select($creatorsSql, $values);
+    // 念のためIDで重複排除（参照不具合やJOINの影響に備えたフェイルセーフ）
+    if (!empty($creators)) {
+        $uniqueById = [];
+        foreach ($creators as $row) {
+            $uniqueById[$row['id']] = $row;
+        }
+        $creators = array_values($uniqueById);
+    }
     
     // ログイン中ユーザーのクリエイターいいね状態を取得
     $userCreatorLikes = [];
@@ -135,9 +170,9 @@ try {
         }
     }
 
-    // 各クリエイターにスキルをセット
-    foreach ($creators as &$creator) {
-        $creator['skills'] = $skillsByCreator[$creator['id']] ?? [];
+    // 各クリエイターにスキルをセット（参照を使わないで安全に代入）
+    foreach ($creators as $idx => $c) {
+        $creators[$idx]['skills'] = $skillsByCreator[$c['id']] ?? [];
     }
     
     // カテゴリ一覧取得
