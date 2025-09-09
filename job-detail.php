@@ -164,7 +164,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_application'])
                 $message .= $coverLetter . "\n\n";
                 $message .= "応募の詳細を確認し、受諾または却下の判断をお願いします。";
                 
-                $actionUrl = url('job-applications.php');
+                $actionUrl = url('job-applications.php', true);
                 sendNotificationMail($clientEmail['email'], $subject, $message, $actionUrl, '応募を確認する');
             }
         } catch (Exception $e) {

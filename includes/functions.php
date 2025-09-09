@@ -16,7 +16,16 @@ function h($str) {
 /**
  * URL生成
  */
-function url($path = '') {
+function url($path = '', $absolute = false) {
+    if ($absolute) {
+        // 絶対URL生成（メール用）
+        $baseUrl = rtrim(BASE_URL, '/');
+        if (empty($path)) {
+            return $baseUrl . '/';
+        }
+        return $baseUrl . '/' . ltrim($path, '/');
+    }
+    
     // 相対パスでの URL 生成（ローカル・本番環境両対応）
     if (empty($path)) {
         return './';
@@ -635,9 +644,11 @@ function sendNotificationMail($to, $subject, $message, $actionUrl = null, $actio
             </div>";
             
     if ($actionUrl && $actionText) {
+        // メール内のリンクは絶対URLを使用
+        $absoluteActionUrl = url($actionUrl, true);
         $body .= "
             <div style=\"text-align: center;\">
-                <a href=\"{$actionUrl}\" class=\"button\">{$actionText}</a>
+                <a href=\"{$absoluteActionUrl}\" class=\"button\">{$actionText}</a>
             </div>";
     }
     
@@ -646,6 +657,7 @@ function sendNotificationMail($to, $subject, $message, $actionUrl = null, $actio
         <div class=\"footer\">
             <p>このメールは AiNA Works から自動送信されています。</p>
             <p>運営：株式会社AiNA</p>
+            <p><a href=\"" . url('', true) . "\" style=\"color: #E5E7EB; text-decoration: underline;\">AiNA Works</a> | <a href=\"" . url('privacy.php', true) . "\" style=\"color: #E5E7EB; text-decoration: underline;\">プライバシーポリシー</a> | <a href=\"" . url('terms.php', true) . "\" style=\"color: #E5E7EB; text-decoration: underline;\">利用規約</a></p>
             <p>お心当たりのない場合は、このメールを破棄してください。</p>
         </div>
     </div>

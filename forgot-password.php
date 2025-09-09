@@ -57,7 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     );
                     
                     // パスワードリセットメール送信
-                    $resetUrl = url("reset-password.php?token=" . $token);
+                    $resetUrl = url("reset-password.php?token=" . $token, true);
                     $subject = "【AiNA Works】パスワードリセットのご案内";
                     $message = "パスワードリセットのリクエストを受け付けました。\n\n";
                     $message .= "以下のボタンをクリックしてパスワードをリセットしてください。\n\n";

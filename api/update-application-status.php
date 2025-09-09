@@ -129,7 +129,7 @@ try {
                 $message .= "チャットルームが作成されましたので、詳細な打ち合わせを開始してください。\n";
                 $message .= "プロジェクトの成功に向けて頑張りましょう！";
                 
-                $actionUrl = url('chat?user_id=' . $currentUser['id']);
+                $actionUrl = url('chat?user_id=' . $currentUser['id'], true);
                 sendNotificationMail($creatorEmail['email'], $subject, $message, $actionUrl, 'チャットを開始する');
             }
         } catch (Exception $e) {

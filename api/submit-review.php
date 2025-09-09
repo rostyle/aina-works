@@ -121,7 +121,7 @@ try {
                 $message .= "素晴らしいフィードバックをいただきました！\n";
                 $message .= "今後の作品制作の参考にしてください。";
                 
-                $actionUrl = url('work-detail.php?id=' . $workId);
+                $actionUrl = url('work-detail.php?id=' . $workId, true);
                 sendNotificationMail($creator['email'], $subject, $message, $actionUrl, 'レビューを確認する');
             }
         } catch (Exception $e) {
