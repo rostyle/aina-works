@@ -455,7 +455,7 @@ include 'includes/header.php';
                         <!-- Client Info & Actions -->
                         <div class="flex items-center justify-between pt-4 border-t border-gray-200">
                             <div class="flex items-center">
-                                <img src="<?= h($job['client_image'] ?? asset('images/default-avatar.png')) ?>" 
+                                <img src="<?= uploaded_asset($job['client_image'] ?? 'assets/images/default-avatar.png') ?>" 
                                      alt="<?= h($job['client_name']) ?>" 
                                      class="w-8 h-8 rounded-full mr-3">
                                 <div>
@@ -584,7 +584,7 @@ include 'includes/header.php';
                         </div>
                         <p class="text-gray-600 line-clamp-2 mb-3"><?= h(mb_substr($job['description'], 0, 90)) ?><?= mb_strlen($job['description']) > 90 ? '...' : '' ?></p>
                         <div class="flex items-center text-sm text-gray-600">
-                            <img src="<?= h($job['client_image'] ?? asset('images/default-avatar.png')) ?>" class="w-6 h-6 rounded-full mr-2" alt="<?= h($job['client_name']) ?>">
+                            <img src="<?= uploaded_asset($job['client_image'] ?? 'assets/images/default-avatar.png') ?>" class="w-6 h-6 rounded-full mr-2" alt="<?= h($job['client_name']) ?>">
                             <span><?= h($job['client_name']) ?></span>
                         </div>
                     </div>
