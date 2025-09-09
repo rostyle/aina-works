@@ -63,6 +63,23 @@ $db->update("
 $pageTitle = h($otherUser['full_name']) . ' とのチャット';
 $pageDescription = 'チャット';
 
+// URLをハイパーリンクに変換する関数
+function convertUrlsToLinks($text) {
+    // URLの正規表現パターン（http、https、wwwで始まるURLを検出）
+    $urlRegex = '/(https?:\/\/[^\s]+|www\.[^\s]+)/i';
+    
+    return preg_replace_callback($urlRegex, function($matches) {
+        $url = $matches[0];
+        // wwwで始まる場合はhttps://を追加
+        $href = $url;
+        if (strtolower(substr($url, 0, 4)) === 'www.') {
+            $href = 'https://' . $url;
+        }
+        
+        return '<a href="' . h($href) . '" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline">' . h($url) . '</a>';
+    }, $text);
+}
+
 include 'includes/header.php';
 ?>
 
@@ -125,7 +142,7 @@ include 'includes/header.php';
                             <?php endif; ?>
                             <div class="flex flex-col <?= $message['sender_id'] === $currentUser['id'] ? 'items-end' : 'items-start' ?>">
                                 <div class="px-4 py-2 rounded-lg <?= $message['sender_id'] === $currentUser['id'] ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-900' ?>">
-                                    <p class="text-sm"><?= nl2br(h($message['message'])) ?></p>
+                                    <p class="text-sm"><?= nl2br(convertUrlsToLinks(h($message['message']))) ?></p>
                                 </div>
                                 <div class="flex items-center space-x-1 mt-1">
                                     <span class="text-xs text-gray-500">
@@ -174,6 +191,22 @@ const otherUserId = <?= $otherUserId ?>;
 
 // 表示済みメッセージIDを追跡
 const displayedMessageIds = new Set();
+
+// URLをハイパーリンクに変換する関数
+function convertUrlsToLinks(text) {
+    // URLの正規表現パターン（http、https、wwwで始まるURLを検出）
+    const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+)/gi;
+    
+    return text.replace(urlRegex, function(url) {
+        // wwwで始まる場合はhttps://を追加
+        let href = url;
+        if (url.toLowerCase().startsWith('www.')) {
+            href = 'https://' + url;
+        }
+        
+        return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline">${url}</a>`;
+    });
+}
 
 // メッセージ送信
 async function sendMessage(event) {
@@ -290,7 +323,7 @@ function addMessageToChat(message) {
             ${!isOwnMessage ? `<img src="${message.sender_image || 'assets/images/default-avatar.png'}" alt="${message.sender_name}" class="w-8 h-8 rounded-full flex-shrink-0">` : ''}
             <div class="flex flex-col ${isOwnMessage ? 'items-end' : 'items-start'}">
                 <div class="px-4 py-2 rounded-lg ${isOwnMessage ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-900'}">
-                    <p class="text-sm">${message.message.replace(/\n/g, '<br>')}</p>
+                    <p class="text-sm">${convertUrlsToLinks(message.message).replace(/\n/g, '<br>')}</p>
                 </div>
                 <div class="flex items-center space-x-1 mt-1">
                     <span class="text-xs text-gray-500">${message.time}</span>
