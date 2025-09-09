@@ -81,67 +81,67 @@ include 'includes/header.php';
             
         </div>
 
-        <!-- Stats Cards - ダッシュボード統計 -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <!-- Stats Cards - ダッシュボード統計（SP省スペース: 2列） -->
+        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
             <!-- 公開作品 -->
-            <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+            <div class="bg-white rounded-lg shadow-sm p-4 md:p-6 border border-gray-200">
                 <div class="flex items-center">
                     <div class="p-2 bg-blue-100 rounded-lg">
-                        <svg class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg class="h-5 w-5 md:h-6 md:w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                         </svg>
                     </div>
                     <div class="ml-4">
                         <h3 class="text-sm font-medium text-gray-500">公開作品</h3>
-                        <p class="text-2xl font-bold text-gray-900"><?= number_format($creatorStats['works']) ?></p>
+                        <p class="text-xl md:text-2xl font-bold text-gray-900"><?= number_format($creatorStats['works']) ?></p>
                         <p class="text-xs text-blue-600 mt-1"><?= number_format($creatorStats['total_likes']) ?>いいね</p>
                     </div>
                 </div>
             </div>
 
             <!-- 投稿案件 -->
-            <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+            <div class="bg-white rounded-lg shadow-sm p-4 md:p-6 border border-gray-200">
                 <div class="flex items-center">
                     <div class="p-2 bg-purple-100 rounded-lg">
-                        <svg class="h-6 w-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg class="h-5 w-5 md:h-6 md:w-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2V6" />
                         </svg>
                     </div>
                     <div class="ml-4">
                         <h3 class="text-sm font-medium text-gray-500">投稿案件</h3>
-                        <p class="text-2xl font-bold text-gray-900"><?= number_format($clientStats['jobs']) ?></p>
+                        <p class="text-xl md:text-2xl font-bold text-gray-900"><?= number_format($clientStats['jobs']) ?></p>
                         <p class="text-xs text-purple-600 mt-1"><?= number_format($clientStats['applications']) ?>件の応募</p>
                     </div>
                 </div>
             </div>
 
             <!-- お気に入り -->
-            <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+            <div class="bg-white rounded-lg shadow-sm p-4 md:p-6 border border-gray-200">
                 <div class="flex items-center">
                     <div class="p-2 bg-red-100 rounded-lg">
-                        <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg class="h-5 w-5 md:h-6 md:w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                         </svg>
                     </div>
                     <div class="ml-4">
                         <h3 class="text-sm font-medium text-gray-500">お気に入り</h3>
-                        <p class="text-2xl font-bold text-gray-900"><?= number_format($creatorStats['favorites_received']) ?></p>
+                        <p class="text-xl md:text-2xl font-bold text-gray-900"><?= number_format($creatorStats['favorites_received']) ?></p>
                         <p class="text-xs text-red-600 mt-1">受け取った数</p>
                     </div>
                 </div>
             </div>
 
             <!-- アクティビティ -->
-            <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+            <div class="bg-white rounded-lg shadow-sm p-4 md:p-6 border border-gray-200">
                 <div class="flex items-center">
                     <div class="p-2 bg-green-100 rounded-lg">
-                        <svg class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg class="h-5 w-5 md:h-6 md:w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                         </svg>
                     </div>
                     <div class="ml-4">
                         <h3 class="text-sm font-medium text-gray-500">アクティビティ</h3>
-                        <p class="text-2xl font-bold text-gray-900"><?= number_format($creatorStats['applications'] + $clientStats['jobs']) ?></p>
+                        <p class="text-xl md:text-2xl font-bold text-gray-900"><?= number_format($creatorStats['applications'] + $clientStats['jobs']) ?></p>
                         <p class="text-xs text-green-600 mt-1">総活動数</p>
                     </div>
                 </div>

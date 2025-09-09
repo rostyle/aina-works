@@ -252,9 +252,56 @@ include 'includes/header.php';
 </section>
 
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Mobile Accordion Filter -->
+    <div class="lg:hidden mb-4">
+        <details class="bg-white rounded-lg shadow-sm border border-gray-200">
+            <summary class="px-4 py-3 cursor-pointer font-medium text-gray-900 flex items-center justify-between">
+                フィルター
+                <svg class="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </summary>
+            <div class="p-4 border-t border-gray-200">
+                <form method="GET" id="filter-form-mobile">
+                    <?php if ($keyword): ?><input type="hidden" name="keyword" value="<?= h($keyword) ?>"><?php endif; ?>
+                    <!-- 専門分野 -->
+                    <div class="mb-4">
+                        <h4 class="font-medium text-gray-900 mb-2">専門分野</h4>
+                        <div class="space-y-2">
+                            <label class="flex items-center">
+                                <input type="radio" name="category_id" value="" 
+                                       <?= !$categoryId ? 'checked' : '' ?>
+                                       class="text-blue-600 focus:ring-blue-500 border-gray-300"
+                                       onchange="document.getElementById('filter-form-mobile').submit()">
+                                <span class="ml-2 text-sm text-gray-700">すべて</span>
+                            </label>
+                            <?php foreach ($categories as $category): ?>
+                                <label class="flex items-center">
+                                    <input type="radio" name="category_id" value="<?= h($category['id']) ?>" 
+                                           <?= $categoryId == $category['id'] ? 'checked' : '' ?>
+                                           class="text-blue-600 focus:ring-blue-500 border-gray-300"
+                                           onchange="document.getElementById('filter-form-mobile').submit()">
+                                    <span class="ml-2 text-sm text-gray-700"><?= h($category['name']) ?></span>
+                                </label>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                    <!-- 地域 -->
+                    <div class="mb-4">
+                        <h4 class="font-medium text-gray-900 mb-2">地域</h4>
+                        <input type="text" name="location" value="<?= h($location) ?>" 
+                               placeholder="東京都、大阪府など"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                    </div>
+                    <div class="flex gap-2">
+                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md">適用</button>
+                        <button type="button" onclick="clearFilters()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md">クリア</button>
+                    </div>
+                </form>
+            </div>
+        </details>
+    </div>
     <div class="flex flex-col lg:flex-row gap-8">
         <!-- Sidebar Filters -->
-        <div class="lg:w-1/4">
+        <div class="hidden lg:block lg:w-1/4">
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sticky top-24">
                 <h3 class="text-lg font-semibold text-gray-900 mb-4">フィルター</h3>
                 
@@ -319,8 +366,8 @@ include 'includes/header.php';
                 
                 <!-- Sort Options -->
                 <div class="flex items-center mt-4 sm:mt-0">
-                    <label class="text-sm font-medium text-gray-700 mr-3">並び替え:</label>
-                    <select name="sort" onchange="changeSort(this.value)" class="border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <label class="text-sm font-medium text-gray-900 mr-3">並び替え:</label>
+                    <select name="sort" onchange="changeSort(this.value)" class="border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         <option value="recommended" <?= $sortBy === 'recommended' ? 'selected' : '' ?>>おすすめ順</option>
                         <option value="newest" <?= $sortBy === 'newest' ? 'selected' : '' ?>>新着順</option>
                         <option value="rating" <?= $sortBy === 'rating' ? 'selected' : '' ?>>評価順</option>

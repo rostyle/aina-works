@@ -59,6 +59,11 @@ include 'includes/header.php';
     
     <!-- Background Image with Enhanced Overlay -->
     <div class="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-10" style="background-image: url('<?= asset('images/hero-background.jpg') ?>');"></div>
+    <style>
+    @media (max-width: 640px) {
+        .hero-text-contrast { text-shadow: 0 1px 3px rgba(0,0,0,.5); }
+    }
+    </style>
     
     <!-- Content -->
     <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 z-10">
@@ -70,14 +75,14 @@ include 'includes/header.php';
             </div>
             
             <!-- Main Headline -->
-            <h1 class="text-display-lg md:text-display-xl font-bold mb-8 animate-slide-up text-balance">
+            <h1 class="text-display-lg md:text-display-xl font-bold mb-8 animate-slide-up text-balance hero-text-contrast">
                 <span class="text-gradient-warm">AIスキル</span>で未来を創る
                 <br />
                 <span class="text-white/90">クリエイター</span><span class="text-gradient">マッチング</span>
             </h1>
             
             <!-- Subtitle -->
-            <p class="text-xl md:text-2xl mb-12 text-white/80 max-w-4xl mx-auto leading-relaxed animate-slide-up" style="animation-delay: 0.2s;">
+            <p class="text-xl md:text-2xl mb-12 text-white/90 max-w-4xl mx-auto leading-relaxed animate-slide-up hero-text-contrast" style="animation-delay: 0.2s;">
                 AIスクール生と企業をつなぐ、革新的なクリエイティブプラットフォーム。
                 <br class="hidden md:block">
                 才能と情熱を持つクリエイターが、素晴らしいプロジェクトと出会える場所
