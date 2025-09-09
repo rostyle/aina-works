@@ -84,12 +84,16 @@ function redirect($url) {
  * JSONレスポンス
  */
 function jsonResponse($data, $status = 200) {
+    // 出力バッファをクリアしてクリーンなレスポンスを確保
+    while (ob_get_level()) {
+        ob_end_clean();
+    }
+    
     if (!headers_sent()) {
         http_response_code($status);
         header('Content-Type: application/json');
-        echo json_encode($data, JSON_UNESCAPED_UNICODE);
-        exit;
     }
+    
     echo json_encode($data, JSON_UNESCAPED_UNICODE);
     exit;
 }

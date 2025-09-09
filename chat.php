@@ -196,7 +196,31 @@ async function sendMessage(event) {
             body: formData
         });
         
-        const result = await response.json();
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('HTTP Error Response:', errorText);
+            throw new Error(`HTTP error! status: ${response.status}, response: ${errorText}`);
+        }
+        
+        const responseText = await response.text();
+        console.log('Raw API Response:', responseText);
+        
+        let result;
+        try {
+            // HTMLエラーメッセージが混在している場合、JSON部分だけを抽出
+            let jsonText = responseText;
+            const jsonStartIndex = responseText.indexOf('{');
+            if (jsonStartIndex > 0) {
+                jsonText = responseText.substring(jsonStartIndex);
+                console.log('Extracted JSON from mixed response:', jsonText);
+            }
+            result = JSON.parse(jsonText);
+            console.log('Parsed API Response:', result);
+        } catch (parseError) {
+            console.error('JSON Parse Error:', parseError);
+            console.error('Response text that failed to parse:', responseText);
+            throw new Error('Invalid JSON response from server');
+        }
         
         if (result.success) {
             // メッセージを即座に表示
@@ -210,12 +234,18 @@ async function sendMessage(event) {
                 window.updateNotificationCount();
             }
         } else {
-            showNotification(result.error || 'メッセージの送信に失敗しました', 'error');
+            const errorMessage = result.error || result.message || 'メッセージの送信に失敗しました';
+            showNotification(errorMessage, 'error');
         }
         
     } catch (error) {
         console.error('Message send error:', error);
-        showNotification('ネットワークエラーが発生しました', 'error');
+        console.error('Error details:', {
+            name: error.name,
+            message: error.message,
+            stack: error.stack
+        });
+        showNotification('ネットワークエラーが発生しました: ' + error.message, 'error');
     } finally {
         submitBtn.disabled = false;
         messageInput.focus();
@@ -224,6 +254,14 @@ async function sendMessage(event) {
 
 // メッセージをチャットに追加
 function addMessageToChat(message) {
+    console.log('Adding message to chat:', message);
+    
+    // メッセージオブジェクトの検証
+    if (!message || !message.id) {
+        console.error('Invalid message object:', message);
+        return;
+    }
+    
     // 既に表示済みのメッセージかチェック
     if (displayedMessageIds.has(message.id)) {
         return;
@@ -314,10 +352,40 @@ setInterval(checkNewMessages, 3000);
 
 async function checkNewMessages() {
     try {
-        const response = await fetch(`api/get-chat-messages.php?room_id=${roomId}&last_message_id=${getLastMessageId()}`);
-        const result = await response.json();
+        const lastMessageId = getLastMessageId();
+        console.log('Checking for new messages, last message ID:', lastMessageId);
+        
+        const response = await fetch(`api/get-chat-messages.php?room_id=${roomId}&last_message_id=${lastMessageId}`);
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Failed to fetch new messages, status:', response.status);
+            console.error('Error response:', errorText);
+            return;
+        }
+        
+        const responseText = await response.text();
+        console.log('Raw response for new messages:', responseText);
+        
+        let result;
+        try {
+            // HTMLエラーメッセージが混在している場合、JSON部分だけを抽出
+            let jsonText = responseText;
+            const jsonStartIndex = responseText.indexOf('{');
+            if (jsonStartIndex > 0) {
+                jsonText = responseText.substring(jsonStartIndex);
+                console.log('Extracted JSON from mixed response:', jsonText);
+            }
+            result = JSON.parse(jsonText);
+        } catch (parseError) {
+            console.error('JSON Parse Error for new messages:', parseError);
+            console.error('Response text that failed to parse:', responseText);
+            return;
+        }
+        console.log('New messages check result:', result);
         
         if (result.success && result.messages.length > 0) {
+            console.log('Found', result.messages.length, 'new messages');
             result.messages.forEach(message => {
                 addMessageToChat(message);
             });
