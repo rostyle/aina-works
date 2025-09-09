@@ -6,6 +6,7 @@
 .Trashes
 ehthumbs.db
 Thumbs.db
+desktop.ini
 
 # IDE/Editor files
 .vscode/
@@ -13,6 +14,9 @@ Thumbs.db
 *.swp
 *.swo
 *~
+.project
+.settings/
+.classpath
 
 # PHP
 composer.phar
@@ -24,45 +28,117 @@ composer.lock
 .env.local
 .env.production
 .env.staging
+sample.env
 
 # Database files
 *.sqlite
 *.db
 database.sqlite
+*.sql
 
 # Log files
 *.log
 logs/
 error.log
 access.log
+php_errors.log
+debug.log
 
 # Cache files
 cache/
 tmp/
 temp/
+*.tmp
+*.cache
 
 # Upload files (if they contain sensitive data)
 uploads/*
 !uploads/.gitkeep
 storage/app/uploads/*
 !storage/app/uploads/.gitkeep
+assets/uploads/
+public/uploads/
 
 # Config files with sensitive data
 config/config.php
+config/database.php
+config/mail.php
 
 # Backup files
 *.bak
 *.backup
+*.old
+*.orig
 sql/
+backup/
 
 # Node modules (if using any JS build tools)
 node_modules/
 npm-debug.log
 yarn-error.log
+package-lock.json
+yarn.lock
 
 # Build files
 dist/
 build/
+public/build/
 
 # XAMPP specific
 .htaccess.bak
+xampp/
+htdocs/backup/
+
+# Session files
+sessions/
+sess_*
+
+# PHP specific
+*.php~
+*.php.bak
+php.ini
+
+# Security
+.htpasswd
+.htaccess.local
+
+# Development
+debug/
+test/
+tests/
+phpunit.xml
+.phpunit.result.cache
+
+# Composer
+composer.phar
+composer.lock
+
+# Git
+.git/
+.gitignore.bak
+
+# Windows specific
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux specific
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# macOS specific
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent

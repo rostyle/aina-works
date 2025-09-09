@@ -1,0 +1,84 @@
+name: FTP Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  ftp-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: FTP Deploy (FTPS explicit)
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ftp.lolipop.jp
+          username: ${{ secrets.FTP_USERNAME }}           # ← ユーザー名もSecret化推奨
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftps                                  # ← 明示的FTPSを使用
+          port: 21
+          local-dir: ./                            # ← 公開したいフォルダに変更（例: ./, ./dist/, ./build/ など）
+          server-dir: /aina-works/                    # ← 末尾のスラッシュ必須
+          exclude: |                                      # 余計なものは送らない
+            **/.git*
+            **/.github/**
+            **/node_modules/**
+            **/README.md
+            **/.DS_Store
+            **/.env*
+            **/sample.env
+            **/composer.lock
+            **/vendor/**
+            **/config/config.php
+            **/config/database.php
+            **/config/mail.php
+            **/sql/**
+            **/backup/**
+            **/logs/**
+            **/cache/**
+            **/tmp/**
+            **/temp/**
+            **/debug/**
+            **/test/**
+            **/tests/**
+            **/storage/app/uploads/**
+            **/uploads/**
+            **/assets/uploads/**
+            **/public/uploads/**
+            **/*.log
+            **/*.bak
+            **/*.backup
+            **/*.old
+            **/*.orig
+            **/*.tmp
+            **/*.cache
+            **/*.php~
+            **/*.php.bak
+            **/php.ini
+            **/.htpasswd
+            **/.htaccess.local
+            **/phpunit.xml
+            **/.phpunit.result.cache
+            **/Thumbs.db
+            **/ehthumbs.db
+            **/desktop.ini
+            **/.vscode/**
+            **/.idea/**
+            **/*.swp
+            **/*.swo
+            **/*~
+            **/.project
+            **/.settings/**
+            **/.classpath
+            **/sessions/**
+            **/sess_*
+            **/package-lock.json
+            **/yarn.lock
+            **/dist/**
+            **/build/**
+            **/public/build/**
+          log-level: minimal
