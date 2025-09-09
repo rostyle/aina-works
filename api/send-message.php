@@ -89,4 +89,3 @@ try {
     error_log("Message send error: " . $e->getMessage());
     jsonResponse(['error' => 'システムエラーが発生しました'], 500);
 }
-?>

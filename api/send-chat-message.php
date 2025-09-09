@@ -104,4 +104,3 @@ try {
     error_log("Chat message send error: " . $e->getMessage());
     jsonResponse(['error' => 'システムエラーが発生しました'], 500);
 }
-?>

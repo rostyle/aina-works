@@ -510,4 +510,3 @@ function showNotification(message, type = 'info') {
 </script>
 
 <?php include 'includes/footer.php'; ?>
-

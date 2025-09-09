@@ -6,4 +6,3 @@ session_destroy();
 
 setFlash('success', 'ログアウトしました。');
 redirect(url());
-?>

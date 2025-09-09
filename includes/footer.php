@@ -479,4 +479,3 @@
     <?php endif; ?>
 </body>
 </html>
-

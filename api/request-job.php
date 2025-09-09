@@ -83,4 +83,3 @@ try {
     error_log("Job request error: " . $e->getMessage());
     jsonResponse(['error' => 'システムエラーが発生しました'], 500);
 }
-?>

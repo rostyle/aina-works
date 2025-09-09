@@ -187,6 +187,3 @@ try {
     error_log('Update application status error: ' . $e->getMessage());
     jsonResponse(['error' => 'システムエラーが発生しました'], 500);
 }
-?>
-
-

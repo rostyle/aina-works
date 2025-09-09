@@ -55,4 +55,3 @@ function validateCurrentPage() {
 if (!defined('SKIP_PAGE_VALIDATION')) {
     validateCurrentPage();
 }
-?>

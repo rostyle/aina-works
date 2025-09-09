@@ -178,7 +178,3 @@ try {
     error_log('Update job settings error: ' . $e->getMessage());
     jsonResponse(['error' => 'システムエラーが発生しました'], 500);
 }
-?>
-
-
-

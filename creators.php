@@ -521,4 +521,3 @@ async function toggleFavorite(targetType, targetId, button) {
 </script>
 
 <?php include 'includes/footer.php'; ?>
-

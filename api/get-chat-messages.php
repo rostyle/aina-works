@@ -61,4 +61,3 @@ try {
     error_log("Get chat messages error: " . $e->getMessage());
     jsonResponse(['error' => 'システムエラーが発生しました'], 500);
 }
-?>

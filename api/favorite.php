@@ -172,4 +172,3 @@ try {
     http_response_code(500);
     echo json_encode(['success' => false, 'message' => 'サーバーエラーが発生しました']);
 }
-?>

@@ -67,7 +67,16 @@ function getCurrentUrl() {
  * リダイレクト
  */
 function redirect($url) {
-    header('Location: ' . $url);
+    if (function_exists('ob_get_level')) {
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+    }
+    if (!headers_sent()) {
+        header('Location: ' . $url, true, 302);
+        exit;
+    }
+    echo '<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url=' . h($url) . '"/></head><body><script>location.replace(' . json_encode($url) . ');</script></body></html>';
     exit;
 }
 
@@ -75,8 +84,12 @@ function redirect($url) {
  * JSONレスポンス
  */
 function jsonResponse($data, $status = 200) {
-    http_response_code($status);
-    header('Content-Type: application/json');
+    if (!headers_sent()) {
+        http_response_code($status);
+        header('Content-Type: application/json');
+        echo json_encode($data, JSON_UNESCAPED_UNICODE);
+        exit;
+    }
     echo json_encode($data, JSON_UNESCAPED_UNICODE);
     exit;
 }
@@ -967,5 +980,4 @@ function performApiLogin($email, $password) {
         ];
     }
 }
-?>
 

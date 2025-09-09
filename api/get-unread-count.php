@@ -31,4 +31,3 @@ try {
     error_log("Get unread count error: " . $e->getMessage());
     jsonResponse(['error' => 'システムエラーが発生しました'], 500);
 }
-?>
