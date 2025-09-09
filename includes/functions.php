@@ -17,6 +17,11 @@ function h($str) {
  * URL生成
  */
 function url($path = '', $absolute = false) {
+    // 既に絶対URLの場合はそのまま返す
+    if (!empty($path) && (strpos($path, 'http://') === 0 || strpos($path, 'https://') === 0)) {
+        return $path;
+    }
+    
     if ($absolute) {
         // 絶対URL生成（メール用）
         $baseUrl = rtrim(BASE_URL, '/');
@@ -645,7 +650,8 @@ function sendNotificationMail($to, $subject, $message, $actionUrl = null, $actio
             
     if ($actionUrl && $actionText) {
         // メール内のリンクは絶対URLを使用
-        $absoluteActionUrl = url($actionUrl, true);
+        // 既に絶対URLの場合はそのまま使用、そうでなければ絶対URLに変換
+        $absoluteActionUrl = (strpos($actionUrl, 'http') === 0) ? $actionUrl : url($actionUrl, true);
         $body .= "
             <div style=\"text-align: center;\">
                 <a href=\"{$absoluteActionUrl}\" class=\"button\">{$actionText}</a>
