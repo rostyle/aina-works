@@ -1,27 +1,49 @@
 <?php
-require_once '../config/config.php';
+// エラー出力を完全に抑制
+error_reporting(0);
+ini_set('display_errors', 0);
 
-// JSONレスポンスのヘッダー設定
-header('Content-Type: application/json');
-header('X-Content-Type-Options: nosniff');
+// 出力バッファリングを開始（予期せぬ出力を防ぐ）
+ob_start();
+
+try {
+    require_once '../config/config.php';
+    
+    // JSONレスポンスのヘッダー設定
+    header('Content-Type: application/json');
+    header('X-Content-Type-Options: nosniff');
+} catch (Exception $e) {
+    // 設定ファイル読み込みエラー
+    ob_clean();
+    http_response_code(500);
+    header('Content-Type: application/json');
+    echo json_encode(['success' => false, 'message' => 'システム設定エラーが発生しました']);
+    exit;
+}
 
 // ログインチェック
 if (!isLoggedIn()) {
+    ob_clean();
     http_response_code(401);
+    header('Content-Type: application/json');
     echo json_encode(['success' => false, 'message' => 'ログインが必要です']);
     exit;
 }
 
 // POSTリクエストのみ受け付け
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    ob_clean();
     http_response_code(405);
+    header('Content-Type: application/json');
     echo json_encode(['success' => false, 'message' => 'POSTリクエストのみ受け付けます']);
     exit;
 }
 
 $user = getCurrentUser();
 if (!$user) {
+    ob_clean();
     http_response_code(401);
+    header('Content-Type: application/json');
     echo json_encode(['success' => false, 'message' => 'ユーザー情報を取得できません']);
     exit;
 }
@@ -29,7 +51,9 @@ if (!$user) {
 // JSONデータを取得
 $input = json_decode(file_get_contents('php://input'), true);
 if (!$input) {
+    ob_clean();
     http_response_code(400);
+    header('Content-Type: application/json');
     echo json_encode(['success' => false, 'message' => '無効なJSONデータです']);
     exit;
 }
@@ -40,19 +64,25 @@ $targetId = (int)($input['target_id'] ?? 0);
 
 // バリデーション
 if (!in_array($action, ['add', 'remove'])) {
+    ob_clean();
     http_response_code(400);
+    header('Content-Type: application/json');
     echo json_encode(['success' => false, 'message' => '無効なアクションです']);
     exit;
 }
 
 if (!in_array($targetType, ['work', 'creator'])) {
+    ob_clean();
     http_response_code(400);
+    header('Content-Type: application/json');
     echo json_encode(['success' => false, 'message' => '無効なターゲットタイプです']);
     exit;
 }
 
 if ($targetId <= 0) {
+    ob_clean();
     http_response_code(400);
+    header('Content-Type: application/json');
     echo json_encode(['success' => false, 'message' => '無効なターゲットIDです']);
     exit;
 }
@@ -71,14 +101,18 @@ try {
         }
         
         if (!$target) {
+            ob_clean();
             http_response_code(404);
+            header('Content-Type: application/json');
             echo json_encode(['success' => false, 'message' => '対象が見つかりません']);
             exit;
         }
         
         // 自分自身をお気に入りに追加できないようにする
         if ($targetType === 'creator' && $targetId === $user['id']) {
+            ob_clean();
             http_response_code(400);
+            header('Content-Type: application/json');
             echo json_encode(['success' => false, 'message' => '自分自身をお気に入りに追加することはできません']);
             exit;
         }
@@ -86,7 +120,9 @@ try {
         if ($targetType === 'work') {
             $work = $db->selectOne("SELECT user_id FROM works WHERE id = ?", [$targetId]);
             if ($work && $work['user_id'] === $user['id']) {
+                ob_clean();
                 http_response_code(400);
+                header('Content-Type: application/json');
                 echo json_encode(['success' => false, 'message' => '自分の作品をお気に入りに追加することはできません']);
                 exit;
             }
@@ -99,6 +135,8 @@ try {
         );
         
         if ($existing) {
+            ob_clean();
+            header('Content-Type: application/json');
             echo json_encode(['success' => true, 'message' => '既にお気に入りに追加されています', 'is_favorite' => true]);
             exit;
         }
@@ -151,6 +189,8 @@ try {
             // メール送信エラーでもお気に入り追加は成功として処理
         }
         
+        ob_clean();
+        header('Content-Type: application/json');
         echo json_encode(['success' => true, 'message' => 'お気に入りに追加しました', 'is_favorite' => true]);
         
     } else {
@@ -160,6 +200,8 @@ try {
             [$user['id'], $targetType, $targetId]
         );
         
+        ob_clean();
+        header('Content-Type: application/json');
         if ($deleted > 0) {
             echo json_encode(['success' => true, 'message' => 'お気に入りから削除しました', 'is_favorite' => false]);
         } else {
@@ -169,6 +211,11 @@ try {
     
 } catch (Exception $e) {
     error_log("Favorite API error: " . $e->getMessage());
+    ob_clean();
     http_response_code(500);
+    header('Content-Type: application/json');
     echo json_encode(['success' => false, 'message' => 'サーバーエラーが発生しました']);
 }
+
+// 出力バッファリングを終了
+ob_end_flush();

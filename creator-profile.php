@@ -324,26 +324,52 @@ include 'includes/header.php';
 async function toggleFavorite(targetType, targetId, button) {
     try {
         const isFavorited = button.getAttribute('data-liked') === 'true';
-        const response = await fetch('api/favorite.php', {
+        const apiUrl = './api/favorite.php';
+        const requestData = {
+            action: isFavorited ? 'remove' : 'add',
+            target_type: targetType,
+            target_id: targetId
+        };
+        
+        console.log('Request URL:', apiUrl);
+        console.log('Request data:', requestData);
+        
+        const response = await fetch(apiUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'X-Requested-With': 'XMLHttpRequest'
             },
-            body: JSON.stringify({
-                action: isFavorited ? 'remove' : 'add',
-                target_type: targetType,
-                target_id: targetId
-            })
+            body: JSON.stringify(requestData)
         });
 
+        console.log('HTTP Status:', response.status);
+        console.log('Response OK:', response.ok);
+        
         if (response.status === 401) {
             const redirectUrl = 'login.php?redirect=' + encodeURIComponent(window.location.href);
             window.location.href = redirectUrl;
             return;
         }
 
-        const result = await response.json();
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.log('Error response text:', errorText);
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const responseText = await response.text();
+        console.log('Raw response:', responseText);
+        
+        let result;
+        try {
+            result = JSON.parse(responseText);
+        } catch (jsonError) {
+            console.error('JSON parse error:', jsonError);
+            console.log('Response was not valid JSON:', responseText.substring(0, 200));
+            throw new Error('サーバーから無効なレスポンスが返されました');
+        }
+        console.log('Favorite API response:', result);
         if (result.success) {
             const svg = button.querySelector('svg');
             const label = button.querySelector('.fav-label');
@@ -365,13 +391,17 @@ async function toggleFavorite(targetType, targetId, button) {
             }
         } else {
             if (typeof showNotification === 'function') {
-                showNotification(result.error || 'エラーが発生しました', 'error');
+                showNotification(result.message || 'エラーが発生しました', 'error');
+            } else {
+                alert('エラー: ' + (result.message || 'エラーが発生しました'));
             }
         }
     } catch (error) {
         console.error('Favorite toggle error:', error);
         if (typeof showNotification === 'function') {
-            showNotification('ネットワークエラーが発生しました', 'error');
+            showNotification('ネットワークエラーが発生しました: ' + error.message, 'error');
+        } else {
+            alert('ネットワークエラーが発生しました: ' + error.message);
         }
     }
 }
