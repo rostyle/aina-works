@@ -179,11 +179,15 @@ $navItems = [
                                     class="flex items-center space-x-2 text-gray-700 hover:text-primary-600 p-2 rounded-lg hover:bg-gray-50"
                                     id="user-menu-button"
                                     onclick="toggleUserMenu()">
-                                <div class="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
-                                    <span class="text-primary-600 font-semibold text-sm">
-                                        <?= strtoupper(substr($user['nickname'] ?? $user['full_name'] ?? $user['username'] ?? 'U', 0, 1)) ?>
-                                    </span>
-                                </div>
+                                <?php if (!empty($user['profile_image'])): ?>
+                                    <img src="<?= uploaded_asset($user['profile_image']) ?>" alt="プロフィール画像" class="w-8 h-8 rounded-full object-cover">
+                                <?php else: ?>
+                                    <div class="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
+                                        <span class="text-primary-600 font-semibold text-sm">
+                                            <?= strtoupper(substr($user['nickname'] ?? $user['full_name'] ?? $user['username'] ?? 'U', 0, 1)) ?>
+                                        </span>
+                                    </div>
+                                <?php endif; ?>
                                 <span><?= h($user['nickname'] ?? $user['full_name'] ?? $user['username'] ?? 'ユーザー') ?></span>
                                 <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
@@ -248,13 +252,17 @@ $navItems = [
                 <!-- Header -->
                 <div class="bg-gradient-to-r from-primary-600 to-secondary-600 p-4 text-white">
                     <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-3">
+                        <div class="flex items-center space-x-3">
                             <?php if (isLoggedIn()): ?>
-                                <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-                                    <span class="text-white font-bold">
-                                        <?= strtoupper(substr($user['nickname'] ?? $user['full_name'] ?? $user['username'] ?? 'U', 0, 1)) ?>
-                                    </span>
-                                </div>
+                                <?php if (!empty($user['profile_image'])): ?>
+                                    <img src="<?= uploaded_asset($user['profile_image']) ?>" alt="プロフィール画像" class="w-10 h-10 rounded-full object-cover border-2 border-white/20">
+                                <?php else: ?>
+                                    <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                                        <span class="text-white font-bold">
+                                            <?= strtoupper(substr($user['nickname'] ?? $user['full_name'] ?? $user['username'] ?? 'U', 0, 1)) ?>
+                                        </span>
+                                    </div>
+                                <?php endif; ?>
                                 <div class="min-w-0 flex-1">
                                     <div class="font-semibold truncate">
                                         <?= h($user['nickname'] ?? $user['full_name'] ?? $user['username'] ?? 'ユーザー') ?>

@@ -53,6 +53,7 @@ config/config.php
 # Backup files
 *.bak
 *.backup
+sql/
 
 # Node modules (if using any JS build tools)
 node_modules/

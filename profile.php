@@ -31,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $linkedin = trim($_POST['linkedin_url'] ?? '');
         $youtube = trim($_POST['youtube_url'] ?? '');
         $tiktok = trim($_POST['tiktok_url'] ?? '');
-        $experienceYears = isset($_POST['experience_years']) && $_POST['experience_years'] !== '' ? (int)$_POST['experience_years'] : (int)($user['experience_years'] ?? 0);
+        $experienceYears = (int)($user['experience_years'] ?? 0);
         $responseTime = isset($_POST['response_time']) && $_POST['response_time'] !== '' ? (int)$_POST['response_time'] : (int)($user['response_time'] ?? 24);
         $isCreator = isset($_POST['is_creator']) ? 1 : 0;
         $isClient = isset($_POST['is_client']) ? 1 : 0;
@@ -194,15 +194,9 @@ include 'includes/header.php';
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                    <label for="experience_years" class="block text-sm font-medium text-gray-700">経験年数</label>
-                    <input type="number" min="0" name="experience_years" id="experience_years" value="<?= (int)($user['experience_years'] ?? 0) ?>" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                </div>
-                <div>
-                    <label for="response_time" class="block text-sm font-medium text-gray-700">平均レスポンス時間（時間）</label>
-                    <input type="number" min="1" name="response_time" id="response_time" value="<?= (int)($user['response_time'] ?? 24) ?>" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                </div>
+            <div>
+                <label for="response_time" class="block text-sm font-medium text-gray-700">平均レスポンス時間（時間）</label>
+                <input type="number" min="1" name="response_time" id="response_time" value="<?= (int)($user['response_time'] ?? 24) ?>" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
             </div>
 
             <div class="border-t pt-6">

@@ -49,7 +49,7 @@ function uploaded_asset($path) {
         return './' . $path;
     }
     
-    // アップロードされたファイルの場合は直接パスを返す
+    // アップロードされたファイルはストレージ直参照（本番環境でのヘッダー警告回避）
     return './storage/app/uploads/' . $path;
 }
 

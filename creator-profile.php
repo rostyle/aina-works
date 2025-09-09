@@ -244,7 +244,7 @@ include 'includes/header.php';
                 </div>
 
                 <!-- Stats -->
-                <div class="grid grid-cols-3 gap-4 text-center mb-6">
+                <div class="grid grid-cols-2 gap-4 text-center mb-6">
                     <div>
                         <div class="text-lg font-bold text-gray-900"><?= $creator['work_count'] ?></div>
                         <div class="text-xs text-gray-500">作品数</div>
@@ -252,10 +252,6 @@ include 'includes/header.php';
                     <div>
                         <div class="text-lg font-bold text-gray-900"><?= $creator['completed_jobs'] ?></div>
                         <div class="text-xs text-gray-500">完了案件</div>
-                    </div>
-                    <div>
-                        <div class="text-lg font-bold text-gray-900"><?= $creator['experience_years'] ?>年</div>
-                        <div class="text-xs text-gray-500">経験</div>
                     </div>
                 </div>
 
@@ -306,10 +302,6 @@ include 'includes/header.php';
                     <div class="flex justify-between">
                         <span class="text-gray-600">所在地</span>
                         <span class="text-gray-900"><?= h($creator['location']) ?></span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="text-gray-600">経験年数</span>
-                        <span class="text-gray-900"><?= $creator['experience_years'] ?>年</span>
                     </div>
                     <div class="flex justify-between">
                         <span class="text-gray-600">対応可能状況</span>

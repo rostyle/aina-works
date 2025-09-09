@@ -312,9 +312,9 @@ include 'includes/header.php';
                             <div class="p-6">
                                 <!-- Creator Header -->
                                 <div class="flex items-start space-x-4 mb-4">
-                                    <img src="<?= h($creator['profile_image'] ?? asset('images/default-avatar.png')) ?>" 
+                                    <img src="<?= uploaded_asset($creator['profile_image'] ?? 'assets/images/default-avatar.png') ?>" 
                                          alt="<?= h($creator['full_name']) ?>" 
-                                         class="w-16 h-16 rounded-full">
+                                         class="w-16 h-16 rounded-full object-cover">
                                     <div class="flex-1 min-w-0">
                                         <h3 class="text-lg font-semibold text-gray-900 truncate">
                                             <a href="<?= url('creator-profile?id=' . $creator['id']) ?>" class="hover:text-blue-600 transition-colors">
@@ -375,7 +375,7 @@ include 'includes/header.php';
                                 <?php endif; ?>
 
                                 <!-- Stats -->
-                                <div class="grid grid-cols-3 gap-4 text-center mb-4 py-3 bg-gray-50 rounded-lg">
+                                <div class="grid grid-cols-2 gap-4 text-center mb-4 py-3 bg-gray-50 rounded-lg">
                                     <div>
                                         <div class="text-lg font-bold text-gray-900"><?= $creator['work_count'] ?></div>
                                         <div class="text-xs text-gray-500">作品</div>
@@ -383,10 +383,6 @@ include 'includes/header.php';
                                     <div>
                                         <div class="text-lg font-bold text-gray-900"><?= $creator['completed_jobs'] ?></div>
                                         <div class="text-xs text-gray-500">完了案件</div>
-                                    </div>
-                                    <div>
-                                        <div class="text-lg font-bold text-gray-900"><?= $creator['experience_years'] ?>年</div>
-                                        <div class="text-xs text-gray-500">経験</div>
                                     </div>
                                 </div>
 
