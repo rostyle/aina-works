@@ -1,6 +1,15 @@
 <?php
 require_once '../config/config.php';
 
+// 出力バッファを完全にクリア
+while (ob_get_level()) {
+    ob_end_clean();
+}
+
+// エラー出力を無効化（JSONレスポンス用）
+ini_set('display_errors', '0');
+error_reporting(0);
+
 header('Content-Type: application/json');
 
 // ログイン確認
