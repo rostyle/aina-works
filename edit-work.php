@@ -47,10 +47,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $formData['price_max'] = (int)($_POST['price_max'] ?? 0);
         $formData['duration_weeks'] = (int)($_POST['duration_weeks'] ?? 0);
 
-        // Main image upload
+        // Main image upload (resize & compress)
         if (isset($_FILES['main_image']) && $_FILES['main_image']['error'] === UPLOAD_ERR_OK) {
             try {
-                $formData['main_image'] = uploadFile($_FILES['main_image']);
+                // 目安: 1600x900以内、品質82、画像のみ許可
+                $formData['main_image'] = uploadImage(
+                    $_FILES['main_image'],
+                    ['max_width' => 1600, 'max_height' => 900, 'quality' => 82, 'strict' => true]
+                );
             } catch (Exception $e) {
                 $errors[] = 'メイン画像のアップロードに失敗しました: ' . $e->getMessage();
             }
@@ -151,7 +155,8 @@ include 'includes/header.php';
                         <img src="<?= uploaded_asset($formData['main_image']) ?>" alt="現在の画像" class="w-32 h-32 object-cover rounded-md">
                     </div>
                 <?php endif; ?>
-                <input type="file" name="main_image" id="main_image" class="mt-2">
+                <input type="file" name="main_image" id="main_image" accept="image/jpeg,image/png,image/gif" class="mt-2">
+                <p class="mt-1 text-xs text-gray-500">推奨: 1600×900px（16:9）、5MB以下。アップロード時に自動でリサイズ・圧縮されます。</p>
             </div>
 
             <div class="flex justify-end">

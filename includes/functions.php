@@ -437,6 +437,137 @@ function uploadFile($file) {
 }
 
 /**
+ * 画像アップロード（アスペクト比維持のリサイズ＋圧縮）
+ *
+ * @param array $file $_FILES の1要素
+ * @param array $options ['max_width' => int, 'max_height' => int, 'quality' => int, 'strict' => bool]
+ * @return string 保存したファイル名
+ * @throws Exception
+ */
+function uploadImage($file, $options = []) {
+    if (!isset($file['tmp_name']) || !is_uploaded_file($file['tmp_name'])) {
+        throw new Exception('ファイルがアップロードされていません。');
+    }
+
+    if ($file['size'] > UPLOAD_MAX_SIZE) {
+        throw new Exception('ファイルサイズが大きすぎます。');
+    }
+
+    // MIMEタイプ検証
+    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+    $mimeType = finfo_file($finfo, $file['tmp_name']);
+    finfo_close($finfo);
+
+    // 画像以外の扱い
+    $imageMimes = ['image/jpeg', 'image/png', 'image/gif'];
+    if (!in_array($mimeType, $imageMimes, true)) {
+        if (!empty($options['strict'])) {
+            throw new Exception('画像ファイルのみアップロード可能です。');
+        }
+        return uploadFile($file);
+    }
+
+    // 画像拡張子の厳格チェック（ALLOWED_EXTENSIONS に PDF が含まれていても、ここでは画像のみ許可）
+    $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+    $allowedImageExtensions = ['jpg', 'jpeg', 'png', 'gif'];
+    if (!in_array($extension, $allowedImageExtensions, true)) {
+        throw new Exception('画像の拡張子のみ許可されています（jpg, jpeg, png, gif）。');
+    }
+
+    // 最大サイズと品質（デフォルト値）
+    $maxWidth = (int)($options['max_width'] ?? 1600);
+    $maxHeight = (int)($options['max_height'] ?? 1600);
+    $jpegQuality = (int)($options['quality'] ?? 82); // 0-100
+    $pngCompression = 6; // 0(無圧縮) - 9(最大圧縮)
+
+    // 画像読み込み
+    switch ($mimeType) {
+        case 'image/jpeg':
+            $srcImage = imagecreatefromjpeg($file['tmp_name']);
+            break;
+        case 'image/png':
+            $srcImage = imagecreatefrompng($file['tmp_name']);
+            break;
+        case 'image/gif':
+            // GIFはアニメーション破壊の恐れがあるため、リサイズせずそのまま保存
+            return uploadFile($file);
+        default:
+            return uploadFile($file);
+    }
+
+    if (!$srcImage) {
+        throw new Exception('画像の読み込みに失敗しました。');
+    }
+
+    $srcWidth = imagesx($srcImage);
+    $srcHeight = imagesy($srcImage);
+
+    // リサイズ不要なら再エンコードのみ行う（圧縮目的）
+    $needResize = ($srcWidth > $maxWidth) || ($srcHeight > $maxHeight);
+
+    if ($needResize) {
+        // 等比で縮小
+        $ratio = min($maxWidth / $srcWidth, $maxHeight / $srcHeight);
+        $dstWidth = max(1, (int)floor($srcWidth * $ratio));
+        $dstHeight = max(1, (int)floor($srcHeight * $ratio));
+
+        $dstImage = imagecreatetruecolor($dstWidth, $dstHeight);
+
+        // PNG のアルファ保持
+        if ($mimeType === 'image/png') {
+            imagealphablending($dstImage, false);
+            imagesavealpha($dstImage, true);
+        }
+
+        imagecopyresampled($dstImage, $srcImage, 0, 0, 0, 0, $dstWidth, $dstHeight, $srcWidth, $srcHeight);
+    } else {
+        $dstImage = $srcImage;
+    }
+
+    // 保存先準備
+    $uploadDir = UPLOAD_PATH;
+    if (!is_dir($uploadDir)) {
+        mkdir($uploadDir, 0755, true);
+    }
+
+    // 拡張子は元の形式を維持（JPEG/PNG）
+    $saveExtension = ($mimeType === 'image/png') ? 'png' : 'jpg';
+    $filename = uniqid() . '.' . $saveExtension;
+    $filepath = $uploadDir . '/' . $filename;
+
+    // 保存
+    $saved = false;
+    if ($saveExtension === 'jpg') {
+        // JPEGとして保存（PNG供給時はJPEG変換・透過は白背景化）
+        if ($mimeType === 'image/png') {
+            // 透過を白に変換
+            $bg = imagecreatetruecolor(imagesx($dstImage), imagesy($dstImage));
+            $white = imagecolorallocate($bg, 255, 255, 255);
+            imagefilledrectangle($bg, 0, 0, imagesx($bg), imagesy($bg), $white);
+            imagecopy($bg, $dstImage, 0, 0, 0, 0, imagesx($dstImage), imagesy($dstImage));
+            $saved = imagejpeg($bg, $filepath, $jpegQuality);
+            imagedestroy($bg);
+        } else {
+            $saved = imagejpeg($dstImage, $filepath, $jpegQuality);
+        }
+    } else {
+        // PNGとして保存（透過保持）
+        $saved = imagepng($dstImage, $filepath, $pngCompression);
+    }
+
+    if ($dstImage !== $srcImage) {
+        imagedestroy($dstImage);
+    }
+    imagedestroy($srcImage);
+
+    if (!$saved) {
+        throw new Exception('画像の保存に失敗しました。');
+    }
+
+    return $filename;
+}
+
+/**
  * 検索条件構築
  */
 function buildSearchConditions($params, $allowedFields) {
