@@ -76,7 +76,7 @@ function convertUrlsToLinks($text) {
             $href = 'https://' . $url;
         }
         
-        return '<a href="' . h($href) . '" target="_blank" rel="noopener noreferrer" class="text-white hover:text-gray-200 underline">' . h($url) . '</a>';
+        return '<a href="' . h($href) . '" target="_blank" rel="noopener noreferrer" class="text-blue-100 hover:text-white underline font-medium">' . h($url) . '</a>';
     }, $text);
 }
 
@@ -142,7 +142,7 @@ include 'includes/header.php';
                             <?php endif; ?>
                             <div class="flex flex-col <?= $message['sender_id'] === $currentUser['id'] ? 'items-end' : 'items-start' ?>">
                                 <div class="px-4 py-2 rounded-lg <?= $message['sender_id'] === $currentUser['id'] ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-900' ?>">
-                                    <p class="text-sm"><?= nl2br(convertUrlsToLinks(h($message['message']))) ?></p>
+                                    <p class="text-sm chat-message"><?= nl2br(convertUrlsToLinks(h($message['message']))) ?></p>
                                 </div>
                                 <div class="flex items-center space-x-1 mt-1">
                                     <span class="text-xs text-gray-500">
@@ -204,7 +204,7 @@ function convertUrlsToLinks(text) {
             href = 'https://' + url;
         }
         
-        return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="text-white hover:text-gray-200 underline">${url}</a>`;
+        return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="text-blue-100 hover:text-white underline font-medium">${url}</a>`;
     });
 }
 
@@ -323,7 +323,7 @@ function addMessageToChat(message) {
             ${!isOwnMessage ? `<img src="${message.sender_image || 'assets/images/default-avatar.png'}" alt="${message.sender_name}" class="w-8 h-8 rounded-full flex-shrink-0">` : ''}
             <div class="flex flex-col ${isOwnMessage ? 'items-end' : 'items-start'}">
                 <div class="px-4 py-2 rounded-lg ${isOwnMessage ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-900'}">
-                    <p class="text-sm">${convertUrlsToLinks(message.message).replace(/\n/g, '<br>')}</p>
+                    <p class="text-sm chat-message">${convertUrlsToLinks(message.message).replace(/\n/g, '<br>')}</p>
                 </div>
                 <div class="flex items-center space-x-1 mt-1">
                     <span class="text-xs text-gray-500">${message.time}</span>

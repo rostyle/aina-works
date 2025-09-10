@@ -20,6 +20,43 @@
     color: #E5E7EB !important;
 }
 
+/* グレー背景内のリンクは濃い青色で表示 */
+.bg-gray-100 a,
+.bg-gray-200 a {
+    color: #1d4ed8 !important;
+    text-decoration: underline;
+    font-weight: 500;
+}
+
+.bg-gray-100 a:hover,
+.bg-gray-200 a:hover {
+    color: #1e3a8a !important;
+    text-decoration: underline;
+}
+
+/* 全般的なリンクスタイル */
+a {
+    color: #2563eb;
+    text-decoration: underline;
+    transition: color 0.2s ease;
+}
+
+a:hover {
+    color: #1d4ed8;
+    text-decoration: underline;
+}
+
+/* チャットメッセージ内のリンク */
+.chat-message a {
+    color: inherit;
+    text-decoration: underline;
+    font-weight: 500;
+}
+
+.chat-message a:hover {
+    opacity: 0.8;
+}
+
 /* ==========================================================================
    DESIGN TOKENS & CSS CUSTOM PROPERTIES
    ========================================================================== */
