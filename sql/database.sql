@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- ホスト: 127.0.0.1
--- 生成日時: 2025-09-09 05:58:07
+-- 生成日時: 2025-09-10 02:41:33
 -- サーバのバージョン： 10.4.32-MariaDB
 -- PHP のバージョン: 8.2.12
 
@@ -274,6 +274,34 @@ CREATE TABLE `users` (
   `is_client` tinyint(1) DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- テーブルのデータのダンプ `users`
+--
+
+INSERT INTO `users` (`id`, `aina_user_id`, `name`, `username`, `email`, `password_hash`, `full_name`, `nickname`, `profile_image`, `bio`, `location`, `website`, `twitter_url`, `instagram_url`, `facebook_url`, `linkedin_url`, `youtube_url`, `tiktok_url`, `response_time`, `experience_years`, `is_pro`, `is_verified`, `is_active`, `last_seen`, `created_at`, `updated_at`, `is_creator`, `is_client`) VALUES
+(1, 21, NULL, NULL, 'rostyle95@gmail.com', NULL, '奥野隆太', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 24, 0, 0, 0, 1, '2025-09-10 09:40:37', '2025-09-10 00:40:37', '2025-09-10 00:40:37', 1, 1);
+
+-- --------------------------------------------------------
+
+--
+-- テーブルの構造 `user_bank_accounts`
+--
+
+CREATE TABLE `user_bank_accounts` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `bank_name` varchar(100) NOT NULL,
+  `branch_name` varchar(100) DEFAULT NULL,
+  `account_type` enum('普通','当座','貯蓄','その他') NOT NULL DEFAULT '普通',
+  `account_number` varchar(32) NOT NULL,
+  `account_holder_name` varchar(100) NOT NULL,
+  `account_holder_kana` varchar(100) DEFAULT NULL,
+  `note` varchar(255) DEFAULT NULL,
+  `is_primary` tinyint(1) NOT NULL DEFAULT 1,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- --------------------------------------------------------
 
 --
@@ -430,6 +458,14 @@ ALTER TABLE `users`
   ADD KEY `idx_aina_user_id` (`aina_user_id`);
 
 --
+-- テーブルのインデックス `user_bank_accounts`
+--
+ALTER TABLE `user_bank_accounts`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_user_primary` (`user_id`,`is_primary`),
+  ADD KEY `idx_user_id` (`user_id`);
+
+--
 -- テーブルのインデックス `user_roles`
 --
 ALTER TABLE `user_roles`
@@ -524,6 +560,12 @@ ALTER TABLE `skills`
 -- テーブルの AUTO_INCREMENT `users`
 --
 ALTER TABLE `users`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- テーブルの AUTO_INCREMENT `user_bank_accounts`
+--
+ALTER TABLE `user_bank_accounts`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
@@ -609,6 +651,12 @@ ALTER TABLE `reviews`
 --
 ALTER TABLE `skills`
   ADD CONSTRAINT `skills_ibfk_1` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`) ON DELETE SET NULL;
+
+--
+-- テーブルの制約 `user_bank_accounts`
+--
+ALTER TABLE `user_bank_accounts`
+  ADD CONSTRAINT `fk_user_bank_accounts_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
 -- テーブルの制約 `user_roles`

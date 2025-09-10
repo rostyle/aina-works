@@ -343,6 +343,12 @@ include 'includes/header.php';
                                                             class="inline-flex items-center px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors">
                                                         却下
                                                     </button>
+                                                <?php elseif (($app['status'] ?? '') === 'accepted'): ?>
+                                                    <button type="button"
+                                                            class="inline-flex items-center px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors"
+                                                            onclick="showBankInfo(<?= (int)$app['job_id'] ?>, <?= (int)$app['creator_id'] ?>)">
+                                                        納品後の振込先を見る
+                                                    </button>
                                                 <?php else: ?>
                                                     <span class="inline-flex items-center px-3 py-1 text-xs font-medium rounded-full <?= ($app['status'] === 'accepted') ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700' ?>">
                                                         <?= ($app['status'] === 'accepted') ? '受諾済み' : (($app['status'] === 'rejected') ? '却下済み' : '処理済み') ?>
@@ -430,6 +436,40 @@ document.addEventListener('click', async function(e) {
         target.disabled = false;
     }
 });
+
+async function showBankInfo(jobId, creatorId) {
+    try {
+        const url = `api/get-bank-account.php?job_id=${encodeURIComponent(jobId)}&creator_id=${encodeURIComponent(creatorId)}`;
+        const res = await fetch(url, { method: 'GET' });
+        const json = await res.json();
+        if (json && json.success && json.account) {
+            const a = json.account;
+            const lines = [];
+            if (a.bank_name) lines.push(`銀行名: ${a.bank_name}`);
+            if (a.branch_name) lines.push(`支店名: ${a.branch_name}`);
+            if (a.account_type) lines.push(`口座種別: ${a.account_type}`);
+            if (a.account_number) lines.push(`口座番号: ${a.account_number}`);
+            if (a.account_holder_name) lines.push(`口座名義: ${a.account_holder_name}`);
+            if (a.account_holder_kana) lines.push(`口座名義カナ: ${a.account_holder_kana}`);
+            if (a.note) lines.push(`備考: ${a.note}`);
+
+            const msg = lines.join('\n');
+            if (typeof showNotification === 'function') {
+                showNotification(msg.replace(/\n/g, '<br>'), 'success', 12000);
+            } else {
+                alert(msg);
+            }
+        } else {
+            const err = (json && (json.error || json.message)) || '振込先を取得できませんでした。案件が納品済みかご確認ください。';
+            if (typeof showNotification === 'function') showNotification(err, 'error');
+            else alert(err);
+        }
+    } catch (e) {
+        console.error('get bank info error', e);
+        if (typeof showNotification === 'function') showNotification('通信エラーが発生しました', 'error');
+        else alert('通信エラーが発生しました');
+    }
+}
 </script>
 JS;
 ?>
