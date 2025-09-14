@@ -68,7 +68,7 @@ try {
                 $emailMessage .= $message . "\n\n";
                 $emailMessage .= "返信はプラットフォーム上で行ってください。";
                 
-                $actionUrl = url('chats.php', true);
+                $actionUrl = url('chats', true);
                 sendNotificationMail($recipientUser['email'], $emailSubject, $emailMessage, $actionUrl, 'メッセージを確認する');
             }
         } catch (Exception $e) {

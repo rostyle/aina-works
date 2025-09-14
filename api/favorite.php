@@ -162,7 +162,7 @@ try {
                     $message .= "これは、あなたのプロフィールや作品が評価されている証拠です。\n";
                     $message .= "今後も素晴らしい作品を作り続けて、多くのクライアントにアピールしましょう！";
                     
-                    $actionUrl = url('profile.php', true);
+                    $actionUrl = url('profile', true);
                     sendNotificationMail($targetUser['email'], $subject, $message, $actionUrl, 'プロフィールを確認する');
                 }
             } elseif ($targetType === 'work') {
@@ -180,7 +180,7 @@ try {
                     $message .= "素晴らしい作品が評価されています！\n";
                     $message .= "引き続き魅力的な作品を投稿して、さらに多くの人にアピールしましょう。";
                     
-                    $actionUrl = url('works.php', true);
+                    $actionUrl = url('works', true);
                     sendNotificationMail($workOwner['email'], $subject, $message, $actionUrl, 'あなたの作品を見る');
                 }
             }

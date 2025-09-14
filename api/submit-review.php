@@ -48,7 +48,7 @@ try {
         error_log("Review submission errors: " . implode(', ', $errors));
         $_SESSION['flash_message'] = implode(' ', $errors);
         $_SESSION['flash_type'] = 'error';
-        header('Location: ../work-detail.php?id=' . $workId);
+        header('Location: ../work-detail?id=' . $workId);
         exit;
     }
     
@@ -121,7 +121,7 @@ try {
                 $message .= "素晴らしいフィードバックをいただきました！\n";
                 $message .= "今後の作品制作の参考にしてください。";
                 
-                $actionUrl = url('work-detail.php?id=' . $workId, true);
+                $actionUrl = url('work-detail?id=' . $workId, true);
                 sendNotificationMail($creator['email'], $subject, $message, $actionUrl, 'レビューを確認する');
             }
         } catch (Exception $e) {

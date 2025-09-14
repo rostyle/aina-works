@@ -808,7 +808,7 @@ function sendNotificationMail($to, $subject, $message, $actionUrl = null, $actio
         <div class=\"footer\">
             <p>このメールは AiNA Works から自動送信されています。</p>
             <p>運営：株式会社AiNA</p>
-            <p><a href=\"" . url('', true) . "\">AiNA Works</a> | <a href=\"" . url('privacy.php', true) . "\">プライバシーポリシー</a> | <a href=\"" . url('terms.php', true) . "\">利用規約</a></p>
+            <p><a href=\"" . url('', true) . "\">AiNA Works</a> | <a href=\"" . url('privacy', true) . "\">プライバシーポリシー</a> | <a href=\"" . url('terms', true) . "\">利用規約</a></p>
             <p>お心当たりのない場合は、このメールを破棄してください。</p>
         </div>
     </div>
