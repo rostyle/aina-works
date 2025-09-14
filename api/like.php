@@ -93,12 +93,12 @@ $work = $db->selectOne("SELECT id, user_id, IFNULL(like_count, 0) as like_count 
     
     $db->commit();
     
-    echo json_encode([
+    jsonResponse([
         'success' => true,
         'message' => $message,
         'is_liked' => $isLiked,
         'like_count' => $newLikeCount
-    ]);
+    ], 200);
     
 } catch (Exception $e) {
     $db->rollback();
