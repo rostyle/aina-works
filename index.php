@@ -639,4 +639,46 @@ include 'includes/header.php';
 
 </section>
 
+<script>
+// いいね機能（トップページ用）
+async function toggleLike(targetType, targetId, button) {
+    try {
+        const response = await fetch('api/like.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify({
+                work_id: targetId
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            const svg = button.querySelector('svg');
+            if (result.is_liked) {
+                // いいね状態
+                svg.setAttribute('fill', 'currentColor');
+                svg.classList.remove('text-gray-600');
+                svg.classList.add('text-red-500');
+                button.setAttribute('data-liked', 'true');
+            } else {
+                // いいね解除状態
+                svg.setAttribute('fill', 'none');
+                svg.classList.remove('text-red-500');
+                svg.classList.add('text-gray-600');
+                button.setAttribute('data-liked', 'false');
+            }
+        } else {
+            alert(result.message || 'エラーが発生しました');
+        }
+    } catch (e) {
+        console.error(e);
+        alert('いいね機能でエラーが発生しました');
+    }
+}
+</script>
+
 <?php include 'includes/footer.php'; ?>

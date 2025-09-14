@@ -2,7 +2,7 @@
 require_once 'config/config.php';
 
 // ログインチェック
-if (!isLoggedIn() || !hasPermission('create_work')) {
+if (!isLoggedIn() || (!isset($_GET['id']) && !hasPermission('create_work'))) {
     redirect(url('login'));
 }
 

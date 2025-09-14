@@ -480,12 +480,22 @@ function uploadImage($file, $options = []) {
     $jpegQuality = (int)($options['quality'] ?? 82); // 0-100
     $pngCompression = 6; // 0(無圧縮) - 9(最大圧縮)
 
+    // GD拡張が未インストール/未有効の場合は、加工せずそのまま保存
+    if (!extension_loaded('gd')) {
+        if (function_exists('error_log')) {
+            error_log('[uploadImage] GD extension not loaded. Saving original file without processing.');
+        }
+        return uploadFile($file);
+    }
+
     // 画像読み込み
     switch ($mimeType) {
         case 'image/jpeg':
+            if (!function_exists('imagecreatefromjpeg')) { return uploadFile($file); }
             $srcImage = imagecreatefromjpeg($file['tmp_name']);
             break;
         case 'image/png':
+            if (!function_exists('imagecreatefrompng')) { return uploadFile($file); }
             $srcImage = imagecreatefrompng($file['tmp_name']);
             break;
         case 'image/gif':

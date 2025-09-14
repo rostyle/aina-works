@@ -47,7 +47,8 @@ $db = Database::getInstance();
 
 try {
     // 作品の存在確認
-    $work = $db->selectOne("SELECT id, user_id, like_count FROM works WHERE id = ? AND status = 'published'", [$workId]);
+// like_count が NULL の場合に 0 として扱う
+$work = $db->selectOne("SELECT id, user_id, IFNULL(like_count, 0) as like_count FROM works WHERE id = ? AND status = 'published'", [$workId]);
     
     if (!$work) {
         http_response_code(404);
@@ -71,19 +72,21 @@ try {
     $db->beginTransaction();
     
     if ($existingLike) {
-        // いいねを取り消し
+        // いいねを取り消し（NULL/負数にならないように防御）
         $db->update("DELETE FROM work_likes WHERE user_id = ? AND work_id = ?", [$user['id'], $workId]);
-        $db->update("UPDATE works SET like_count = like_count - 1 WHERE id = ?", [$workId]);
+        $db->update("UPDATE works SET like_count = GREATEST(COALESCE(like_count, 0) - 1, 0) WHERE id = ?", [$workId]);
         
-        $newLikeCount = max(0, $work['like_count'] - 1);
+        $current = (int)($work['like_count'] ?? 0);
+        $newLikeCount = max(0, $current - 1);
         $isLiked = false;
         $message = 'いいねを取り消しました';
     } else {
-        // いいねを追加
+        // いいねを追加（NULL を 0 として加算）
         $db->insert("INSERT INTO work_likes (user_id, work_id) VALUES (?, ?)", [$user['id'], $workId]);
-        $db->update("UPDATE works SET like_count = like_count + 1 WHERE id = ?", [$workId]);
+        $db->update("UPDATE works SET like_count = COALESCE(like_count, 0) + 1 WHERE id = ?", [$workId]);
         
-        $newLikeCount = $work['like_count'] + 1;
+        $current = (int)($work['like_count'] ?? 0);
+        $newLikeCount = $current + 1;
         $isLiked = true;
         $message = 'いいねしました';
     }

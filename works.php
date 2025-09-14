@@ -69,16 +69,16 @@ try {
     
     $works = $db->select($worksSql, $search['values']);
     
-    // ログイン中のユーザーのいいね状態を取得
+    // ログイン中のユーザーのいいね状態を取得（work_likes から）
     $userLikes = [];
     if (isLoggedIn() && !empty($works)) {
         $workIds = array_column($works, 'id');
         $placeholders = str_repeat('?,', count($workIds) - 1) . '?';
         $likesResult = $db->select(
-            "SELECT target_id FROM favorites WHERE user_id = ? AND target_type = 'work' AND target_id IN ($placeholders)",
+            "SELECT work_id FROM work_likes WHERE user_id = ? AND work_id IN ($placeholders)",
             array_merge([$_SESSION['user_id']], $workIds)
         );
-        $userLikes = array_column($likesResult, 'target_id');
+        $userLikes = array_column($likesResult, 'work_id');
     }
     
     // デバッグ: 取得された作品データを確認
@@ -427,7 +427,9 @@ include 'includes/header.php';
                                         <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                                         </svg>
-                                        <span id="like-count-<?= $work['id'] ?>"><?= number_format($work['like_count'] ?? 0) ?></span>
+                                        <span id="like-count-<?= $work['id'] ?>">
+                                            <?= number_format($work['like_count'] ?? 0) ?>
+                                        </span>
                                     </div>
                                 </div>
                             </div>
@@ -510,8 +512,7 @@ async function toggleLike(targetType, targetId, button) {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
             },
             body: JSON.stringify({
-                target_type: targetType,
-                target_id: targetId
+                work_id: targetId
             })
         });
         
@@ -522,7 +523,7 @@ async function toggleLike(targetType, targetId, button) {
             const svg = button.querySelector('svg');
             const likeCountElement = document.getElementById(`like-count-${targetId}`);
             
-            if (result.liked) {
+            if (result.is_liked) {
                 // いいね状態
                 svg.setAttribute('fill', 'currentColor');
                 svg.classList.remove('text-gray-600');
@@ -545,7 +546,7 @@ async function toggleLike(targetType, targetId, button) {
             showNotification(result.message, 'success');
             
         } else {
-            showNotification(result.error || 'エラーが発生しました', 'error');
+            showNotification(result.message || result.error || 'エラーが発生しました', 'error');
         }
         
     } catch (error) {
