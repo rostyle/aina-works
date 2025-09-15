@@ -120,7 +120,7 @@ include 'includes/header.php';
     </div>
 
     <!-- チャットメッセージエリア -->
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 h-96 flex flex-col">
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 h-[calc(100vh-200px)] min-h-[600px] flex flex-col">
         <!-- メッセージリスト -->
         <div id="messages-container" class="flex-1 overflow-y-auto p-4 space-y-4">
             <?php if (empty($messages)): ?>
