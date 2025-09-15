@@ -106,9 +106,10 @@ function jsonResponse($data, $status = 200) {
     if (!headers_sent()) {
         http_response_code($status);
         header('Content-Type: application/json');
+        header('X-Content-Type-Options: nosniff');
     }
     
-    echo json_encode($data, JSON_UNESCAPED_UNICODE);
+    echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
     exit;
 }
 
@@ -480,12 +481,22 @@ function uploadImage($file, $options = []) {
     $jpegQuality = (int)($options['quality'] ?? 82); // 0-100
     $pngCompression = 6; // 0(無圧縮) - 9(最大圧縮)
 
+    // GD拡張が未インストール/未有効の場合は、加工せずそのまま保存
+    if (!extension_loaded('gd')) {
+        if (function_exists('error_log')) {
+            error_log('[uploadImage] GD extension not loaded. Saving original file without processing.');
+        }
+        return uploadFile($file);
+    }
+
     // 画像読み込み
     switch ($mimeType) {
         case 'image/jpeg':
+            if (!function_exists('imagecreatefromjpeg')) { return uploadFile($file); }
             $srcImage = imagecreatefromjpeg($file['tmp_name']);
             break;
         case 'image/png':
+            if (!function_exists('imagecreatefrompng')) { return uploadFile($file); }
             $srcImage = imagecreatefrompng($file['tmp_name']);
             break;
         case 'image/gif':
@@ -797,7 +808,7 @@ function sendNotificationMail($to, $subject, $message, $actionUrl = null, $actio
         <div class=\"footer\">
             <p>このメールは AiNA Works から自動送信されています。</p>
             <p>運営：株式会社AiNA</p>
-            <p><a href=\"" . url('', true) . "\">AiNA Works</a> | <a href=\"" . url('privacy.php', true) . "\">プライバシーポリシー</a> | <a href=\"" . url('terms.php', true) . "\">利用規約</a></p>
+            <p><a href=\"" . url('', true) . "\">AiNA Works</a> | <a href=\"" . url('privacy', true) . "\">プライバシーポリシー</a> | <a href=\"" . url('terms', true) . "\">利用規約</a></p>
             <p>お心当たりのない場合は、このメールを破棄してください。</p>
         </div>
     </div>

@@ -134,7 +134,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $db->commit();
 
                 setFlash('success', '案件を投稿しました。');
-                redirect(url('job-detail.php?id=' . $jobId));
+                redirect(url('job-detail?id=' . $jobId));
 
             } catch (Exception $e) {
                 $db->rollback();

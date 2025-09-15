@@ -117,7 +117,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_application'])
     );
     if ($existingApp) {
         setFlash('error', '既に応募済みです。');
-        redirect(url('job-detail.php?id=' . $jobId));
+        redirect(url('job-detail?id=' . $jobId));
     }
 
     // 応募データ挿入
@@ -164,7 +164,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_application'])
                 $message .= $coverLetter . "\n\n";
                 $message .= "応募の詳細を確認し、受諾または却下の判断をお願いします。";
                 
-                $actionUrl = url('job-applications.php', true);
+                $actionUrl = url('job-applications', true);
                 sendNotificationMail($clientEmail['email'], $subject, $message, $actionUrl, '応募を確認する');
             }
         } catch (Exception $e) {
@@ -181,7 +181,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_application'])
         error_log('応募処理エラー: ' . $e->getMessage());
         $db->rollBack();
         setFlash('error', '応募の送信に失敗しました。もう一度お試しください。');
-        redirect(url('job-detail.php?id=' . $jobId));
+        redirect(url('job-detail?id=' . $jobId));
     }
 }
 
@@ -600,7 +600,7 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
             
             <!-- Application Form -->
-            <form id="application-form" method="POST" action="<?= url('job-detail.php?id=' . $jobId) ?>" class="space-y-4">
+            <form id="application-form" method="POST" action="<?= url('job-detail?id=' . $jobId) ?>" class="space-y-4">
                 <!-- 常に送られるように隠しフィールドを追加 -->
                 <input type="hidden" name="submit_application" value="1">
                 <input type="hidden" name="job_id" value="<?= $jobId ?>">

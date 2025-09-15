@@ -92,7 +92,7 @@ try {
                 $emailMessage .= $message . "\n\n";
                 $emailMessage .= "返信はチャットルームで行ってください。";
                 
-                $actionUrl = url('chats.php', true);
+                $actionUrl = url('chats', true);
                 sendNotificationMail($recipient['email'], $subject, $emailMessage, $actionUrl, 'チャットを確認する');
             }
         } catch (Exception $e) {

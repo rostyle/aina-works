@@ -81,6 +81,7 @@ try {
     redirect(url('work'));
 }
 
+$isOwner = isLoggedIn() && $currentUser && ((int)$currentUser['id'] === (int)$work['user_id']);
 $pageTitle = h($work['title']) . ' - 作品詳細';
 $pageDescription = h($work['description']);
 
@@ -202,6 +203,14 @@ include 'includes/header.php';
                     </div>
                 </div>
 
+                <?php if (!empty($isOwner)): ?>
+                <div class="mb-6">
+                    <a href="<?= url('edit-work?id=' . $workId) ?>" class="inline-flex items-center px-4 py-2 rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
+                        編集する
+                    </a>
+                </div>
+                <?php endif; ?>
+
                 <!-- Description -->
                 <div class="mb-8">
                     <h3 class="text-lg font-semibold text-gray-900 mb-4">プロジェクト概要</h3>
@@ -258,7 +267,9 @@ include 'includes/header.php';
                     <div class="grid grid-cols-3 gap-4 text-center">
                         <div>
                             <div class="text-2xl font-bold text-gray-900">
-                                <span id="like-count-<?= $work['id'] ?>"><?= number_format($work['like_count'] ?: 0) ?></span>
+                                <span id="like-count-<?= $work['id'] ?>">
+                                    <?= number_format($work['like_count'] ?: 0) ?>
+                                </span>
                             </div>
                             <div class="text-sm text-gray-500">いいね</div>
                         </div>
@@ -863,17 +874,16 @@ document.getElementById('image-modal').addEventListener('click', function(e) {
 // いいね機能
 async function toggleLike(targetType, targetId, button) {
     try {
-        const response = await fetch('api/like.php', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-            },
-            body: JSON.stringify({
-                target_type: targetType,
-                target_id: targetId
-            })
-        });
+                        const response = await fetch('api/like.php', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                            },
+                            body: JSON.stringify({
+                                work_id: targetId
+                            })
+                        });
         
         const result = await response.json();
         
@@ -883,7 +893,7 @@ async function toggleLike(targetType, targetId, button) {
             const likeText = button.querySelector('.like-text');
             const likeCountElement = document.getElementById(`like-count-${targetId}`);
             
-            if (result.liked) {
+            if (result.is_liked) {
                 // いいね状態
                 svg.setAttribute('fill', 'currentColor');
                 button.classList.remove('bg-red-50', 'text-red-600', 'border-red-200');
@@ -908,7 +918,7 @@ async function toggleLike(targetType, targetId, button) {
             showNotification(result.message, 'success');
             
         } else {
-            showNotification(result.error || 'エラーが発生しました', 'error');
+            showNotification(result.message || result.error || 'エラーが発生しました', 'error');
         }
         
     } catch (error) {

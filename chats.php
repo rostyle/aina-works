@@ -29,17 +29,31 @@ $chatRooms = $db->select("
             WHEN cr.user1_id = ? THEN u2.last_seen
             ELSE u1.last_seen
         END as other_user_last_seen,
-        cm.message as last_message,
-        cm.created_at as last_message_time,
-        cm.sender_id as last_message_sender_id,
-        COUNT(CASE WHEN cm.is_read = 0 AND cm.sender_id != ? THEN 1 END) as unread_count
+        latest_message.message as last_message,
+        latest_message.created_at as last_message_time,
+        latest_message.sender_id as last_message_sender_id,
+        unread_counts.unread_count
     FROM chat_rooms cr
     LEFT JOIN users u1 ON cr.user1_id = u1.id
     LEFT JOIN users u2 ON cr.user2_id = u2.id
-    LEFT JOIN chat_messages cm ON cr.id = cm.room_id
+    LEFT JOIN (
+        SELECT 
+            room_id,
+            message,
+            created_at,
+            sender_id,
+            ROW_NUMBER() OVER (PARTITION BY room_id ORDER BY created_at DESC) as rn
+        FROM chat_messages
+    ) latest_message ON cr.id = latest_message.room_id AND latest_message.rn = 1
+    LEFT JOIN (
+        SELECT 
+            room_id,
+            COUNT(CASE WHEN is_read = 0 AND sender_id != ? THEN 1 END) as unread_count
+        FROM chat_messages
+        GROUP BY room_id
+    ) unread_counts ON cr.id = unread_counts.room_id
     WHERE cr.user1_id = ? OR cr.user2_id = ?
-    GROUP BY cr.id
-    ORDER BY cr.updated_at DESC
+    ORDER BY COALESCE(latest_message.created_at, cr.created_at) DESC
 ", [
     $currentUser['id'], $currentUser['id'], $currentUser['id'], $currentUser['id'], 
     $currentUser['id'], $currentUser['id'], $currentUser['id']
@@ -101,7 +115,7 @@ include 'includes/header.php';
                                 </div>
                                 
                                 <?php if ($room['last_message']): ?>
-                                    <p class="text-sm text-gray-500 truncate mt-1">
+                                    <p class="text-sm text-gray-500 mt-1 line-clamp-2">
                                         <?php if ($room['last_message_sender_id'] === $currentUser['id']): ?>
                                             <span class="text-gray-400">あなた: </span>
                                         <?php endif; ?>
