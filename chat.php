@@ -142,6 +142,25 @@ include 'includes/header.php';
                             <?php endif; ?>
                             <div class="flex flex-col <?= $message['sender_id'] === $currentUser['id'] ? 'items-end' : 'items-start' ?>">
                                 <div class="px-4 py-2 rounded-lg <?= $message['sender_id'] === $currentUser['id'] ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-900' ?>">
+                                    <?php if ($message['message_type'] === 'image' && $message['file_path']): ?>
+                                        <div class="mb-2">
+                                            <img src="<?= uploaded_asset($message['file_path']) ?>" 
+                                                 alt="<?= h($message['message']) ?>" 
+                                                 class="max-w-xs max-h-64 rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                                                 onclick="openImageModal('<?= uploaded_asset($message['file_path']) ?>', '<?= h($message['message']) ?>')">
+                                        </div>
+                                    <?php elseif ($message['message_type'] === 'document' && $message['file_path']): ?>
+                                        <div class="mb-2">
+                                            <a href="<?= uploaded_asset($message['file_path']) ?>" 
+                                               target="_blank" 
+                                               class="inline-flex items-center space-x-2 px-3 py-2 bg-white bg-opacity-20 rounded-lg hover:bg-opacity-30 transition-colors">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                                </svg>
+                                                <span class="text-sm"><?= h($message['message']) ?></span>
+                                            </a>
+                                        </div>
+                                    <?php endif; ?>
                                     <p class="text-sm chat-message"><?= nl2br(convertUrlsToLinks(h($message['message']))) ?></p>
                                 </div>
                                 <div class="flex items-center space-x-1 mt-1">
@@ -163,16 +182,38 @@ include 'includes/header.php';
 
         <!-- メッセージ入力エリア -->
         <div class="border-t border-gray-200 p-4">
+            <!-- ファイルプレビューエリア -->
+            <div id="file-preview" class="mb-3 hidden">
+                <div class="flex items-center space-x-2 p-2 bg-gray-50 rounded-lg">
+                    <div id="file-preview-content"></div>
+                    <button type="button" onclick="removeFilePreview()" class="text-gray-500 hover:text-gray-700">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            
             <form id="message-form" onsubmit="sendMessage(event)" class="flex space-x-3">
                 <input type="hidden" name="room_id" value="<?= $chatRoom['id'] ?>">
                 <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
+                <input type="file" id="file-input" name="file" accept="image/*,.pdf" class="hidden" onchange="handleFileSelect(event)">
                 
                 <div class="flex-1">
-                    <textarea id="message-input" name="message" rows="1" required
+                    <textarea id="message-input" name="message" rows="1" 
                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                               placeholder="メッセージを入力..."
                               onkeydown="handleKeyDown(event)"></textarea>
                 </div>
+                
+                <!-- ファイルアップロードボタン -->
+                <button type="button" onclick="document.getElementById('file-input').click()" 
+                        class="px-3 py-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
+                    </svg>
+                </button>
+                
                 <button type="submit" 
                         class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -180,6 +221,25 @@ include 'includes/header.php';
                     </svg>
                 </button>
             </form>
+        </div>
+    </div>
+</div>
+
+<!-- 画像モーダル -->
+<div id="image-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 hidden" onclick="closeImageModal()">
+    <div class="max-w-4xl max-h-full p-4" onclick="event.stopPropagation()">
+        <div class="bg-white rounded-lg overflow-hidden">
+            <div class="flex justify-between items-center p-4 border-b">
+                <h3 id="image-modal-title" class="text-lg font-semibold"></h3>
+                <button onclick="closeImageModal()" class="text-gray-500 hover:text-gray-700">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="p-4">
+                <img id="image-modal-img" src="" alt="" class="max-w-full max-h-96 mx-auto">
+            </div>
         </div>
     </div>
 </div>
@@ -208,6 +268,76 @@ function convertUrlsToLinks(text) {
     });
 }
 
+// ファイル選択処理
+function handleFileSelect(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    // ファイルサイズチェック（10MB）
+    const maxSize = 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+        showNotification('ファイルサイズは10MB以下にしてください', 'error');
+        event.target.value = '';
+        return;
+    }
+    
+    // ファイル形式チェック
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'];
+    if (!allowedTypes.includes(file.type)) {
+        showNotification('画像（JPG, PNG, GIF, WebP）またはPDFファイルのみアップロードできます', 'error');
+        event.target.value = '';
+        return;
+    }
+    
+    // プレビュー表示
+    showFilePreview(file);
+}
+
+// ファイルプレビュー表示
+function showFilePreview(file) {
+    const preview = document.getElementById('file-preview');
+    const content = document.getElementById('file-preview-content');
+    
+    if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            content.innerHTML = `
+                <img src="${e.target.result}" alt="${file.name}" class="w-16 h-16 object-cover rounded-lg">
+                <span class="text-sm text-gray-600 ml-2">${file.name}</span>
+            `;
+        };
+        reader.readAsDataURL(file);
+    } else {
+        content.innerHTML = `
+            <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+            <span class="text-sm text-gray-600 ml-2">${file.name}</span>
+        `;
+    }
+    
+    preview.classList.remove('hidden');
+}
+
+// ファイルプレビュー削除
+function removeFilePreview() {
+    document.getElementById('file-preview').classList.add('hidden');
+    document.getElementById('file-input').value = '';
+}
+
+// 画像モーダル表示
+function openImageModal(src, title) {
+    document.getElementById('image-modal-img').src = src;
+    document.getElementById('image-modal-img').alt = title;
+    document.getElementById('image-modal-title').textContent = title;
+    document.getElementById('image-modal').classList.remove('hidden');
+}
+
+// 画像モーダル閉じる
+function closeImageModal() {
+    document.getElementById('image-modal').classList.add('hidden');
+}
+
 // メッセージ送信
 async function sendMessage(event) {
     event.preventDefault();
@@ -216,8 +346,17 @@ async function sendMessage(event) {
     const formData = new FormData(form);
     const messageInput = document.getElementById('message-input');
     const message = messageInput.value.trim();
+    const fileInput = document.getElementById('file-input');
+    const file = fileInput.files[0];
     
-    if (!message) return;
+    // メッセージとファイルの両方が空の場合は送信しない
+    if (!message && !file) return;
+    
+    // ファイルがある場合はファイルアップロードAPIを使用
+    if (file) {
+        await sendFileMessage(formData);
+        return;
+    }
     
     // 送信ボタンを無効化
     const submitBtn = form.querySelector('button[type="submit"]');
@@ -285,6 +424,63 @@ async function sendMessage(event) {
     }
 }
 
+// ファイルメッセージ送信
+async function sendFileMessage(formData) {
+    const submitBtn = document.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    
+    try {
+        const response = await fetch('api/upload-chat-file.php', {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('HTTP Error Response:', errorText);
+            throw new Error(`HTTP error! status: ${response.status}, response: ${errorText}`);
+        }
+        
+        const responseText = await response.text();
+        console.log('Raw API Response:', responseText);
+        
+        let result;
+        try {
+            let jsonText = responseText;
+            const jsonStartIndex = responseText.indexOf('{');
+            if (jsonStartIndex > 0) {
+                jsonText = responseText.substring(jsonStartIndex);
+            }
+            result = JSON.parse(jsonText);
+        } catch (parseError) {
+            console.error('JSON Parse Error:', parseError);
+            throw new Error('Invalid JSON response from server');
+        }
+        
+        if (result.success) {
+            addMessageToChat(result.message);
+            document.getElementById('message-input').value = '';
+            document.getElementById('file-input').value = '';
+            removeFilePreview();
+            scrollToBottom();
+            
+            if (typeof window.updateNotificationCount === 'function') {
+                window.updateNotificationCount();
+            }
+        } else {
+            const errorMessage = result.error || result.message || 'ファイルの送信に失敗しました';
+            showNotification(errorMessage, 'error');
+        }
+        
+    } catch (error) {
+        console.error('File send error:', error);
+        showNotification('ネットワークエラーが発生しました: ' + error.message, 'error');
+    } finally {
+        submitBtn.disabled = false;
+        document.getElementById('message-input').focus();
+    }
+}
+
 // メッセージをチャットに追加
 function addMessageToChat(message) {
     console.log('Adding message to chat:', message);
@@ -318,11 +514,54 @@ function addMessageToChat(message) {
             <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
         </svg>` : '';
     
+    // ファイル添付の表示部分
+    let fileContent = '';
+    if (message.message_type === 'image' && message.file_path) {
+        // 画像ファイルのパス処理
+        let imageUrl = message.file_path;
+        if (imageUrl.startsWith('storage/app/uploads/')) {
+            imageUrl = './' + imageUrl;
+        } else {
+            imageUrl = './storage/app/uploads/' + imageUrl;
+        }
+        
+        fileContent = `
+            <div class="mb-2">
+                <img src="${imageUrl}" 
+                     alt="${message.message}" 
+                     class="max-w-xs max-h-64 rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                     onclick="openImageModal('${imageUrl}', '${message.message}')">
+            </div>
+        `;
+    } else if (message.message_type === 'document' && message.file_path) {
+        // PDFファイルのパス処理
+        let pdfUrl = message.file_path;
+        if (pdfUrl.startsWith('storage/app/uploads/')) {
+            pdfUrl = './' + pdfUrl;
+        } else {
+            pdfUrl = './storage/app/uploads/' + pdfUrl;
+        }
+        
+        fileContent = `
+            <div class="mb-2">
+                <a href="${pdfUrl}" 
+                   target="_blank" 
+                   class="inline-flex items-center space-x-2 px-3 py-2 bg-white bg-opacity-20 rounded-lg hover:bg-opacity-30 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    <span class="text-sm">${message.message}</span>
+                </a>
+            </div>
+        `;
+    }
+
     messageElement.innerHTML = `
         <div class="flex space-x-2 max-w-xs lg:max-w-md">
             ${!isOwnMessage ? `<img src="${message.sender_image || 'assets/images/default-avatar.png'}" alt="${message.sender_name}" class="w-8 h-8 rounded-full flex-shrink-0">` : ''}
             <div class="flex flex-col ${isOwnMessage ? 'items-end' : 'items-start'}">
                 <div class="px-4 py-2 rounded-lg ${isOwnMessage ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-900'}">
+                    ${fileContent}
                     <p class="text-sm chat-message">${convertUrlsToLinks(message.message).replace(/\n/g, '<br>')}</p>
                 </div>
                 <div class="flex items-center space-x-1 mt-1">

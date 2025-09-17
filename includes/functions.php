@@ -63,7 +63,13 @@ function uploaded_asset($path) {
         return './' . $path;
     }
     
-    // アップロードされたファイルはストレージ直参照（本番環境でのヘッダー警告回避）
+    // アップロードされたファイルは直接アクセス
+    // storage/app/uploads/で始まる場合はそのまま使用
+    if (strpos($path, 'storage/app/uploads/') === 0) {
+        return './' . $path;
+    }
+    
+    // 相対パスの場合はstorage/app/uploads/を追加
     return './storage/app/uploads/' . $path;
 }
 

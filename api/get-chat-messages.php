@@ -77,6 +77,8 @@ try {
             'id' => $message['id'],
             'sender_id' => $message['sender_id'],
             'message' => $message['message'],
+            'message_type' => $message['message_type'] ?? 'text',
+            'file_path' => $message['file_path'] ?? null,
             'sender_name' => $message['sender_name'],
             'sender_image' => $message['sender_image'],
             'time' => date('H:i', strtotime($message['created_at'])),
