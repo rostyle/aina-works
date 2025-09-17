@@ -1012,6 +1012,48 @@ function validateUserAccess($user) {
 }
 
 /**
+ * ユーザーの年齢を計算
+ */
+function calculateAge($birthdate) {
+    if (empty($birthdate)) {
+        return null;
+    }
+    
+    $birthdateObj = DateTime::createFromFormat('Y-m-d', $birthdate);
+    if (!$birthdateObj) {
+        return null;
+    }
+    
+    $today = new DateTime();
+    return $today->diff($birthdateObj)->y;
+}
+
+/**
+ * ユーザーが13歳以上かチェック
+ */
+function isUserAgeValid($userId = null) {
+    if ($userId === null) {
+        if (!isLoggedIn()) {
+            return false;
+        }
+        $userId = $_SESSION['user_id'];
+    }
+    
+    $db = Database::getInstance();
+    $result = $db->selectOne(
+        "SELECT birthdate FROM users WHERE id = ? AND is_active = 1",
+        [$userId]
+    );
+    
+    if (!$result || empty($result['birthdate'])) {
+        return false; // 生年月日が未設定の場合は無効
+    }
+    
+    $age = calculateAge($result['birthdate']);
+    return $age !== null && $age >= 13;
+}
+
+/**
  * ユーザーの作成または更新（API認証のみ）
  */
 function createOrUpdateUser($apiUser) {

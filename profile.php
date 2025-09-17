@@ -43,6 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $linkedin = trim($_POST['linkedin_url'] ?? '');
         $youtube = trim($_POST['youtube_url'] ?? '');
         $tiktok = trim($_POST['tiktok_url'] ?? '');
+        $birthdate = trim($_POST['birthdate'] ?? '');
         $experienceYears = (int)($user['experience_years'] ?? 0);
         $responseTime = isset($_POST['response_time']) && $_POST['response_time'] !== '' ? (int)$_POST['response_time'] : (int)($user['response_time'] ?? 24);
         $isCreator = isset($_POST['is_creator']) ? 1 : 0;
@@ -51,6 +52,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // バリデーション
         if (empty($fullName)) {
             $errors[] = '氏名は必須です。';
+        }
+        
+        // 生年月日の必須チェックと年齢確認
+        if (empty($birthdate)) {
+            $errors[] = '生年月日は必須です。';
+        } else {
+            // 日付形式の確認
+            $birthdateObj = DateTime::createFromFormat('Y-m-d', $birthdate);
+            if (!$birthdateObj || $birthdateObj->format('Y-m-d') !== $birthdate) {
+                $errors[] = '生年月日の形式が正しくありません。';
+            } else {
+                // 年齢計算
+                $today = new DateTime();
+                $age = $today->diff($birthdateObj)->y;
+                
+                // 13歳未満チェック
+                if ($age < 13) {
+                    $errors[] = '13歳未満の方はご利用いただけません。';
+                }
+                
+                // 未来の日付チェック
+                if ($birthdateObj > $today) {
+                    $errors[] = '生年月日に未来の日付は設定できません。';
+                }
+                
+                // 120歳以上チェック（現実的でない年齢）
+                if ($age > 120) {
+                    $errors[] = '生年月日を正しく入力してください。';
+                }
+            }
         }
         
         // 少なくとも一つのロールが選択されている必要がある
@@ -83,8 +114,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 // ユーザー情報を更新
                 $db->update(
-                    "UPDATE users SET full_name = ?, bio = ?, location = ?, website = ?, twitter_url = ?, instagram_url = ?, facebook_url = ?, linkedin_url = ?, youtube_url = ?, tiktok_url = ?, experience_years = ?, response_time = ?, profile_image = ?, is_creator = ?, is_client = ? WHERE id = ?",
-                    [$fullName, $bio, $location, $website, $twitter, $instagram, $facebook, $linkedin, $youtube, $tiktok, $experienceYears, $responseTime, $profileImagePath, $isCreator, $isClient, $userId]
+                    "UPDATE users SET full_name = ?, bio = ?, location = ?, website = ?, twitter_url = ?, instagram_url = ?, facebook_url = ?, linkedin_url = ?, youtube_url = ?, tiktok_url = ?, birthdate = ?, experience_years = ?, response_time = ?, profile_image = ?, is_creator = ?, is_client = ? WHERE id = ?",
+                    [$fullName, $bio, $location, $website, $twitter, $instagram, $facebook, $linkedin, $youtube, $tiktok, $birthdate, $experienceYears, $responseTime, $profileImagePath, $isCreator, $isClient, $userId]
                 );
                 
                 // user_rolesテーブルを更新
@@ -162,6 +193,12 @@ include 'includes/header.php';
             <div>
                 <label for="full_name" class="block text-sm font-medium text-gray-700">氏名</label>
                 <input type="text" name="full_name" id="full_name" value="<?= h($user['full_name'] ?? '') ?>" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+            </div>
+
+            <div>
+                <label for="birthdate" class="block text-sm font-medium text-gray-700">生年月日 <span class="text-red-500">*</span></label>
+                <input type="date" name="birthdate" id="birthdate" value="<?= h($user['birthdate'] ?? '') ?>" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                <p class="mt-1 text-xs text-gray-500">13歳未満の方はご利用いただけません。</p>
             </div>
 
             <div>
