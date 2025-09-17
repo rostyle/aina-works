@@ -53,6 +53,9 @@ $messages = $db->select("
     ORDER BY cm.created_at ASC
 ", [$chatRoom['id']]);
 
+// デバッグ: メッセージ取得状況をログに記録
+error_log("チャット画面 - Room ID: {$chatRoom['id']}, メッセージ数: " . count($messages));
+
 // 未読メッセージを既読に更新
 $db->update("
     UPDATE chat_messages 
@@ -130,6 +133,15 @@ include 'includes/header.php';
                     </svg>
                     <p>まだメッセージがありません</p>
                     <p class="text-sm">メッセージを送信して会話を始めましょう</p>
+                    <?php if (isset($_GET['debug'])): ?>
+                        <div class="mt-4 p-4 bg-yellow-100 text-left text-sm">
+                            <strong>デバッグ情報:</strong><br>
+                            チャットルームID: <?= $chatRoom['id'] ?><br>
+                            現在のユーザーID: <?= $currentUser['id'] ?><br>
+                            相手のユーザーID: <?= $otherUser['id'] ?><br>
+                            メッセージ数: <?= count($messages) ?>
+                        </div>
+                    <?php endif; ?>
                 </div>
             <?php else: ?>
                 <?php foreach ($messages as $message): ?>

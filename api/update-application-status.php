@@ -84,25 +84,48 @@ try {
         }
 
         // Ensure chat room exists
+        error_log("チャットルーム確認開始 - currentUser: {$currentUser['id']}, creator: {$application['creator_id']}");
         $room = $db->selectOne(
             "SELECT id FROM chat_rooms WHERE (user1_id = ? AND user2_id = ?) OR (user1_id = ? AND user2_id = ?)",
             [$currentUser['id'], $application['creator_id'], $application['creator_id'], $currentUser['id']]
         );
         if (!$room) {
+            error_log("新しいチャットルームを作成");
             $roomId = (int)$db->insert(
                 "INSERT INTO chat_rooms (user1_id, user2_id, created_at) VALUES (?, ?, NOW())",
                 [$currentUser['id'], $application['creator_id']]
             );
+            error_log("チャットルーム作成完了 - roomId: {$roomId}");
         } else {
             $roomId = (int)$room['id'];
+            error_log("既存のチャットルームを使用 - roomId: {$roomId}");
         }
 
-        // Initial chat message
-        $initialMessage = "応募を受諾しました。ここからやり取りを開始しましょう。案件: " . ($application['job_title'] ?? '案件');
-        $db->insert(
+        // Initial chat message with application details
+        error_log("初期メッセージ作成開始");
+        $initialMessage = "応募を受諾しました。ここからやり取りを開始しましょう。\n\n";
+        $initialMessage .= "【案件】" . ($application['job_title'] ?? '案件') . "\n\n";
+        $initialMessage .= "【応募内容】\n";
+        $initialMessage .= "・提案金額: ¥" . number_format((int)($application['proposed_price'] ?? 0)) . "\n";
+        $initialMessage .= "・提案期間: " . (int)($application['proposed_duration'] ?? 0) . "週間\n";
+        if (!empty($application['cover_letter'])) {
+            $initialMessage .= "・応募メッセージ:\n" . ($application['cover_letter'] ?? '') . "\n";
+        }
+        $initialMessage .= "\nよろしくお願いいたします。";
+        
+        error_log("初期メッセージ内容: " . substr($initialMessage, 0, 200) . "...");
+        
+        $messageId = $db->insert(
             "INSERT INTO chat_messages (room_id, sender_id, message, created_at) VALUES (?, ?, ?, NOW())",
             [$roomId, $currentUser['id'], $initialMessage]
         );
+        
+        if (!$messageId) {
+            error_log("チャットメッセージ挿入失敗");
+            throw new Exception("チャットメッセージの作成に失敗しました");
+        }
+        
+        error_log("チャットメッセージ挿入完了 - messageId: {$messageId}");
 
         $db->commit();
 

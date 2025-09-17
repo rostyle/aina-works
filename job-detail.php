@@ -141,6 +141,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_application'])
         error_log('応募数更新完了');
         
         $db->commit();
+
+        // 応募内容をチャットに自動投稿（ベストエフォート）
+        try {
+            // チャットルームを取得または作成（応募者とクライアント）
+            $room = $db->selectOne(
+                "SELECT id FROM chat_rooms WHERE (user1_id = ? AND user2_id = ?) OR (user1_id = ? AND user2_id = ?)",
+                [$user['id'], $job['client_id'], $job['client_id'], $user['id']]
+            );
+            if (!$room) {
+                $roomId = (int)$db->insert(
+                    "INSERT INTO chat_rooms (user1_id, user2_id, created_at) VALUES (?, ?, NOW())",
+                    [$user['id'], $job['client_id']]
+                );
+            } else {
+                $roomId = (int)$room['id'];
+            }
+
+            // 応募内容メッセージ生成（応募者からの送信として保存）
+            $applicationMessage  = "新規応募を送信しました。\n\n";
+            $applicationMessage .= "【案件】" . ($job['title'] ?? '案件') . "\n\n";
+            $applicationMessage .= "【応募内容】\n";
+            $applicationMessage .= "・提案金額: ¥" . number_format((int)$proposedPrice) . "\n";
+            $applicationMessage .= "・提案期間: " . (int)$proposedDuration . "週間\n";
+            if (!empty($coverLetter)) {
+                $applicationMessage .= "・応募メッセージ:\n" . $coverLetter . "\n";
+            }
+
+            $db->insert(
+                "INSERT INTO chat_messages (room_id, sender_id, message, created_at) VALUES (?, ?, ?, NOW())",
+                [$roomId, $user['id'], $applicationMessage]
+            );
+        } catch (Exception $chatErr) {
+            error_log('応募内容のチャット保存エラー: ' . $chatErr->getMessage());
+        }
         
         error_log('応募処理成功');
         
