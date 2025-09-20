@@ -115,10 +115,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 $jobId = $db->insert("
                     INSERT INTO jobs (
-                        client_id, title, description, category_id, 
-                        budget_min, budget_max, duration_weeks, 
-                        urgency, deadline
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        client_id, title, description, category_id,
+                        budget_min, budget_max, duration_weeks,
+                        required_skills, urgency, deadline
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ", [
                     $clientId,
                     $formData['title'],
@@ -127,6 +127,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $formData['budget_min'],
                     $formData['budget_max'],
                     $formData['duration_weeks'],
+                    json_encode([]), // 空のJSON配列を既定で保存（CHECK json_valid 対策）
                     $formData['urgency'],
                     $formData['deadline'] ?: null
                 ]);
@@ -138,7 +139,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             } catch (Exception $e) {
                 $db->rollback();
-                $errors[] = '案件の投稿に失敗しました。再度お試しください。';
+                error_log('[post-job] INSERT失敗: ' . $e->getMessage());
+                $errors[] = DEBUG ? ('案件の投稿に失敗しました: ' . $e->getMessage()) : '案件の投稿に失敗しました。再度お試しください。';
             }
         }
     }
