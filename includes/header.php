@@ -531,3 +531,6 @@ $navItems = [
     });
     </script>
 
+    <!-- オンボーディングツアー -->
+    <script src="<?= asset('js/onboarding.js') ?>"></script>
+
