@@ -36,6 +36,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $fullName = trim($_POST['full_name'] ?? '');
         $bio = trim($_POST['bio'] ?? '');
         $location = trim($_POST['location'] ?? '');
+        
+        // 空文字列の場合はNULLに変換
+        $bio = empty($bio) ? null : $bio;
+        $location = empty($location) ? null : $location;
         $website = trim($_POST['website'] ?? '');
         $twitter = trim($_POST['twitter_url'] ?? '');
         $instagram = trim($_POST['instagram_url'] ?? '');
@@ -43,8 +47,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $linkedin = trim($_POST['linkedin_url'] ?? '');
         $youtube = trim($_POST['youtube_url'] ?? '');
         $tiktok = trim($_POST['tiktok_url'] ?? '');
+        
+        // 空文字列のURLフィールドはNULLに変換
+        $website = empty($website) ? null : $website;
+        $twitter = empty($twitter) ? null : $twitter;
+        $instagram = empty($instagram) ? null : $instagram;
+        $facebook = empty($facebook) ? null : $facebook;
+        $linkedin = empty($linkedin) ? null : $linkedin;
+        $youtube = empty($youtube) ? null : $youtube;
+        $tiktok = empty($tiktok) ? null : $tiktok;
         $birthdate = trim($_POST['birthdate'] ?? '');
-        $experienceYears = (int)($user['experience_years'] ?? 0);
+        // 空文字列の場合はNULLに変換
+        if (empty($birthdate)) {
+            $birthdate = null;
+        }
         $responseTime = isset($_POST['response_time']) && $_POST['response_time'] !== '' ? (int)$_POST['response_time'] : (int)($user['response_time'] ?? 24);
         $isCreator = isset($_POST['is_creator']) ? 1 : 0;
         $isClient = isset($_POST['is_client']) ? 1 : 0;
@@ -84,6 +100,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
         
+        // URL形式のバリデーション
+        $urlFields = [
+            'website' => $website,
+            'twitter_url' => $twitter,
+            'instagram_url' => $instagram,
+            'facebook_url' => $facebook,
+            'linkedin_url' => $linkedin,
+            'youtube_url' => $youtube,
+            'tiktok_url' => $tiktok
+        ];
+        
+        foreach ($urlFields as $fieldName => $url) {
+            if (!empty($url) && !filter_var($url, FILTER_VALIDATE_URL)) {
+                $errors[] = ucfirst(str_replace('_', ' ', $fieldName)) . 'の形式が正しくありません。';
+            }
+        }
+        
+        // レスポンス時間のバリデーション
+        if ($responseTime < 1 || $responseTime > 168) { // 1時間から1週間まで
+            $errors[] = 'レスポンス時間は1時間から168時間（1週間）の間で設定してください。';
+        }
+        
+
         // 少なくとも一つのロールが選択されている必要がある
         if (!$isCreator && !$isClient) {
             $errors[] = 'クリエイターまたは依頼者のいずれかは選択してください。';
@@ -109,13 +148,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 // デバッグ用ログ（本番環境では削除）
                 if (defined('DEBUG') && DEBUG) {
-                    error_log("Profile update values - experience_years: " . $experienceYears . ", response_time: " . $responseTime);
+                    error_log("Profile update values - response_time: " . $responseTime);
+                    error_log("Profile update values - fullName: " . $fullName . ", bio length: " . strlen($bio));
+                    error_log("Profile update values - birthdate: " . $birthdate . ", isCreator: " . $isCreator . ", isClient: " . $isClient);
                 }
                 
                 // ユーザー情報を更新
                 $db->update(
-                    "UPDATE users SET full_name = ?, bio = ?, location = ?, website = ?, twitter_url = ?, instagram_url = ?, facebook_url = ?, linkedin_url = ?, youtube_url = ?, tiktok_url = ?, birthdate = ?, experience_years = ?, response_time = ?, profile_image = ?, is_creator = ?, is_client = ? WHERE id = ?",
-                    [$fullName, $bio, $location, $website, $twitter, $instagram, $facebook, $linkedin, $youtube, $tiktok, $birthdate, $experienceYears, $responseTime, $profileImagePath, $isCreator, $isClient, $userId]
+                    "UPDATE users SET full_name = ?, bio = ?, location = ?, website = ?, twitter_url = ?, instagram_url = ?, facebook_url = ?, linkedin_url = ?, youtube_url = ?, tiktok_url = ?, birthdate = ?, response_time = ?, profile_image = ?, is_creator = ?, is_client = ? WHERE id = ?",
+                    [$fullName, $bio, $location, $website, $twitter, $instagram, $facebook, $linkedin, $youtube, $tiktok, $birthdate, $responseTime, $profileImagePath, $isCreator, $isClient, $userId]
                 );
                 
                 // user_rolesテーブルを更新
@@ -147,12 +188,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $user = getCurrentUser(true);
             } catch (Exception $e) {
                 $db->rollback();
-                $errors[] = 'プロフィールの更新に失敗しました: ' . $e->getMessage();
-                // デバッグ用（本番環境では削除）
-                if (defined('DEBUG') && DEBUG) {
-                    error_log("Profile update error: " . $e->getMessage());
-                    error_log("Stack trace: " . $e->getTraceAsString());
+                
+                // より具体的なエラーメッセージを提供
+                $errorMessage = 'プロフィールの更新に失敗しました。';
+                
+                // データベースエラーの場合、より詳細な情報を提供
+                if (strpos($e->getMessage(), 'SQLSTATE') !== false) {
+                    if (strpos($e->getMessage(), 'Data too long') !== false) {
+                        $errorMessage = '入力されたデータが長すぎます。文字数を確認してください。';
+                    } elseif (strpos($e->getMessage(), 'Duplicate entry') !== false) {
+                        $errorMessage = '重複するデータが検出されました。入力内容を確認してください。';
+                    } elseif (strpos($e->getMessage(), 'Invalid date') !== false) {
+                        $errorMessage = '日付の形式が正しくありません。';
+                    } elseif (strpos($e->getMessage(), 'Column count') !== false) {
+                        $errorMessage = 'データベースの構造に問題があります。管理者にお問い合わせください。';
+                    } elseif (strpos($e->getMessage(), 'Unknown column') !== false) {
+                        $errorMessage = 'データベースの構造に問題があります。管理者にお問い合わせください。';
+                    } else {
+                        $errorMessage = 'データベースエラーが発生しました。エラー詳細: ' . $e->getMessage();
+                    }
+                } else {
+                    $errorMessage .= ' エラー詳細: ' . $e->getMessage();
                 }
+                
+                $errors[] = $errorMessage;
+                
+                // デバッグ用（本番環境では削除）
+                error_log("Profile update error: " . $e->getMessage());
+                error_log("Stack trace: " . $e->getTraceAsString());
+                error_log("Profile update values - fullName: " . $fullName . ", bio: " . substr($bio, 0, 100) . "...");
+                error_log("Profile update values - birthdate: " . $birthdate . ", userId: " . $userId);
             }
         }
     }
@@ -245,7 +310,7 @@ include 'includes/header.php';
 
             <div>
                 <label for="response_time" class="block text-sm font-medium text-gray-700">平均レスポンス時間（時間）</label>
-                <input type="number" min="1" name="response_time" id="response_time" value="<?= (int)($user['response_time'] ?? 24) ?>" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                <input type="number" min="1" max="168" name="response_time" id="response_time" value="<?= (int)($user['response_time'] ?? 24) ?>" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
             </div>
 
             <div class="border-t pt-6">
@@ -354,6 +419,86 @@ include 'includes/header.php';
 </section>
 
 <script>
+// プロフィールフォームのバリデーション
+document.addEventListener('DOMContentLoaded', function() {
+    const profileForm = document.querySelector('form[method="POST"]');
+    
+    if (profileForm) {
+        profileForm.addEventListener('submit', function(e) {
+            let hasErrors = false;
+            const errors = [];
+            
+            // 氏名の必須チェック
+            const fullName = document.getElementById('full_name');
+            if (!fullName.value.trim()) {
+                errors.push('氏名は必須です。');
+                hasErrors = true;
+            }
+            
+            // 生年月日の必須チェック
+            const birthdate = document.getElementById('birthdate');
+            if (!birthdate.value) {
+                errors.push('生年月日は必須です。');
+                hasErrors = true;
+            } else {
+                // 年齢チェック
+                const birthDate = new Date(birthdate.value);
+                const today = new Date();
+                const age = today.getFullYear() - birthDate.getFullYear();
+                
+                if (age < 13) {
+                    errors.push('13歳未満の方はご利用いただけません。');
+                    hasErrors = true;
+                } else if (age > 120) {
+                    errors.push('生年月日を正しく入力してください。');
+                    hasErrors = true;
+                }
+            }
+            
+            // URL形式のチェック
+            const urlFields = ['website', 'twitter_url', 'instagram_url', 'facebook_url', 'linkedin_url', 'youtube_url', 'tiktok_url'];
+            urlFields.forEach(fieldName => {
+                const field = document.getElementById(fieldName);
+                if (field && field.value && !isValidUrl(field.value)) {
+                    errors.push(fieldName.replace('_', ' ') + 'の形式が正しくありません。');
+                    hasErrors = true;
+                }
+            });
+            
+            // レスポンス時間のチェック
+            const responseTime = document.getElementById('response_time');
+            if (responseTime && (responseTime.value < 1 || responseTime.value > 168)) {
+                errors.push('レスポンス時間は1時間から168時間（1週間）の間で設定してください。');
+                hasErrors = true;
+            }
+            
+            
+            // ロールのチェック
+            const isCreator = document.getElementById('is_creator');
+            const isClient = document.getElementById('is_client');
+            if (!isCreator.checked && !isClient.checked) {
+                errors.push('クリエイターまたは依頼者のいずれかは選択してください。');
+                hasErrors = true;
+            }
+            
+            if (hasErrors) {
+                e.preventDefault();
+                alert('以下のエラーがあります：\n\n' + errors.join('\n'));
+                return false;
+            }
+        });
+    }
+    
+    function isValidUrl(string) {
+        try {
+            new URL(string);
+            return true;
+        } catch (_) {
+            return false;
+        }
+    }
+});
+
 // 振込口座フォームの処理
 document.addEventListener('DOMContentLoaded', function() {
     const bankForm = document.getElementById('bank-account-form');
