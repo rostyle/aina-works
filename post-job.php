@@ -261,6 +261,23 @@ include 'includes/header.php';
                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-vertical"
                               placeholder="案件の詳細な内容、要件、期待する成果物などを具体的に記載してください。（最低50文字以上）"><?= h($formData['description']) ?></textarea>
                     <p class="text-sm text-gray-500 mt-1">50文字以上で詳細に記載してください</p>
+                    <div class="mt-4 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <button type="button" id="ai-director-run" class="btn btn-secondary btn-sm btn-shimmer">
+                                <svg class="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                AIディレクターで添削・相場提案
+                            </button>
+                            <button type="button" id="ai-history-btn" class="px-3 py-2 text-sm border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                履歴
+                            </button>
+                        </div>
+                        <div class="flex-1 ml-6">
+                            <div class="w-full bg-gray-200 rounded-full overflow-hidden"><div id="ai-director-progress" class="ai-progress" style="width:0%"></div></div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -398,6 +415,60 @@ include 'includes/header.php';
                 </div>
             </div>
         </form>
+        <div id="ai-director-spark" class="ai-spark opacity-0 scale-50 px-3 py-1 bg-gradient-to-r from-primary-500 to-secondary-600 text-white rounded-full shadow-lg text-sm">+50 XP</div>
+        
+        <!-- AI Director Dock Panel -->
+        <div id="ai-director-dock" class="ai-dock">
+            <div class="ai-dock-header flex items-center justify-between px-4 py-3 border-b bg-gradient-to-r from-blue-50 to-purple-50">
+                <div class="flex items-center gap-2">
+                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                    </svg>
+                    <span class="font-semibold text-gray-800">AIディレクター提案</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button type="button" id="ai-dock-minimize" class="px-2 py-1 text-xs rounded-md bg-white border border-gray-300 text-gray-600 hover:bg-gray-50 transition-colors" title="最小化">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path>
+                        </svg>
+                    </button>
+                    <button type="button" id="ai-dock-close" class="px-2 py-1 text-xs rounded-md bg-white border border-gray-300 text-gray-600 hover:bg-gray-50 transition-colors" title="閉じる">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div id="ai-director-dock-body" class="ai-dock-body overflow-y-auto">
+                <div class="p-4 text-center text-gray-500">
+                    <svg class="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                    </svg>
+                    <p>AIディレクターの提案がここに表示されます</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI History Modal -->
+        <div id="ai-history-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+            <div class="flex items-center justify-center min-h-screen p-4">
+                <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
+                    <div class="flex items-center justify-between p-4 border-b">
+                        <h3 class="text-lg font-semibold text-gray-900">AI提案履歴</h3>
+                        <button type="button" id="ai-history-close" class="text-gray-500 hover:text-gray-700 text-xl">✕</button>
+                    </div>
+                    <div id="ai-history-body" class="p-4 overflow-y-auto max-h-[60vh]">
+                        <div class="text-center text-gray-500 py-8">
+                            <svg class="w-12 h-12 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <p>まだ履歴がありません</p>
+                            <p class="text-sm">AIディレクターを使用すると、ここに履歴が表示されます</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
         <?php endif; ?>
     </div>
 </section>
@@ -497,5 +568,7 @@ document.addEventListener('DOMContentLoaded', function() {
     updateDescCounter();
 });
 </script>
+
+<script src="<?= asset('js/ai-director.js') ?>"></script>
 
 <?php include 'includes/footer.php'; ?>
