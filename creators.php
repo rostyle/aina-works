@@ -45,7 +45,8 @@ $whereClause = !empty($conditions) ? 'AND ' . implode(' AND ', $conditions) : ''
 $orderBy = match($sortBy) {
     'newest' => 'u.created_at DESC',
     'rating' => 'avg_rating DESC',
-    'experience' => 'u.experience_years DESC',
+    // 経験年数カラムが存在しない環境向けにフォールバック
+    'experience' => 'u.created_at DESC',
     // 時給カラム廃止のため料金ソートは無効化（created_atにフォールバック）
     'price_low' => 'u.created_at DESC',
     'price_high' => 'u.created_at DESC',
@@ -86,7 +87,7 @@ try {
                u.youtube_url,
                u.tiktok_url,
                u.response_time,
-               u.experience_years,
+               0 as experience_years,
                u.is_pro,
                u.is_verified,
                u.is_active,
