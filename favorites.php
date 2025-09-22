@@ -107,7 +107,7 @@ include 'includes/header.php';
                     <h3 class="mt-2 text-sm font-medium text-gray-900">お気に入りの作品がありません</h3>
                     <p class="mt-1 text-sm text-gray-500">気になる作品を見つけてお気に入りに追加しましょう</p>
                     <div class="mt-6">
-                        <a href="<?= url('work') ?>" class="btn btn-primary">
+                        <a href="<?= url('works') ?>" class="btn btn-primary">
                             作品を探す
                         </a>
                     </div>

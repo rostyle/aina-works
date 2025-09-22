@@ -4,7 +4,7 @@ require_once 'config/config.php';
 $workId = (int)($_GET['id'] ?? 0);
 
 if (!$workId) {
-    redirect(url('work'));
+    redirect(url('works'));
 }
 
 // データベース接続
@@ -14,25 +14,52 @@ $db = Database::getInstance();
 $currentUser = getCurrentUser();
 
 try {
-    // 作品詳細取得
+    // 作品詳細取得（集計はサブクエリで安全に取得）
     $work = $db->selectOne("
-        SELECT w.*, u.full_name as creator_name, u.profile_image as creator_image, 
+        SELECT w.*,
+               u.full_name as creator_name, u.profile_image as creator_image,
                u.bio as creator_bio, u.location as creator_location, u.response_time,
-               u.experience_years, u.is_pro, u.is_verified,
-               u.website, u.twitter_url, u.instagram_url, u.facebook_url, 
+               0 as experience_years, u.is_pro, u.is_verified,
+               u.website, u.twitter_url, u.instagram_url, u.facebook_url,
                u.linkedin_url, u.youtube_url, u.tiktok_url,
                c.name as category_name, c.color as category_color,
-               AVG(r.rating) as avg_rating, COUNT(DISTINCT r.id) as review_count
+               rs.avg_rating, rs.review_count
         FROM works w
         JOIN users u ON w.user_id = u.id
         LEFT JOIN categories c ON w.category_id = c.id
-        LEFT JOIN reviews r ON w.id = r.work_id
+        LEFT JOIN (
+            SELECT work_id, AVG(rating) AS avg_rating, COUNT(*) AS review_count
+            FROM reviews
+            GROUP BY work_id
+        ) rs ON rs.work_id = w.id
         WHERE w.id = ? AND w.status = 'published' AND u.is_active = 1
-        GROUP BY w.id
     ", [$workId]);
 
+    // フォールバック: ユーザー状態条件で取得できない場合でも作品自体は表示
     if (!$work) {
-        redirect(url('work'));
+        $work = $db->selectOne("
+            SELECT w.*,
+                   u.full_name as creator_name, u.profile_image as creator_image,
+                   u.bio as creator_bio, u.location as creator_location, u.response_time,
+                   0 as experience_years, u.is_pro, u.is_verified,
+                   u.website, u.twitter_url, u.instagram_url, u.facebook_url,
+                   u.linkedin_url, u.youtube_url, u.tiktok_url,
+                   c.name as category_name, c.color as category_color,
+                   rs.avg_rating, rs.review_count
+            FROM works w
+            LEFT JOIN users u ON w.user_id = u.id
+            LEFT JOIN categories c ON w.category_id = c.id
+            LEFT JOIN (
+                SELECT work_id, AVG(rating) AS avg_rating, COUNT(*) AS review_count
+                FROM reviews
+                GROUP BY work_id
+            ) rs ON rs.work_id = w.id
+            WHERE w.id = ? AND w.status = 'published'
+        ", [$workId]);
+    }
+
+    if (!$work) {
+        redirect(url('works'));
     }
 
     // 閲覧数更新
@@ -60,25 +87,27 @@ try {
         ORDER BY us.proficiency DESC, s.name ASC
     ", [$work['user_id']]);
 
-    // 関連作品取得
+    // 関連作品取得（集計はサブクエリで安全に取得）
     $relatedWorks = $db->select("
-        SELECT w.*, AVG(r.rating) as avg_rating, COUNT(DISTINCT r.id) as review_count
+        SELECT w.*, COALESCE(rs.avg_rating, 0) AS avg_rating, COALESCE(rs.review_count, 0) AS review_count
         FROM works w
-        LEFT JOIN reviews r ON w.id = r.work_id
+        LEFT JOIN (
+            SELECT work_id, AVG(rating) AS avg_rating, COUNT(*) AS review_count
+            FROM reviews
+            GROUP BY work_id
+        ) rs ON rs.work_id = w.id
         WHERE w.user_id = ? AND w.id != ? AND w.status = 'published'
-        GROUP BY w.id
         ORDER BY w.view_count DESC
         LIMIT 3
     ", [$work['user_id'], $workId]);
 
 } catch (Exception $e) {
-    // エラーログ出力（開発時のみ）
+    // 開発時は詳細を表示して原因を特定
     if (DEBUG) {
-        error_log("Work detail error: " . $e->getMessage());
+        throw $e;
     }
-    
-    // エラー時は404ページにリダイレクト
-    redirect(url('work'));
+    // 本番は一覧へ
+    redirect(url('works'));
 }
 
 $isOwner = isLoggedIn() && $currentUser && ((int)$currentUser['id'] === (int)$work['user_id']);
@@ -99,7 +128,7 @@ include 'includes/header.php';
         <ol class="flex items-center space-x-2 text-sm">
             <li><a href="<?= url() ?>" class="text-gray-500 hover:text-gray-700">ホーム</a></li>
             <li><span class="text-gray-400">/</span></li>
-            <li><a href="<?= url('work') ?>" class="text-gray-500 hover:text-gray-700">作品一覧</a></li>
+            <li><a href="<?= url('works') ?>" class="text-gray-500 hover:text-gray-700">作品一覧</a></li>
             <li><span class="text-gray-400">/</span></li>
             <li><span class="text-gray-900 font-medium"><?= h($work['title']) ?></span></li>
         </ol>

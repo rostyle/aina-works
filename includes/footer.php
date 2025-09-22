@@ -31,7 +31,7 @@
                 <div>
                     <h3 class="text-lg font-semibold mb-6 text-white">サービス</h3>
                     <ul class="space-y-3">
-                        <li><a href="<?= url('work') ?>" class="text-gray-300 hover:text-white transition-colors duration-300 flex items-center group">
+                        <li><a href="<?= url('works') ?>" class="text-gray-300 hover:text-white transition-colors duration-300 flex items-center group">
                             <svg class="w-4 h-4 mr-2 text-gray-500 group-hover:text-primary-400 transition-colors duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                             </svg>

@@ -1,3 +1,15 @@
+Options -MultiViews
+
+RewriteEngine On
+
+# 既存のファイル/ディレクトリはそのまま
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# 拡張子なしのルートを .php に解決
+RewriteRule ^([^./]+)$ $1.php [QSA,L]
+
 Options -Indexes
 Options -MultiViews
 DirectoryIndex index.php

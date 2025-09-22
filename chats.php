@@ -78,7 +78,7 @@ include 'includes/header.php';
             </svg>
             <h3 class="text-lg font-medium text-gray-900 mb-2">まだチャットがありません</h3>
             <p class="text-gray-500 mb-6">作品を見てクリエイターとチャットを始めましょう</p>
-            <a href="<?= url('work') ?>" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+            <a href="<?= url('works') ?>" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
                 作品を探す
             </a>
         </div>

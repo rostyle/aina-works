@@ -90,7 +90,7 @@ include 'includes/header.php';
             
             <!-- Enhanced Search Bar -->
             <div class="max-w-3xl mx-auto mb-12 animate-scale-in hero-search-container" style="animation-delay: 0.4s;">
-                <form action="<?= url('work') ?>" method="GET" class="relative group">
+                <form action="<?= url('works') ?>" method="GET" class="relative group">
                     <div class="absolute inset-0 bg-gradient-to-r from-primary-500 to-secondary-500 rounded-2xl blur opacity-20 group-hover:opacity-30 transition-opacity duration-500"></div>
                     <div class="relative bg-white/95 backdrop-blur-lg rounded-2xl p-2 shadow-2xl hero-search-wrapper">
                         <div class="flex items-center hero-search-form">
@@ -218,7 +218,7 @@ include 'includes/header.php';
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-12 categories-grid">
             <?php foreach ($categories as $category): ?>
-                <a href="<?= url('work?category_id=' . $category['id']) ?>" 
+                <a href="<?= url('works?category_id=' . $category['id']) ?>" 
                    class="group card hover-lift fade-in-on-scroll category-card">
                     <div class="p-8 text-center">
                         <!-- Enhanced Icon with Gradient Background -->
@@ -269,7 +269,7 @@ include 'includes/header.php';
         
         <!-- View All Categories Button -->
         <div class="text-center fade-in-on-scroll">
-            <a href="<?= url('work') ?>" class="btn btn-outline btn-lg group">
+            <a href="<?= url('works') ?>" class="btn btn-outline btn-lg group">
                 すべてのカテゴリを見る
                 <svg class="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
@@ -418,7 +418,7 @@ include 'includes/header.php';
 
         <!-- View All Button -->
         <div class="text-center fade-in-on-scroll">
-            <a href="<?= url('work') ?>" class="btn btn-primary btn-xl btn-shimmer group">
+            <a href="<?= url('works') ?>" class="btn btn-primary btn-xl btn-shimmer group">
                 すべての作品を見る
                 <svg class="ml-3 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />

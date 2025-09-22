@@ -298,7 +298,7 @@ include 'includes/header.php';
                             </div>
                         </a>
                         
-                        <a href="<?= url('work?user=' . $user['id']) ?>" 
+                        <a href="<?= url('works?user=' . $user['id']) ?>" 
                            class="flex items-center p-4 border border-gray-200 rounded-lg hover:border-purple-300 hover:bg-purple-50 transition-colors">
                             <div class="p-2 bg-purple-100 rounded-lg mr-4">
                                 <svg class="h-6 w-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -402,7 +402,8 @@ include 'includes/header.php';
                             </div>
                         </a>
 
-                        <a href="<?= url('work') ?>" 
+                        <a href="<?= url('works') ?>" 
+                        <a href="<?= url('works') ?>" 
                            class="flex items-center p-4 border border-gray-200 rounded-lg hover:border-indigo-300 hover:bg-indigo-50 transition-colors">
                             <div class="p-2 bg-indigo-100 rounded-lg mr-4">
                                 <svg class="h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">

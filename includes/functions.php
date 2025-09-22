@@ -21,21 +21,40 @@ function url($path = '', $absolute = false) {
     if (!empty($path) && (strpos($path, 'http://') === 0 || strpos($path, 'https://') === 0)) {
         return $path;
     }
-    
+
+    // クエリを分離
+    $basePath = $path;
+    $query = '';
+    if (!empty($path) && strpos($path, '?') !== false) {
+        [$basePath, $query] = explode('?', $path, 2);
+    }
+
+    // 拡張子なしのとき、対応する .php が存在すれば付与
+    if (!empty($basePath) && strpos($basePath, '.') === false) {
+        $candidate = BASE_PATH . '/' . ltrim($basePath, '/');
+        if (file_exists($candidate . '.php')) {
+            $basePath .= '.php';
+        }
+    }
+
+    // 再結合
+    $finalPath = ltrim($basePath, '/');
+    if ($query !== '') {
+        $finalPath .= '?' . $query;
+    }
+
     if ($absolute) {
-        // 絶対URL生成（メール用）
         $baseUrl = rtrim(BASE_URL, '/');
-        if (empty($path)) {
+        if ($finalPath === '') {
             return $baseUrl . '/';
         }
-        return $baseUrl . '/' . ltrim($path, '/');
+        return $baseUrl . '/' . $finalPath;
     }
-    
-    // 相対パスでの URL 生成（ローカル・本番環境両対応）
-    if (empty($path)) {
+
+    if ($finalPath === '') {
         return './';
     }
-    return './' . ltrim($path, '/');
+    return './' . $finalPath;
 }
 
 /**

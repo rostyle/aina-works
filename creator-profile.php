@@ -198,7 +198,7 @@ include 'includes/header.php';
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
                     <div class="flex justify-between items-center mb-6">
                         <h2 class="text-xl font-semibold text-gray-900">ポートフォリオ</h2>
-                        <a href="<?= url('work?creator_id=' . $creator['id']) ?>" class="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                        <a href="<?= url('works?creator_id=' . $creator['id']) ?>" class="text-blue-600 hover:text-blue-700 text-sm font-medium">
                             すべて見る →
                         </a>
                     </div>
