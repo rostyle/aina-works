@@ -129,14 +129,8 @@ class OnboardingTour {
     }
 
     checkIfFirstVisit() {
-        const hasSeenTour = localStorage.getItem('aina_works_onboarding_completed');
-        
-        if (!hasSeenTour) {
-            // 初回訪問の場合は自動でツアーを開始
-            setTimeout(() => {
-                this.startTour();
-            }, 1000);
-        }
+        // 自動ツアー開始を無効化
+        // ツアー開始ボタンを押した時のみツアーを開始する
     }
 
     startTour() {
