@@ -294,43 +294,99 @@ document.addEventListener('DOMContentLoaded', () => {
         
         console.log('コピー実行:', text.substring(0, 50) + '...');
         
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(text).then(() => {
-                console.log('クリップボードにコピー成功');
-                if (window.AiNAWorks?.showToast) window.AiNAWorks.showToast('コピーしました', 'success');
-            }).catch((err) => {
-                console.error('クリップボードAPI失敗:', err);
-                fallbackCopy(text);
-            });
-        } else {
-            console.log('フォールバック方式でコピー');
-            fallbackCopy(text);
-        }
-    }
-
-    function fallbackCopy(text) {
-        try {
-            const textarea = document.createElement('textarea');
-            textarea.value = text;
-            textarea.style.position = 'fixed';
-            textarea.style.opacity = '0';
-            document.body.appendChild(textarea);
-            textarea.select();
-            textarea.setSelectionRange(0, 99999);
-            const success = document.execCommand('copy');
-            document.body.removeChild(textarea);
+        // 複数の方法を試行
+        const copyMethods = [
+            // 方法1: モダンなClipboard API
+            () => {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    return navigator.clipboard.writeText(text);
+                }
+                return Promise.reject('Clipboard API not available');
+            },
             
-            if (success) {
-                console.log('フォールバックコピー成功');
-                if (window.AiNAWorks?.showToast) window.AiNAWorks.showToast('コピーしました', 'success');
-            } else {
-                console.error('フォールバックコピー失敗');
-                if (window.AiNAWorks?.showToast) window.AiNAWorks.showToast('コピーに失敗しました', 'error');
+            // 方法2: 非同期フォールバック
+            () => {
+                return new Promise((resolve, reject) => {
+                    try {
+                        const textarea = document.createElement('textarea');
+                        textarea.value = text;
+                        textarea.style.position = 'fixed';
+                        textarea.style.left = '-9999px';
+                        textarea.style.top = '-9999px';
+                        textarea.style.opacity = '0';
+                        textarea.setAttribute('readonly', '');
+                        document.body.appendChild(textarea);
+                        
+                        // フォーカスと選択
+                        textarea.focus();
+                        textarea.select();
+                        textarea.setSelectionRange(0, text.length);
+                        
+                        const success = document.execCommand('copy');
+                        document.body.removeChild(textarea);
+                        
+                        if (success) {
+                            resolve();
+                        } else {
+                            reject('execCommand failed');
+                        }
+                    } catch (err) {
+                        reject(err);
+                    }
+                });
+            },
+            
+            // 方法3: 同期フォールバック
+            () => {
+                return new Promise((resolve, reject) => {
+                    try {
+                        const textarea = document.createElement('textarea');
+                        textarea.value = text;
+                        textarea.style.position = 'absolute';
+                        textarea.style.left = '-9999px';
+                        textarea.style.top = '-9999px';
+                        document.body.appendChild(textarea);
+                        
+                        textarea.select();
+                        textarea.setSelectionRange(0, 99999);
+                        
+                        const success = document.execCommand('copy');
+                        document.body.removeChild(textarea);
+                        
+                        if (success) {
+                            resolve();
+                        } else {
+                            reject('execCommand failed');
+                        }
+                    } catch (err) {
+                        reject(err);
+                    }
+                });
             }
-        } catch (err) {
-            console.error('フォールバックコピーエラー:', err);
-            if (window.AiNAWorks?.showToast) window.AiNAWorks.showToast('コピーに失敗しました', 'error');
-        }
+        ];
+        
+        // 各方法を順番に試行
+        let methodIndex = 0;
+        const tryNextMethod = () => {
+            if (methodIndex >= copyMethods.length) {
+                console.error('すべてのコピー方法が失敗しました');
+                if (window.AiNAWorks?.showToast) window.AiNAWorks.showToast('コピーに失敗しました', 'error');
+                return;
+            }
+            
+            copyMethods[methodIndex]()
+                .then(() => {
+                    console.log(`コピー成功 (方法${methodIndex + 1})`);
+                    if (window.AiNAWorks?.showToast) window.AiNAWorks.showToast('コピーしました', 'success');
+                })
+                .catch((err) => {
+                    console.warn(`コピー方法${methodIndex + 1}失敗:`, err);
+                    methodIndex++;
+                    tryNextMethod();
+                });
+        };
+        
+        tryNextMethod();
     }
 
     function applyToForm(d) {
@@ -397,9 +453,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function generateDockSection(title, content, action, actionData) {
-        const actionButton = action ? `<button onclick="${action}('${escapeHtml(actionData || '').replace(/'/g, '\\\'')}')" class="ai-copy-btn">コピー</button>` : '';
-        return `
-            <div class="ai-result-section">
+        const sectionId = 'section-' + Math.random().toString(36).substr(2, 9);
+        const actionButton = action ? `<button class="ai-copy-btn" data-copy-text="${escapeHtml(actionData || '')}">コピー</button>` : '';
+        
+        const html = `
+            <div class="ai-result-section" id="${sectionId}">
                 <div class="ai-result-header">
                     <span class="font-medium text-gray-700">${title}</span>
                     ${actionButton}
@@ -409,6 +467,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             </div>
         `;
+        
+        // イベントリスナーを設定
+        setTimeout(() => {
+            const section = document.getElementById(sectionId);
+            if (section) {
+                const copyBtn = section.querySelector('.ai-copy-btn');
+                if (copyBtn) {
+                    copyBtn.addEventListener('click', function() {
+                        const text = this.getAttribute('data-copy-text');
+                        copyText(text);
+                    });
+                }
+            }
+        }, 0);
+        
+        return html;
     }
 
 
