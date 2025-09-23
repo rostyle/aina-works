@@ -264,7 +264,7 @@ include 'includes/header.php';
                                         <?= formatPrice($job['budget_min']) ?> - <?= formatPrice($job['budget_max']) ?>
                                     </p>
                                     <p class="text-xs text-gray-500">
-                                        <a href="<?= url('job-applications?job_id=' . $job['id']) ?>" 
+                                        <a href="<?= url('job-applications?search_job_id=' . $job['id']) ?>" 
                                            class="text-blue-600 hover:text-blue-500">
                                             <?= $job['application_count'] ?>件の応募
                                         </a>

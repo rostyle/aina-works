@@ -14,7 +14,57 @@ $pageDescription = '案件への応募を管理します';
 $db = Database::getInstance();
 
 // 案件ID取得（クライアント用）
-$jobId = (int)($_GET['job_id'] ?? 0);
+$jobId = (int)($_GET['id'] ?? 0);
+// クライアント向け 検索/フィルター/並び替え
+$keyword = trim($_GET['q'] ?? '');
+$status = $_GET['status'] ?? '';
+$allowedStatuses = ['pending','accepted','rejected','withdrawn'];
+$priceMin = ($_GET['price_min'] ?? '') !== '' ? (int)$_GET['price_min'] : null;
+$priceMax = ($_GET['price_max'] ?? '') !== '' ? (int)$_GET['price_max'] : null;
+$durationMin = ($_GET['duration_min'] ?? '') !== '' ? (int)$_GET['duration_min'] : null;
+$durationMax = ($_GET['duration_max'] ?? '') !== '' ? (int)$_GET['duration_max'] : null;
+$searchJobId = ($_GET['search_job_id'] ?? '') !== '' ? (int)$_GET['search_job_id'] : null;
+$sort = $_GET['sort'] ?? 'newest';
+
+// 案件情報取得（特定案件表示時）
+$jobInfo = null;
+if ($jobId) {
+    try {
+        // まず案件が存在するかチェック
+        $jobExists = $db->selectOne("SELECT * FROM jobs WHERE id = ?", [$jobId]);
+        
+        if ($jobExists) {
+            // 案件の所有者かどうかチェック
+            if ($jobExists['client_id'] == $user['id']) {
+                $jobInfo = $db->selectOne("
+                    SELECT j.*, c.name as category_name
+                    FROM jobs j
+                    LEFT JOIN categories c ON j.category_id = c.id
+                    WHERE j.id = ?
+                ", [$jobId]);
+                
+                if ($jobInfo) {
+                    error_log("案件情報取得成功: Job ID {$jobId}, Title: {$jobInfo['title']}, Client ID: {$jobInfo['client_id']}");
+                } else {
+                    error_log("案件情報取得失敗: Job ID {$jobId}");
+                }
+            } else {
+                // 案件は存在するが、このユーザーが所有者ではない
+                error_log("案件アクセス拒否: Job ID {$jobId}, User ID {$user['id']}, Owner ID {$jobExists['client_id']}");
+                setFlash('error', 'この案件へのアクセス権限がありません。');
+                redirect(url('dashboard'));
+            }
+        } else {
+            // 案件が存在しない
+            error_log("案件が見つからない: Job ID {$jobId}");
+            setFlash('error', '案件が見つかりません。');
+            redirect(url('dashboard'));
+        }
+    } catch (Exception $e) {
+        error_log("案件情報取得エラー: " . $e->getMessage());
+        $jobInfo = null;
+    }
+}
 
 try {
     // クリエイター：自分の応募一覧
@@ -65,13 +115,37 @@ try {
     try {
         if ($jobId) {
             // 特定の案件への応募
-            $job = $db->selectOne("
-                SELECT * FROM jobs WHERE id = ? AND client_id = ?
-            ", [$jobId, $user['id']]);
-
-            if (!$job) {
+            if (!$jobInfo) {
                 setFlash('error', '案件が見つかりません。');
                 redirect(url('dashboard'));
+            }
+
+            $conditions = ['ja.job_id = ?'];
+            $params = [$jobId];
+
+            if ($keyword !== '') {
+                $conditions[] = '(u.full_name LIKE ? OR ja.cover_letter LIKE ?)';
+                $like = "%{$keyword}%";
+                $params[] = $like; $params[] = $like;
+            }
+            if ($status !== '' && in_array($status, $allowedStatuses, true)) {
+                $conditions[] = 'ja.status = ?';
+                $params[] = $status;
+            }
+            if ($priceMin !== null) { $conditions[] = 'ja.proposed_price >= ?'; $params[] = $priceMin; }
+            if ($priceMax !== null) { $conditions[] = 'ja.proposed_price <= ?'; $params[] = $priceMax; }
+            if ($durationMin !== null) { $conditions[] = 'ja.proposed_duration >= ?'; $params[] = $durationMin; }
+            if ($durationMax !== null) { $conditions[] = 'ja.proposed_duration <= ?'; $params[] = $durationMax; }
+
+            $whereSql = 'WHERE ' . implode(' AND ', $conditions);
+
+            $orderBy = 'ja.created_at DESC';
+            switch ($sort) {
+                case 'oldest': $orderBy = 'ja.created_at ASC'; break;
+                case 'price_high': $orderBy = 'ja.proposed_price DESC'; break;
+                case 'price_low': $orderBy = 'ja.proposed_price ASC'; break;
+                case 'duration_short': $orderBy = 'ja.proposed_duration ASC'; break;
+                case 'duration_long': $orderBy = 'ja.proposed_duration DESC'; break;
             }
 
             $clientApplications = $db->select("
@@ -79,21 +153,50 @@ try {
                        u.bio as creator_bio, u.experience_years
                 FROM job_applications ja
                 JOIN users u ON ja.creator_id = u.id
-                WHERE ja.job_id = ?
-                ORDER BY ja.created_at DESC
-            ", [$jobId]);
+                $whereSql
+                ORDER BY $orderBy
+            ", $params);
 
         } else {
             // 全ての案件への応募
+            $conditions = ['j.client_id = ?'];
+            $params = [$user['id']];
+
+            if ($keyword !== '') {
+                $conditions[] = '(u.full_name LIKE ? OR ja.cover_letter LIKE ? OR j.title LIKE ?)';
+                $like = "%{$keyword}%";
+                $params[] = $like; $params[] = $like; $params[] = $like;
+            }
+            if ($status !== '' && in_array($status, $allowedStatuses, true)) {
+                $conditions[] = 'ja.status = ?';
+                $params[] = $status;
+            }
+            if ($priceMin !== null) { $conditions[] = 'ja.proposed_price >= ?'; $params[] = $priceMin; }
+            if ($priceMax !== null) { $conditions[] = 'ja.proposed_price <= ?'; $params[] = $priceMax; }
+            if ($durationMin !== null) { $conditions[] = 'ja.proposed_duration >= ?'; $params[] = $durationMin; }
+            if ($durationMax !== null) { $conditions[] = 'ja.proposed_duration <= ?'; $params[] = $durationMax; }
+            if ($searchJobId !== null) { $conditions[] = 'ja.job_id = ?'; $params[] = $searchJobId; }
+
+            $whereSql = 'WHERE ' . implode(' AND ', $conditions);
+
+            $orderBy = 'ja.created_at DESC';
+            switch ($sort) {
+                case 'oldest': $orderBy = 'ja.created_at ASC'; break;
+                case 'price_high': $orderBy = 'ja.proposed_price DESC'; break;
+                case 'price_low': $orderBy = 'ja.proposed_price ASC'; break;
+                case 'duration_short': $orderBy = 'ja.proposed_duration ASC'; break;
+                case 'duration_long': $orderBy = 'ja.proposed_duration DESC'; break;
+            }
+
             $clientApplications = $db->select("
                 SELECT ja.*, j.title as job_title, u.full_name as creator_name,
                        u.profile_image as creator_image
                 FROM job_applications ja
                 JOIN jobs j ON ja.job_id = j.id
                 JOIN users u ON ja.creator_id = u.id
-                WHERE j.client_id = ?
-                ORDER BY ja.created_at DESC
-            ", [$user['id']]);
+                $whereSql
+                ORDER BY $orderBy
+            ", $params);
         }
     } catch (Exception $e) {
         $clientApplications = [];
@@ -116,7 +219,16 @@ include 'includes/header.php';
             <div class="flex items-center justify-between">
                 <div>
                     <h1 class="text-3xl font-bold text-gray-900">📝 応募管理</h1>
-                    <p class="text-gray-600 mt-2">応募した案件と応募された案件を管理できます</p>
+                    <?php if ($jobInfo): ?>
+                        <div class="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                            <p class="text-sm text-blue-800 font-medium">対象案件: <?= h($jobInfo['title']) ?></p>
+                            <?php if ($jobInfo['category_name']): ?>
+                                <p class="text-xs text-blue-600 mt-1">カテゴリ: <?= h($jobInfo['category_name']) ?></p>
+                            <?php endif; ?>
+                        </div>
+                    <?php else: ?>
+                        <p class="text-gray-600 mt-2">応募した案件と応募された案件を管理できます</p>
+                    <?php endif; ?>
                 </div>
 
                 <?php if (empty($user['is_creator'])): ?>
@@ -262,7 +374,70 @@ include 'includes/header.php';
                         <h2 id="received-heading" class="text-xl font-semibold text-gray-900 mb-4 flex items-center">
                             <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium mr-3">応募された案件</span>
                         </h2>
-
+                        <form action="" method="get" class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4">
+                            <?php if ($jobId): ?>
+                                <input type="hidden" name="id" value="<?= (int)$jobId ?>">
+                            <?php endif; ?>
+                    <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-7 gap-3">
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">キーワード</label>
+                            <input type="text" name="q" value="<?= h($keyword) ?>" placeholder="応募者名・メッセージ・案件名"
+                                   class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" />
+                        </div>
+                        <?php if (!$jobId): ?>
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">案件ID</label>
+                            <input type="number" name="search_job_id" min="1" value="<?= h((string)($searchJobId ?? '')) ?>" placeholder="案件ID"
+                                   class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" />
+                        </div>
+                        <?php endif; ?>
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1">ステータス</label>
+                                    <select name="status" class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                        <option value="" <?= $status === '' ? 'selected' : '' ?>>すべて</option>
+                                        <option value="pending" <?= $status === 'pending' ? 'selected' : '' ?>>保留</option>
+                                        <option value="accepted" <?= $status === 'accepted' ? 'selected' : '' ?>>受諾</option>
+                                        <option value="rejected" <?= $status === 'rejected' ? 'selected' : '' ?>>却下</option>
+                                        <option value="withdrawn" <?= $status === 'withdrawn' ? 'selected' : '' ?>>撤回</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1">提案金額(最小)</label>
+                                    <input type="number" name="price_min" min="0" step="100" value="<?= h((string)($priceMin ?? '')) ?>"
+                                           class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" />
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1">提案金額(最大)</label>
+                                    <input type="number" name="price_max" min="0" step="100" value="<?= h((string)($priceMax ?? '')) ?>"
+                                           class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" />
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1">提案期間(最短・週)</label>
+                                    <input type="number" name="duration_min" min="0" step="1" value="<?= h((string)($durationMin ?? '')) ?>"
+                                           class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" />
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1">提案期間(最長・週)</label>
+                                    <input type="number" name="duration_max" min="0" step="1" value="<?= h((string)($durationMax ?? '')) ?>"
+                                           class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" />
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1">並び替え</label>
+                                    <select name="sort" class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                        <option value="newest" <?= $sort === 'newest' ? 'selected' : '' ?>>新着順</option>
+                                        <option value="oldest" <?= $sort === 'oldest' ? 'selected' : '' ?>>古い順</option>
+                                        <option value="price_high" <?= $sort === 'price_high' ? 'selected' : '' ?>>金額が高い順</option>
+                                        <option value="price_low" <?= $sort === 'price_low' ? 'selected' : '' ?>>金額が低い順</option>
+                                        <option value="duration_short" <?= $sort === 'duration_short' ? 'selected' : '' ?>>期間が短い順</option>
+                                        <option value="duration_long" <?= $sort === 'duration_long' ? 'selected' : '' ?>>期間が長い順</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="mt-3 flex items-center gap-2">
+                                <button type="submit" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">検索</button>
+                                <a href="<?= $jobId ? url('job-applications?id=' . $jobId) : url('job-applications') ?>" class="inline-flex items-center px-3 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200">リセット</a>
+                            </div>
+                        </form>
                         <div class="space-y-4">
                             <?php foreach ($clientApplications as $app): ?>
                                 <article class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 border-l-4 border-l-green-500" role="article">

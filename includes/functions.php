@@ -1161,7 +1161,13 @@ function performApiLogin($email, $password) {
         ];
     }
     
-    // API認証
+    // まずローカルDBでの認証を試行
+    $localAuthResult = performLocalLogin($email, $password);
+    if ($localAuthResult['success']) {
+        return $localAuthResult;
+    }
+    
+    // ローカル認証が失敗した場合、API認証を試行
     $authResult = authenticateWithAinaApi($email, $password);
     if (!$authResult['success']) {
         return [
@@ -1211,6 +1217,67 @@ function performApiLogin($email, $password) {
             'success' => false, 
             'message' => 'ログイン処理中にエラーが発生しました。再度お試しください。',
             'error_type' => 'session_error'
+        ];
+    }
+}
+
+/**
+ * ローカルDB認証処理
+ */
+function performLocalLogin($email, $password) {
+    try {
+        $db = Database::getInstance();
+        
+        // ローカルDBからユーザー情報を取得
+        $user = $db->selectOne(
+            "SELECT * FROM users WHERE email = ? AND is_active = 1",
+            [$email]
+        );
+        
+        if (!$user) {
+            return [
+                'success' => false,
+                'message' => 'メールアドレスまたはパスワードが正しくありません。',
+                'error_type' => 'user_not_found'
+            ];
+        }
+        
+        // パスワードハッシュが存在する場合のみ検証
+        if (!empty($user['password_hash'])) {
+            if (!password_verify($password, $user['password_hash'])) {
+                error_log('ローカル認証失敗: パスワード不一致 - Email: ' . $email);
+                return [
+                    'success' => false,
+                    'message' => 'メールアドレスまたはパスワードが正しくありません。',
+                    'error_type' => 'password_mismatch'
+                ];
+            }
+        } else {
+            // パスワードハッシュが存在しない場合はAPI認証に委ねる
+            return [
+                'success' => false,
+                'message' => 'API認証が必要です。',
+                'error_type' => 'no_password_hash'
+            ];
+        }
+        
+        // セッション設定
+        $_SESSION['user_id'] = $user['id'];
+        $_SESSION['aina_user_id'] = $user['aina_user_id'] ?? null;
+        $_SESSION['user_rank'] = '';
+        $_SESSION['user_status'] = 3; // デフォルトでアクティブ
+        $_SESSION['login_time'] = time();
+        
+        error_log('ローカル認証成功: User ID: ' . $user['id'] . ', Email: ' . $email);
+        
+        return ['success' => true, 'user_id' => $user['id']];
+        
+    } catch (Exception $e) {
+        error_log('ローカル認証エラー: ' . $e->getMessage());
+        return [
+            'success' => false,
+            'message' => '認証処理中にエラーが発生しました。',
+            'error_type' => 'local_auth_error'
         ];
     }
 }
