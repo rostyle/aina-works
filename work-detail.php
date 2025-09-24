@@ -70,7 +70,8 @@ try {
         SELECT 
             COUNT(DISTINCT w.id) as work_count,
             COUNT(DISTINCT ja.id) as completed_jobs,
-            AVG(r.rating) as avg_rating
+            AVG(r.rating) as avg_rating,
+            ROUND((AVG(r.rating) / 5) * 100) as satisfaction_rate
         FROM users u
         LEFT JOIN works w ON u.id = w.user_id AND w.status = 'published'
         LEFT JOIN job_applications ja ON u.id = ja.creator_id AND ja.status = 'accepted'
@@ -522,7 +523,7 @@ include 'includes/header.php';
                             <div class="text-xs text-gray-500">完了案件</div>
                         </div>
                         <div>
-                            <div class="text-lg font-bold text-gray-900">98%</div>
+                            <div class="text-lg font-bold text-gray-900"><?= $creatorStats['satisfaction_rate'] ?: 0 ?>%</div>
                             <div class="text-xs text-gray-500">満足度</div>
                         </div>
                     </div>

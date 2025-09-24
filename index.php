@@ -13,6 +13,7 @@ $stats = [
     'works' => $db->selectOne("SELECT COUNT(*) as count FROM works WHERE status = 'published'")['count'] ?? 0,
     'jobs_completed' => $db->selectOne("SELECT COUNT(*) as count FROM jobs WHERE status = 'completed'")['count'] ?? 0,
     'categories' => $db->selectOne("SELECT COUNT(*) as count FROM categories WHERE is_active = 1")['count'] ?? 0,
+    'satisfaction_rate' => $db->selectOne("SELECT ROUND((AVG(rating) / 5) * 100) as rate FROM reviews")['rate'] ?? 0,
 ];
 
 // カテゴリ取得
@@ -181,7 +182,7 @@ include 'includes/header.php';
                 </div>
                 <div class="group">
                     <div class="text-3xl md:text-4xl font-bold text-white mb-2 group-hover:scale-110 transition-transform duration-300">
-                        98%
+                        <?= $stats['satisfaction_rate'] ?>%
                     </div>
                     <div class="text-sm text-white/70">満足度</div>
                 </div>
@@ -510,7 +511,7 @@ include 'includes/header.php';
                     <div class="absolute inset-0 bg-gradient-to-br from-orange-400 to-orange-500 rounded-2xl opacity-0 group-hover:opacity-20 transition-opacity duration-500 blur"></div>
                 </div>
                 <div class="text-4xl md:text-5xl font-bold text-orange-600 mb-2">
-                    98<span class="text-2xl">%</span>
+                    <?= $stats['satisfaction_rate'] ?><span class="text-2xl">%</span>
                 </div>
                 <div class="text-lg font-medium text-gray-900 mb-1">満足度</div>
                 <div class="text-sm text-gray-500">クライアント評価</div>
