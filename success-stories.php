@@ -1,6 +1,10 @@
 <?php
 require_once 'config/config.php';
 
+// ページが未完成のため、ダッシュボードにリダイレクト
+header('Location: ' . url('./'));
+exit;
+
 $pageTitle = '成功事例';
 $pageDescription = 'AiNA Worksで実現した素晴らしいプロジェクトの成功事例をご紹介';
 
@@ -87,12 +91,29 @@ try {
     
     $stories = $db->select($storiesSql, $values);
 
-    // 実際のプロジェクトデータを使用（ダミーデータは削除）
+    // お客様の声（レビュー）を取得
+    $testimonialsSql = "
+        SELECT r.*, 
+               u.full_name as reviewer_name,
+               u.profile_image as reviewer_image,
+               j.title as job_title,
+               c.name as category_name
+        FROM reviews r
+        JOIN users u ON r.reviewer_id = u.id
+        LEFT JOIN jobs j ON r.job_id = j.id
+        LEFT JOIN categories c ON j.category_id = c.id
+        WHERE r.comment IS NOT NULL AND r.comment != ''
+        ORDER BY r.created_at DESC
+        LIMIT 3
+    ";
+    
+    $testimonials = $db->select($testimonialsSql);
 
 } catch (Exception $e) {
     $stories = [];
     $total = 0;
     $pagination = calculatePagination(0, $perPage, 1);
+    $testimonials = [];
     setFlash('error', 'データの取得に失敗しました。');
 }
 
@@ -269,7 +290,6 @@ include 'includes/header.php';
 
                                     <!-- View Details -->
                                     <a href="<?= url('work-detail?id=' . $story['id']) ?>" 
-                                    <a href="<?= url('work-detail?id=' . $story['id']) ?>" 
                                        class="text-green-600 hover:text-green-700 text-sm font-medium">
                                         詳細を見る →
                                     </a>
@@ -326,64 +346,45 @@ include 'includes/header.php';
             <p class="text-lg text-gray-600">AiNA Worksをご利用いただいたお客様からの嬉しいお声をご紹介</p>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <!-- Testimonial 1 -->
-            <div class="bg-gray-50 rounded-xl p-6">
-                <div class="flex items-center mb-4">
-                    <?= renderStars(5) ?>
+        <?php if (empty($testimonials)): ?>
+            <!-- レビューがない場合のメッセージ -->
+            <div class="text-center py-16">
+                <div class="w-24 h-24 bg-gray-200 rounded-full mx-auto mb-6 flex items-center justify-center">
+                    <svg class="h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
                 </div>
-                <p class="text-gray-700 mb-4">
-                    「期待以上のロゴデザインを短期間で制作していただきました。コミュニケーションも丁寧で、安心して依頼できました。」
-                </p>
-                <div class="flex items-center">
-                    <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center mr-3">
-                        <span class="text-white font-semibold text-sm">A</span>
-                    </div>
-                    <div>
-                        <p class="font-medium text-gray-900">A社 マーケティング部</p>
-                        <p class="text-sm text-gray-500">ロゴ制作プロジェクト</p>
-                    </div>
-                </div>
+                <h3 class="text-xl font-semibold text-gray-900 mb-2">お客様の声がまだありません</h3>
+                <p class="text-gray-600 mb-6">プロジェクトが完了すると、お客様の声がここに表示されます。</p>
             </div>
-
-            <!-- Testimonial 2 -->
-            <div class="bg-gray-50 rounded-xl p-6">
-                <div class="flex items-center mb-4">
-                    <?= renderStars(5) ?>
-                </div>
-                <p class="text-gray-700 mb-4">
-                    「AI漫画の制作をお願いしました。技術力が高く、要望通りの素晴らしい作品に仕上げていただきました。」
-                </p>
-                <div class="flex items-center">
-                    <div class="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center mr-3">
-                        <span class="text-white font-semibold text-sm">B</span>
+        <?php else: ?>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <?php foreach ($testimonials as $testimonial): ?>
+                    <div class="bg-gray-50 rounded-xl p-6">
+                        <div class="flex items-center mb-4">
+                            <?= renderStars($testimonial['rating']) ?>
+                        </div>
+                        <p class="text-gray-700 mb-4">
+                            「<?= h($testimonial['comment']) ?>」
+                        </p>
+                        <div class="flex items-center">
+                            <img src="<?= uploaded_asset($testimonial['reviewer_image'] ?? 'assets/images/default-avatar.png') ?>" 
+                                 alt="<?= h($testimonial['reviewer_name']) ?>" 
+                                 class="w-10 h-10 rounded-full mr-3 object-cover">
+                            <div>
+                                <p class="font-medium text-gray-900"><?= h($testimonial['reviewer_name']) ?></p>
+                                <p class="text-sm text-gray-500">
+                                    <?= h($testimonial['job_title'] ?? 'プロジェクト') ?>
+                                    <?php if ($testimonial['category_name']): ?>
+                                        (<?= h($testimonial['category_name']) ?>)
+                                    <?php endif; ?>
+                                </p>
+                            </div>
+                        </div>
                     </div>
-                    <div>
-                        <p class="font-medium text-gray-900">B出版 編集部</p>
-                        <p class="text-sm text-gray-500">AI漫画制作プロジェクト</p>
-                    </div>
-                </div>
+                <?php endforeach; ?>
             </div>
-
-            <!-- Testimonial 3 -->
-            <div class="bg-gray-50 rounded-xl p-6">
-                <div class="flex items-center mb-4">
-                    <?= renderStars(4) ?>
-                </div>
-                <p class="text-gray-700 mb-4">
-                    「Webサイトのリニューアルを依頼しました。デザインセンスが良く、レスポンシブ対応も完璧でした。」
-                </p>
-                <div class="flex items-center">
-                    <div class="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center mr-3">
-                        <span class="text-white font-semibold text-sm">C</span>
-                    </div>
-                    <div>
-                        <p class="font-medium text-gray-900">C株式会社 代表取締役</p>
-                        <p class="text-sm text-gray-500">Web制作プロジェクト</p>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <?php endif; ?>
     </div>
 </section>
 
