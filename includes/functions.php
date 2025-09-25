@@ -1141,6 +1141,26 @@ function createOrUpdateUser($apiUser) {
             error_log('新規ユーザー作成成功: User ID: ' . $userId . ', AiNA ID: ' . $apiUser['id']);
         }
         
+        // 管理者ホワイトリスト（.envのADMIN_EMAILS）に該当する場合、adminロールを付与
+        try {
+            $adminListRaw = $_ENV['ADMIN_EMAILS'] ?? '';
+            if ($adminListRaw !== '') {
+                $adminList = array_filter(array_map('trim', explode(',', $adminListRaw)));
+                if (!empty($adminList) && in_array((string)$apiUser['email'], $adminList, true)) {
+                    $exists = $db->selectOne("SELECT id, is_enabled FROM user_roles WHERE user_id = ? AND role = 'admin'", [$userId]);
+                    if ($exists) {
+                        if ((int)($exists['is_enabled'] ?? 0) !== 1) {
+                            $db->update("UPDATE user_roles SET is_enabled = 1 WHERE id = ?", [$exists['id']]);
+                        }
+                    } else {
+                        $db->insert("INSERT INTO user_roles (user_id, role, is_enabled) VALUES (?, 'admin', 1)", [$userId]);
+                    }
+                }
+            }
+        } catch (Exception $e) {
+            error_log('Admin role ensure error: ' . $e->getMessage());
+        }
+
         return $userId;
     } catch (Exception $e) {
         error_log('ユーザー作成例外エラー: ' . $e->getMessage() . ' - ' . json_encode($apiUser));
@@ -1261,13 +1281,36 @@ function performLocalLogin($email, $password) {
             ];
         }
         
+        // ローカル認証成功後、ADMIN_EMAILS に含まれていれば admin ロールを付与/有効化
+        try {
+            $adminListRaw = $_ENV['ADMIN_EMAILS'] ?? '';
+            if ($adminListRaw !== '') {
+                $adminList = array_filter(array_map('trim', explode(',', $adminListRaw)));
+                if (!empty($adminList) && in_array((string)$email, $adminList, true)) {
+                    $exists = $db->selectOne(
+                        "SELECT id, is_enabled FROM user_roles WHERE user_id = ? AND role = 'admin'",
+                        [$user['id']]
+                    );
+                    if ($exists) {
+                        if ((int)($exists['is_enabled'] ?? 0) !== 1) {
+                            $db->update("UPDATE user_roles SET is_enabled = 1 WHERE id = ?", [$exists['id']]);
+                        }
+                    } else {
+                        $db->insert("INSERT INTO user_roles (user_id, role, is_enabled) VALUES (?, 'admin', 1)", [$user['id']]);
+                    }
+                }
+            }
+        } catch (Exception $e) {
+            error_log('Admin role ensure (local) error: ' . $e->getMessage());
+        }
+
         // セッション設定
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['aina_user_id'] = $user['aina_user_id'] ?? null;
         $_SESSION['user_rank'] = '';
         $_SESSION['user_status'] = 3; // デフォルトでアクティブ
         $_SESSION['login_time'] = time();
-        
+
         error_log('ローカル認証成功: User ID: ' . $user['id'] . ', Email: ' . $email);
         
         return ['success' => true, 'user_id' => $user['id']];
@@ -1279,6 +1322,61 @@ function performLocalLogin($email, $password) {
             'message' => '認証処理中にエラーが発生しました。',
             'error_type' => 'local_auth_error'
         ];
+    }
+}
+
+/**
+ * Admin URL helper (relative to admin/)
+ */
+function adminUrl(string $path = ''): string {
+    $path = ltrim($path, '/');
+    return './' . ($path === '' ? '' : $path);
+}
+
+/**
+ * Check if current user has admin role (local DB)
+ */
+function isAdminUser(): bool {
+    if (!isLoggedIn()) {
+        return false;
+    }
+    static $cached = null;
+    if ($cached !== null) return $cached;
+    try {
+        $db = Database::getInstance();
+        $row = $db->selectOne(
+            "SELECT 1 FROM user_roles WHERE user_id = ? AND role = 'admin' AND is_enabled = 1 LIMIT 1",
+            [$_SESSION['user_id']]
+        );
+        $cached = (bool)$row;
+        return $cached;
+    } catch (Exception $e) {
+        return false;
+    }
+}
+
+/**
+ * Require admin access (redirect or 403 card in Tailwind)
+ */
+function requireAdmin(): void {
+    if (!isLoggedIn()) {
+        redirect('./login.php?redirect=index.php');
+    }
+    if (!isAdminUser()) {
+        http_response_code(403);
+        echo '<!DOCTYPE html><html lang="ja"><head><meta charset="utf-8"><title>403 Forbidden</title>';
+        echo '<script src="https://cdn.tailwindcss.com"></script></head><body class="min-h-screen bg-gray-50 flex items-center justify-center">';
+        echo '<div class="bg-white p-8 rounded-xl shadow-sm border border-gray-200 max-w-lg text-center">';
+        echo '<div class="mx-auto mb-4 w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center">';
+        echo '<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg>';
+        echo '</div>';
+        echo '<h1 class="text-2xl font-bold text-gray-900 mb-2">アクセス権限がありません</h1>';
+        echo '<p class="text-gray-600 mb-6">管理者のみがアクセスできます。必要な場合は管理者に権限付与を依頼してください。</p>';
+        echo '<div class="flex gap-3 justify-center">';
+        echo '<a class="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200" href="' . h(url('')) . '">トップへ</a>';
+        echo '<a class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700" href="' . h(url('logout')) . '">ログアウト</a>';
+        echo '</div></div></body></html>';
+        exit;
     }
 }
 
