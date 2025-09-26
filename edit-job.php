@@ -168,11 +168,51 @@ include 'includes/header.php';
 
             <div class="flex justify-end space-x-3">
                 <a href="<?= url('job-detail?id=' . $jobId) ?>" class="px-4 py-2 rounded-lg border border-gray-300 text-gray-700">戻る</a>
+                <button type="button" id="deleteJobBtn" class="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700">削除</button>
                 <button type="submit" class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700">保存</button>
             </div>
         </form>
     </div>
 </section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const deleteBtn = document.getElementById('deleteJobBtn');
+    if (!deleteBtn) return;
+    deleteBtn.addEventListener('click', async function() {
+        if (!confirm('この案件を削除しますか？この操作は取り消せません。')) {
+            return;
+        }
+        const form = document.querySelector('form');
+        const tokenInput = form ? form.querySelector('input[name="csrf_token"]') : null;
+        const csrfToken = tokenInput ? tokenInput.value : '';
+        try {
+            const res = await fetch('<?= url('api/delete-job.php') ?>', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: new URLSearchParams({
+                    job_id: String(<?= (int)$jobId ?>),
+                    csrf_token: csrfToken
+                }).toString()
+            });
+            const result = await res.json();
+            if (res.ok && result && result.success) {
+                alert('案件を削除しました');
+                window.location.href = '<?= url('jobs') ?>';
+            } else {
+                const message = (result && (result.message || result.error)) ? (result.message || result.error) : '削除に失敗しました';
+                alert(message);
+            }
+        } catch (e) {
+            console.error(e);
+            alert('削除に失敗しました');
+        }
+    });
+});
+</script>
 
 <?php include 'includes/footer.php'; ?>
 
