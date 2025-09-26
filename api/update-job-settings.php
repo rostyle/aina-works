@@ -223,6 +223,44 @@ try {
                         [$roomId, $currentUser['id'], $systemMessage]
                     );
                 }
+
+                // ステータスが完了になった場合は、双方にレビュー依頼を送る
+                if ($newStatus === 'completed') {
+                    foreach ($acceptedCreators as $row) {
+                        $creatorId = (int)$row['creator_id'];
+                        if ($creatorId <= 0) { continue; }
+
+                        // チャットルーム確保（再利用）
+                        $room = $db->selectOne(
+                            "SELECT id FROM chat_rooms WHERE (user1_id = ? AND user2_id = ?) OR (user1_id = ? AND user2_id = ?)",
+                            [$currentUser['id'], $creatorId, $creatorId, $currentUser['id']]
+                        );
+                        if (!$room) {
+                            $roomId = (int)$db->insert(
+                                "INSERT INTO chat_rooms (user1_id, user2_id, created_at) VALUES (?, ?, NOW())",
+                                [$currentUser['id'], $creatorId]
+                            );
+                        } else {
+                            $roomId = (int)$room['id'];
+                        }
+
+                        $clientProfileUrl = url('creator-profile?id=' . (int)$currentUser['id'], true);
+                        $creatorProfileUrl = url('creator-profile?id=' . $creatorId, true);
+
+                        $reviewMessage  = "【相互レビューのお願い】\n";
+                        $reviewMessage .= "案件: " . ($jobTitleForChat !== '' ? $jobTitleForChat : '案件') . " は完了しました。\n\n";
+                        $reviewMessage .= "依頼者さまへ: クリエイターの対応や品質について、プロフィールよりレビューのご協力をお願いします。\n";
+                        $reviewMessage .= "クリエイタープロフィール: " . $creatorProfileUrl . "\n\n";
+                        $reviewMessage .= "クリエイターさまへ: 依頼者とのやり取りについて、フィードバックのレビューをお願いします。\n";
+                        $reviewMessage .= "依頼者プロフィール: " . $clientProfileUrl . "\n\n";
+                        $reviewMessage .= "レビューは今後のマッチング品質向上に役立ちます。ご協力ありがとうございます。";
+
+                        $db->insert(
+                            "INSERT INTO chat_messages (room_id, sender_id, message, created_at) VALUES (?, ?, ?, NOW())",
+                            [$roomId, $currentUser['id'], $reviewMessage]
+                        );
+                    }
+                }
             }
         }
     } catch (Exception $e) {
