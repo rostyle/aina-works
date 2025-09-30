@@ -15,6 +15,7 @@ function renderAdminHeader(string $title = 'Admin', string $active = ''): void {
     echo '<!DOCTYPE html><html lang="ja"><head><meta charset="utf-8">';
     echo '<meta name="viewport" content="width=device-width, initial-scale=1">';
     echo '<title>' . h($title) . ' - Admin</title>';
+    echo '<link rel="icon" type="image/x-icon" href="' . h(asset('images/favicon.ico')) . '">';
     echo '<script src="https://cdn.tailwindcss.com"></script>';
     echo '<meta name="csrf-token" content="' . h(generateCsrfToken()) . '">';
     echo '</head><body class="bg-gray-50">';

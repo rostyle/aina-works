@@ -24,7 +24,8 @@ $navItems = [
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AiNA Works</title>
-    <link rel="icon" type="image/png" href="<?= asset('images/logo-design-icon.png') ?>">
+    <link rel="icon" type="image/x-icon" href="<?= asset('images/favicon.ico') ?>">
+    <link rel="apple-touch-icon" href="<?= asset('images/logo.png') ?>">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
   tailwind.config = {
@@ -164,9 +165,7 @@ $navItems = [
                 <!-- Logo -->
                 <div class="flex items-center">
                     <a href="./" class="flex items-center space-x-3">
-                        <div class="w-8 h-8 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-lg flex items-center justify-center">
-                            <span class="text-white font-bold text-sm">AW</span>
-                            </div>
+                        <img src="<?= asset('images/logo.png') ?>" alt="AiNA Works" class="h-8 w-auto">
                         <span class="text-xl font-bold text-gray-900">AiNA Works</span>
                     </a>
                 </div>
