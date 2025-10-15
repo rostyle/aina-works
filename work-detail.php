@@ -245,7 +245,7 @@ include 'includes/header.php';
                 <div class="mb-8">
                     <h3 class="text-lg font-semibold text-gray-900 mb-4">プロジェクト概要</h3>
                     <div class="prose prose-gray max-w-none">
-                        <p class="text-gray-700 leading-relaxed text-base"><?= nl2br(h($work['description'])) ?></p>
+                        <p class="text-gray-700 leading-relaxed text-base"><?= nl2br(autolink(h($work['description']))) ?></p>
                     </div>
                 </div>
 

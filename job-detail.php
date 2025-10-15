@@ -446,7 +446,7 @@ $showSuccess = isset($_GET['applied']) && $_GET['applied'] == '1';
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                     <h2 class="text-xl font-bold text-gray-900 mb-4">案件の詳細</h2>
                     <div class="prose max-w-none">
-                        <?= nl2br(h($job['description'])) ?>
+                        <?= nl2br(autolink(h($job['description']))) ?>
                     </div>
                 </div>
 

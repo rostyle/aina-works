@@ -479,7 +479,7 @@ include 'includes/header.php';
 
                                             <div class="bg-gray-50 rounded-lg p-3 mb-3">
                                                 <h4 class="text-sm font-medium text-gray-700 mb-1">応募メッセージ</h4>
-                                                <p class="text-sm text-gray-600"><?= nl2br(h($app['cover_letter'])) ?></p>
+                                                <p class="text-sm text-gray-600"><?= nl2br(autolink(h($app['cover_letter']))) ?></p>
                                             </div>
 
                                             <p class="text-xs text-gray-500 mb-4">

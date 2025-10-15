@@ -161,7 +161,7 @@ include 'includes/header.php';
             <!-- About -->
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
                 <h2 class="text-xl font-semibold text-gray-900 mb-4">自己紹介</h2>
-                <p class="text-gray-700 leading-relaxed"><?= nl2br(h($creator['bio'])) ?></p>
+                <p class="text-gray-700 leading-relaxed"><?= nl2br(autolink(h($creator['bio']))) ?></p>
             </div>
 
             <?php if (isLoggedIn() && (int)$currentUser['id'] !== (int)$creator['id']): ?>
@@ -229,7 +229,7 @@ include 'includes/header.php';
                                         </div>
                                         <time class="text-sm text-gray-500"><?= formatDate($review['created_at']) ?></time>
                                     </div>
-                                    <p class="text-gray-700 text-sm leading-relaxed"><?= nl2br(h($review['comment'])) ?></p>
+                                    <p class="text-gray-700 text-sm leading-relaxed"><?= nl2br(autolink(h($review['comment']))) ?></p>
                                 </div>
                             </div>
                         </div>
