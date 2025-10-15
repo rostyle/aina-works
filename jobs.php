@@ -133,7 +133,7 @@ include 'includes/header.php';
 </section>
 
 <!-- Search & Filter Section -->
-<section class="bg-white shadow-sm border-b border-gray-200 sticky top-16 z-40">
+<section class="bg-white shadow-sm border-b border-gray-200">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <form method="GET" class="space-y-4">
             <!-- Search Bar -->
