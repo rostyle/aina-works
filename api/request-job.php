@@ -39,8 +39,14 @@ try {
         jsonResponse(['error' => 'プロジェクト概要を入力してください'], 400);
     }
     
-    if ($budgetMin <= 0 || $budgetMax <= 0 || $budgetMin > $budgetMax) {
-        jsonResponse(['error' => '予算を正しく入力してください'], 400);
+    if ($budgetMin < 100) {
+        jsonResponse(['error' => '予算（最小）は100円以上で入力してください'], 400);
+    }
+    if ($budgetMax < 100) {
+        jsonResponse(['error' => '予算（最大）は100円以上で入力してください'], 400);
+    }
+    if ($budgetMin >= 100 && $budgetMax >= 100 && $budgetMin > $budgetMax) {
+        jsonResponse(['error' => '予算の上限は下限より大きい値を入力してください'], 400);
     }
     
     if (empty($deadline)) {

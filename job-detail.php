@@ -99,9 +99,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_application'])
         setFlash('error', '応募メッセージを入力してください。');
         redirect(url('job-detail?id=' . $jobId));
     }
-    if ($proposedPrice <= 0) {
+    if ($proposedPrice < 100) {
         error_log('提案金額が無効です: ' . $proposedPrice);
-        setFlash('error', '提案金額を正しく入力してください。');
+        setFlash('error', '提案金額は100円以上で入力してください。');
         redirect(url('job-detail?id=' . $jobId));
     }
     if ($proposedDuration <= 0) {
@@ -448,6 +448,7 @@ $showSuccess = isset($_GET['applied']) && $_GET['applied'] == '1';
                     <div class="prose max-w-none">
                         <?= nl2br(autolink(h($job['description']))) ?>
                     </div>
+                    <p class="text-xs text-gray-500 mt-1">100円以上、100円単位で入力してください</p>
                 </div>
 
                 <!-- Required Skills -->
@@ -681,8 +682,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         <input type="number" 
                                id="modal_proposed_price" 
                                name="proposed_price" 
-                               min="1000"
-                               step="1000"
+                               min="100"
+                               step="100"
                                required
                                class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                placeholder="100000">

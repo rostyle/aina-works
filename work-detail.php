@@ -784,15 +784,17 @@ include 'includes/header.php';
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">予算（最小）</label>
-                        <input type="number" name="budget_min" required min="1"
+                        <input type="number" name="budget_min" required min="100" step="100"
                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                placeholder="100000">
+                        <p class="text-xs text-gray-500 mt-1">100円以上、100円単位で入力してください</p>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">予算（最大）</label>
-                        <input type="number" name="budget_max" required min="1"
+                        <input type="number" name="budget_max" required min="100" step="100"
                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                placeholder="500000">
+                        <p class="text-xs text-gray-500 mt-1">100円以上、100円単位で入力してください</p>
                     </div>
                 </div>
                 

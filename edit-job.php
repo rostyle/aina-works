@@ -57,8 +57,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$categoryId) {
             $errors[] = 'カテゴリを選択してください。';
         }
-        if ($budgetMin <= 0 || $budgetMax <= 0 || $budgetMin > $budgetMax) {
-            $errors[] = '予算を正しく入力してください。';
+        if ($budgetMin < 100) {
+            $errors[] = '予算（下限）は100円以上で入力してください。';
+        }
+        if ($budgetMax < 100) {
+            $errors[] = '予算（上限）は100円以上で入力してください。';
+        }
+        if ($budgetMin >= 100 && $budgetMax >= 100 && $budgetMin > $budgetMax) {
+            $errors[] = '予算の上限は下限より大きい値を入力してください。';
         }
         if ($durationWeeks <= 0) {
             $errors[] = '期間を正しく入力してください。';
@@ -143,11 +149,11 @@ include 'includes/header.php';
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">予算（下限）</label>
-                    <input type="number" name="budget_min" min="0" value="<?= h($job['budget_min']) ?>" class="w-full px-3 py-2 border border-gray-300 rounded-lg" required>
+                    <input type="number" name="budget_min" min="100" value="<?= h($job['budget_min']) ?>" class="w-full px-3 py-2 border border-gray-300 rounded-lg" required>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">予算（上限）</label>
-                    <input type="number" name="budget_max" min="0" value="<?= h($job['budget_max']) ?>" class="w-full px-3 py-2 border border-gray-300 rounded-lg" required>
+                    <input type="number" name="budget_max" min="100" value="<?= h($job['budget_max']) ?>" class="w-full px-3 py-2 border border-gray-300 rounded-lg" required>
                 </div>
             </div>
 
