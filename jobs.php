@@ -133,7 +133,7 @@ include 'includes/header.php';
 </section>
 
 <!-- Search & Filter Section -->
-<section class="bg-white shadow-sm border-b border-gray-200 sticky top-16 z-40">
+<section class="bg-white shadow-sm border-b border-gray-200">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <form method="GET" class="space-y-4">
             <!-- Search Bar -->
@@ -177,6 +177,9 @@ include 'includes/header.php';
                     </option>
                     <option value="delivered" <?= $status == 'delivered' ? 'selected' : '' ?>>
                         🟣 納品済み
+                    </option>
+                    <option value="approved" <?= $status == 'approved' ? 'selected' : '' ?>>
+                        🟦 検収済み
                     </option>
                     <option value="cancelled" <?= $status == 'cancelled' ? 'selected' : '' ?>>
                         🔴 キャンセル
@@ -317,6 +320,7 @@ include 'includes/header.php';
                             'closed' => '🟡 募集終了', 
                             'contracted' => '🔵 契約済み',
                             'delivered' => '🟣 納品済み',
+                            'approved' => '🟦 検収済み',
                             'cancelled' => '🔴 キャンセル',
                             'in_progress' => '🔵 進行中',
                             'completed' => '⚫ 完了'
@@ -427,7 +431,7 @@ include 'includes/header.php';
 
                             <div class="flex items-center text-sm text-gray-600">
                                 <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 1 1 -18 0 9 9 0 0 1 18 0z" />
                                 </svg>
                                 <span><?= h($job['duration_weeks']) ?>週間</span>
                             </div>
@@ -483,14 +487,20 @@ include 'includes/header.php';
                                     'contracted' => [
                                         'class' => 'bg-blue-100 text-blue-800 border border-blue-200',
                                         'label' => '契約済み',
-                                        'icon' => '<svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>',
+                                        'icon' => '<svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20"><path d="M9 12l2 2 4-4m6 2a9 9 0 1 1 -18 0 9 9 0 0 1 18 0z"></path></svg>',
                                         'description' => '作業開始'
                                     ],
                                     'delivered' => [
                                         'class' => 'bg-purple-100 text-purple-800 border border-purple-200',
                                         'label' => '納品済み',
-                                        'icon' => '<svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20"><path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"></path></svg>',
+                                        'icon' => '<svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20"><path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 001 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"></path></svg>',
                                         'description' => '完了実績'
+                                    ],
+                                    'approved' => [
+                                        'class' => 'bg-indigo-100 text-indigo-800 border border-indigo-200',
+                                        'label' => '検収済み',
+                                        'icon' => '<svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm-1.293-5.293l-2-2a1 1 0 10-1.414 1.414l2.707 2.707a1 1 0 001.414 0l5.707-5.707a1 1 0 10-1.414-1.414l-5 5z" clip-rule="evenodd"></path></svg>',
+                                        'description' => '検収完了'
                                     ],
                                     'cancelled' => [
                                         'class' => 'bg-red-100 text-red-800 border border-red-200',
@@ -560,7 +570,7 @@ include 'includes/header.php';
                     FROM jobs j
                     JOIN users u ON j.client_id = u.id
                     LEFT JOIN categories c ON j.category_id = c.id
-                    WHERE j.status IN ('completed')
+                    WHERE j.status IN ('completed', 'delivered', 'approved')
                     ORDER BY j.updated_at DESC, j.created_at DESC
                     LIMIT 8
                 ");

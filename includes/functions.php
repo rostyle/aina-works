@@ -1350,6 +1350,24 @@ function performLocalLogin($email, $password) {
 }
 
 /**
+ * テキスト内のURLを自動的にハイパーリンクに変換
+ */
+function autolink($text) {
+    // URLパターン（http, https）
+    $pattern = '/(https?:\/\/[^\s<>"\']+)/i';
+    
+    // URLをリンクに変換
+    $text = preg_replace_callback($pattern, function($matches) {
+        $url = $matches[1];
+        // URLの末尾の句読点を除外
+        $url = rtrim($url, '.,;:!?');
+        return '<a href="' . h($url) . '" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline">' . h($url) . '</a>';
+    }, $text);
+    
+    return $text;
+}
+
+/**
  * Admin URL helper (relative to admin/)
  */
 function adminUrl(string $path = ''): string {

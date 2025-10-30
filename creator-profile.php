@@ -56,6 +56,16 @@ try {
         LIMIT 6
     ", [$creatorId]);
 
+    // レビュー詳細取得
+    $reviews = $db->select("
+        SELECT r.*, u.full_name as reviewer_name, u.profile_image as avatar, u.is_creator
+        FROM reviews r
+        JOIN users u ON r.reviewer_id = u.id
+        WHERE r.reviewee_id = ?
+        ORDER BY r.created_at DESC
+        LIMIT 10
+    ", [$creatorId]);
+
     // 現在ユーザーのお気に入り状態（クリエイター）
     $isCreatorLiked = false;
     if (isLoggedIn()) {
@@ -151,8 +161,88 @@ include 'includes/header.php';
             <!-- About -->
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
                 <h2 class="text-xl font-semibold text-gray-900 mb-4">自己紹介</h2>
-                <p class="text-gray-700 leading-relaxed"><?= nl2br(h($creator['bio'])) ?></p>
+                <p class="text-gray-700 leading-relaxed"><?= nl2br(autolink(h($creator['bio']))) ?></p>
             </div>
+
+            <?php if (isLoggedIn() && (int)$currentUser['id'] !== (int)$creator['id']): ?>
+            <!-- Review Form -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">このクリエイターをレビュー</h2>
+                <form method="POST" action="<?= url('api/submit-user-review.php') ?>" class="space-y-4">
+                    <input type="hidden" name="csrf_token" value="<?= h(generateCsrfToken()) ?>">
+                    <input type="hidden" name="reviewee_id" value="<?= (int)$creator['id'] ?>">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">評価（1〜5）</label>
+                        <select name="rating" class="w-32 px-3 py-2 border border-gray-300 rounded-md" required>
+                            <option value="5">★★★★★ (5)</option>
+                            <option value="4">★★★★ (4)</option>
+                            <option value="3">★★★ (3)</option>
+                            <option value="2">★★ (2)</option>
+                            <option value="1">★ (1)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">コメント</label>
+                        <textarea name="comment" rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="やり取りの感想や良かった点などをご記入ください" required></textarea>
+                        <p class="text-xs text-gray-500 mt-1">1000文字以内</p>
+                    </div>
+                    <div class="flex justify-end">
+                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">レビューを送信</button>
+                    </div>
+                </form>
+            </div>
+            <?php endif; ?>
+
+            <!-- Reviews -->
+            <?php if (!empty($reviews)): ?>
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+                <h2 class="text-xl font-semibold text-gray-900 mb-6">レビュー (<?= $creator['review_count'] ?>件)</h2>
+                <div class="space-y-6">
+                    <?php foreach ($reviews as $review): ?>
+                        <div class="border-b border-gray-100 last:border-b-0 pb-6 last:pb-0">
+                            <div class="flex items-start space-x-4">
+                                <?php 
+                                // プロフィールリンクを決定
+                                $profileUrl = $review['is_creator'] 
+                                    ? url('creator-profile?id=' . $review['reviewer_id'])
+                                    : url('profile?id=' . $review['reviewer_id']);
+                                ?>
+                                <div class="flex-shrink-0">
+                                    <a href="<?= $profileUrl ?>" class="block">
+                                        <img src="<?= uploaded_asset($review['avatar'] ?: 'default-avatar.png') ?>" 
+                                             alt="<?= h($review['reviewer_name']) ?>" 
+                                             class="h-10 w-10 rounded-full object-cover hover:ring-2 hover:ring-blue-500 transition-all">
+                                    </a>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <div class="flex items-center space-x-3">
+                                            <h4 class="text-sm font-medium">
+                                                <a href="<?= $profileUrl ?>" class="text-gray-900 hover:text-blue-600 transition-colors">
+                                                    <?= h($review['reviewer_name']) ?>
+                                                </a>
+                                            </h4>
+                                            <div class="flex items-center">
+                                                <?= renderStars($review['rating']) ?>
+                                                <span class="ml-1 text-sm text-gray-600"><?= $review['rating'] ?></span>
+                                            </div>
+                                        </div>
+                                        <time class="text-sm text-gray-500"><?= formatDate($review['created_at']) ?></time>
+                                    </div>
+                                    <p class="text-gray-700 text-sm leading-relaxed"><?= nl2br(autolink(h($review['comment']))) ?></p>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+                
+                <?php if ($creator['review_count'] > 10): ?>
+                <div class="mt-6 text-center">
+                    <p class="text-sm text-gray-500">他 <?= $creator['review_count'] - 10 ?>件のレビューがあります</p>
+                </div>
+                <?php endif; ?>
+            </div>
+            <?php endif; ?>
 
             <!-- Skills -->
             <?php if (!empty($skills)): ?>

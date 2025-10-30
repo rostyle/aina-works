@@ -57,8 +57,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$categoryId) {
             $errors[] = 'カテゴリを選択してください。';
         }
-        if ($budgetMin <= 0 || $budgetMax <= 0 || $budgetMin > $budgetMax) {
-            $errors[] = '予算を正しく入力してください。';
+        if ($budgetMin < 100) {
+            $errors[] = '予算（下限）は100円以上で入力してください。';
+        }
+        if ($budgetMax < 100) {
+            $errors[] = '予算（上限）は100円以上で入力してください。';
+        }
+        if ($budgetMin >= 100 && $budgetMax >= 100 && $budgetMin > $budgetMax) {
+            $errors[] = '予算の上限は下限より大きい値を入力してください。';
         }
         if ($durationWeeks <= 0) {
             $errors[] = '期間を正しく入力してください。';
@@ -143,11 +149,11 @@ include 'includes/header.php';
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">予算（下限）</label>
-                    <input type="number" name="budget_min" min="0" value="<?= h($job['budget_min']) ?>" class="w-full px-3 py-2 border border-gray-300 rounded-lg" required>
+                    <input type="number" name="budget_min" min="100" value="<?= h($job['budget_min']) ?>" class="w-full px-3 py-2 border border-gray-300 rounded-lg" required>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">予算（上限）</label>
-                    <input type="number" name="budget_max" min="0" value="<?= h($job['budget_max']) ?>" class="w-full px-3 py-2 border border-gray-300 rounded-lg" required>
+                    <input type="number" name="budget_max" min="100" value="<?= h($job['budget_max']) ?>" class="w-full px-3 py-2 border border-gray-300 rounded-lg" required>
                 </div>
             </div>
 
@@ -168,11 +174,51 @@ include 'includes/header.php';
 
             <div class="flex justify-end space-x-3">
                 <a href="<?= url('job-detail?id=' . $jobId) ?>" class="px-4 py-2 rounded-lg border border-gray-300 text-gray-700">戻る</a>
+                <button type="button" id="deleteJobBtn" class="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700">削除</button>
                 <button type="submit" class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700">保存</button>
             </div>
         </form>
     </div>
 </section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const deleteBtn = document.getElementById('deleteJobBtn');
+    if (!deleteBtn) return;
+    deleteBtn.addEventListener('click', async function() {
+        if (!confirm('この案件を削除しますか？この操作は取り消せません。')) {
+            return;
+        }
+        const form = document.querySelector('form');
+        const tokenInput = form ? form.querySelector('input[name="csrf_token"]') : null;
+        const csrfToken = tokenInput ? tokenInput.value : '';
+        try {
+            const res = await fetch('<?= url('api/delete-job.php') ?>', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: new URLSearchParams({
+                    job_id: String(<?= (int)$jobId ?>),
+                    csrf_token: csrfToken
+                }).toString()
+            });
+            const result = await res.json();
+            if (res.ok && result && result.success) {
+                alert('案件を削除しました');
+                window.location.href = '<?= url('jobs') ?>';
+            } else {
+                const message = (result && (result.message || result.error)) ? (result.message || result.error) : '削除に失敗しました';
+                alert(message);
+            }
+        } catch (e) {
+            console.error(e);
+            alert('削除に失敗しました');
+        }
+    });
+});
+</script>
 
 <?php include 'includes/footer.php'; ?>
 

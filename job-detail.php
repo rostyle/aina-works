@@ -99,9 +99,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_application'])
         setFlash('error', '応募メッセージを入力してください。');
         redirect(url('job-detail?id=' . $jobId));
     }
-    if ($proposedPrice <= 0) {
+    if ($proposedPrice < 100) {
         error_log('提案金額が無効です: ' . $proposedPrice);
-        setFlash('error', '提案金額を正しく入力してください。');
+        setFlash('error', '提案金額は100円以上で入力してください。');
         redirect(url('job-detail?id=' . $jobId));
     }
     if ($proposedDuration <= 0) {
@@ -267,7 +267,7 @@ $showSuccess = isset($_GET['applied']) && $_GET['applied'] == '1';
                                 </span>
                                 <span class="inline-flex items-center">
                                     <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 1 1 -18 0 9 9 0 0 1 18 0z" />
                                     </svg>
                                     <?= timeAgo($job['created_at']) ?>
                                 </span>
@@ -279,7 +279,7 @@ $showSuccess = isset($_GET['applied']) && $_GET['applied'] == '1';
                                 </span>
                                 <span class="inline-flex items-center">
                                     <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 1 1 -18 0 9 9 0 0 1 18 0z" />
                                     </svg>
                                     採用 <?= $acceptedCount ?>/<?= $hiringLimit ?> 人
                                 </span>
@@ -306,16 +306,23 @@ $showSuccess = isset($_GET['applied']) && $_GET['applied'] == '1';
                                 'contracted' => [
                                     'class' => 'bg-blue-100 text-blue-800 border-2 border-blue-300',
                                     'label' => '契約済み',
-                                    'icon' => '<svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>',
+                                    'icon' => '<svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20"><path d="M9 12l2 2 4-4m6 2a9 9 0 1 1 -18 0 9 9 0 0 1 18 0z"></path></svg>',
                                     'description' => 'クリエイターとの契約が成立し作業が開始されています',
                                     'bgClass' => 'bg-blue-50'
                                 ],
                                 'delivered' => [
                                     'class' => 'bg-purple-100 text-purple-800 border-2 border-purple-300',
                                     'label' => '納品済み',
-                                    'icon' => '<svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20"><path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"></path></svg>',
+                                    'icon' => '<svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20"><path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 001 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"></path></svg>',
                                     'description' => '作業が完了し成果物が納品されました',
                                     'bgClass' => 'bg-purple-50'
+                                ],
+                                'approved' => [
+                                    'class' => 'bg-indigo-100 text-indigo-800 border-2 border-indigo-300',
+                                    'label' => '検収済み',
+                                    'icon' => '<svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm-1.293-5.293l-2-2a1 1 0 10-1.414 1.414l2.707 2.707a1 1 0 001.414 0l5.707-5.707a1 1 0 10-1.414-1.414l-5 5z" clip-rule="evenodd"></path></svg>',
+                                    'description' => '納品物の検収が完了しました',
+                                    'bgClass' => 'bg-indigo-50'
                                 ],
                                 'cancelled' => [
                                     'class' => 'bg-red-100 text-red-800 border-2 border-red-300',
@@ -439,8 +446,9 @@ $showSuccess = isset($_GET['applied']) && $_GET['applied'] == '1';
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                     <h2 class="text-xl font-bold text-gray-900 mb-4">案件の詳細</h2>
                     <div class="prose max-w-none">
-                        <?= nl2br(h($job['description'])) ?>
+                        <?= nl2br(autolink(h($job['description']))) ?>
                     </div>
+                    <p class="text-xs text-gray-500 mt-1">100円以上、100円単位で入力してください</p>
                 </div>
 
                 <!-- Required Skills -->
@@ -505,9 +513,12 @@ $showSuccess = isset($_GET['applied']) && $_GET['applied'] == '1';
                                 <div class="flex items-center space-x-2">
                                     <select id="status_select" class="px-3 py-2 border border-gray-300 rounded-md text-sm">
                                         <option value="open" <?= $job['status'] === 'open' ? 'selected' : '' ?>>募集中</option>
-                                        <option value="closed" <?= $job['status'] === 'closed' ? 'selected' : '' ?>>募集終了</option>
+                                        <option value="in_progress" <?= $job['status'] === 'in_progress' ? 'selected' : '' ?>>進行中</option>
                                         <option value="contracted" <?= $job['status'] === 'contracted' ? 'selected' : '' ?>>契約済み</option>
                                         <option value="delivered" <?= $job['status'] === 'delivered' ? 'selected' : '' ?>>納品済み</option>
+                                        <option value="approved" <?= $job['status'] === 'approved' ? 'selected' : '' ?>>検収済み</option>
+                                        <option value="completed" <?= $job['status'] === 'completed' ? 'selected' : '' ?>>完了</option>
+                                        <option value="closed" <?= $job['status'] === 'closed' ? 'selected' : '' ?>>募集終了</option>
                                         <option value="cancelled" <?= $job['status'] === 'cancelled' ? 'selected' : '' ?>>キャンセル</option>
                                     </select>
                                 </div>
@@ -532,7 +543,7 @@ $showSuccess = isset($_GET['applied']) && $_GET['applied'] == '1';
                     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center">
                         <div class="flex items-center justify-center mb-4">
                             <svg class="h-12 w-12 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 1 1 -18 0 9 9 0 0 1 18 0z" />
                             </svg>
                         </div>
                         <h3 class="text-lg font-semibold text-gray-900 mb-2">応募済み</h3>
@@ -595,10 +606,21 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('レスポンス:', res.status);
             
             if (!res.ok) {
-                throw new Error('HTTP ' + res.status);
+                const text = await res.text();
+                throw new Error('HTTP ' + res.status + ' ' + text);
             }
             
-            const json = await res.json();
+            const rawText = await res.text();
+            let json;
+            try {
+                let jsonText = rawText;
+                const idx = rawText.indexOf('{');
+                if (idx > 0) jsonText = rawText.substring(idx);
+                json = JSON.parse(jsonText);
+            } catch(parseErr) {
+                console.error('JSON parse error:', parseErr, rawText);
+                throw new Error('サーバー応答の解析に失敗しました');
+            }
             console.log('JSON:', json);
             
             if (json.success) {
@@ -660,8 +682,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         <input type="number" 
                                id="modal_proposed_price" 
                                name="proposed_price" 
-                               min="1000"
-                               step="1000"
+                               min="100"
+                               step="100"
                                required
                                class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                placeholder="100000">

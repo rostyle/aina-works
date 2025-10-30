@@ -79,13 +79,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $isCreatorUser = $currentUser && !empty($currentUser['is_creator']);
         
         if (!$isCreatorUser) {
-            // 依頼者の場合は予算必須
-            if ($formData['budget_min'] <= 0) {
-                $errors[] = '予算の下限を入力してください。';
+            // 依頼者の場合は予算必須（100円以上）
+            if ($formData['budget_min'] < 100) {
+                $errors[] = '予算の下限は100円以上で入力してください。';
             }
 
-            if ($formData['budget_max'] <= 0) {
-                $errors[] = '予算の上限を入力してください。';
+            if ($formData['budget_max'] < 100) {
+                $errors[] = '予算の上限は100円以上で入力してください。';
             }
         }
 
@@ -277,6 +277,7 @@ include 'includes/header.php';
                         <div class="flex-1 ml-6">
                             <div class="w-full bg-gray-200 rounded-full overflow-hidden"><div id="ai-director-progress" class="ai-progress" style="width:0%"></div></div>
                         </div>
+                        <p class="text-xs text-gray-500 mt-1">100円以上、100円単位で入力してください</p>
                     </div>
                 </div>
             </div>
@@ -304,12 +305,13 @@ include 'includes/header.php';
                                    id="budget_min" 
                                    name="budget_min" 
                                    value="<?= h($formData['budget_min']) ?>"
-                                   min="1000"
-                                   step="1000"
+                                   min="100"
+                                   step="100"
                                    <?php if (!isset($isCreator) || !$isCreator): ?>required<?php endif; ?>
                                    class="w-full pl-8 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                                    placeholder="50000">
                         </div>
+                        <p class="text-xs text-gray-500 mt-1">100円以上、100円単位で入力してください</p>
                     </div>
 
                     <div>
@@ -327,8 +329,8 @@ include 'includes/header.php';
                                    id="budget_max" 
                                    name="budget_max" 
                                    value="<?= h($formData['budget_max']) ?>"
-                                   min="1000"
-                                   step="1000"
+                                   min="100"
+                                   step="100"
                                    <?php if (!isset($isCreator) || !$isCreator): ?>required<?php endif; ?>
                                    class="w-full pl-8 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                                    placeholder="100000">

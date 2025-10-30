@@ -61,7 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <script src="https://cdn.tailwindcss.com"></script>
   <meta name="csrf-token" content="<?= h(generateCsrfToken()) ?>">
   <style>body{min-height:100vh}</style>
-  <link rel="icon" href="data:,">
+  <link rel="icon" type="image/x-icon" href="<?= h(asset('images/favicon.ico')) ?>">
   <!-- 管理画面はローカルDB認証のみ -->
   <!-- info@ai-na.co.jp は .env の ADMIN_EMAILS に設定済みであれば admin 権限が付与されます -->
   <!-- 例: ADMIN_EMAILS=info@ai-na.co.jp -->
