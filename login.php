@@ -107,6 +107,15 @@ include 'includes/header.php';
                                     <li>メンバープラン以上へのアップグレードが必要です</li>
                                 </ul>
                             </div>
+                        <?php elseif (strpos($errors['general'], 'API認証') !== false): ?>
+                            <div class="mt-3 text-xs text-red-600">
+                                <p><strong>解決方法：</strong></p>
+                                <ul class="list-disc list-inside mt-1 space-y-1">
+                                    <li>システムの設定に問題があります</li>
+                                    <li>APIキーが正しく設定されていない可能性があります</li>
+                                    <li>管理者にお問い合わせください</li>
+                                </ul>
+                            </div>
                         <?php elseif (strpos($errors['general'], 'サーバー') !== false || strpos($errors['general'], '接続') !== false): ?>
                             <div class="mt-3 text-xs text-red-600">
                                 <p><strong>解決方法：</strong></p>

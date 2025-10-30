@@ -920,11 +920,18 @@ function authenticateWithAinaApi($email, $password = null) {
         ];
     }
     
-    // デバッグ用: レスポンスをログに記録
-    error_log('AiNA API Response (Status: ' . $httpStatus . '): ' . substr($response, 0, 500));
-    
     if ($httpStatus >= 400) {
         error_log('AiNA API HTTPエラー: Status ' . $httpStatus . ' Response: ' . $response);
+        
+        // 401エラーはAPIキーの問題
+        if ($httpStatus === 401) {
+            return [
+                'success' => false,
+                'message' => 'API認証エラーです。管理者にお問い合わせください。',
+                'error_type' => 'api_auth_error'
+            ];
+        }
+        
         return [
             'success' => false,
             'message' => 'サーバーエラーが発生しました。時間をおいて再試行してください。',
@@ -1000,7 +1007,7 @@ function authenticateWithAinaApi($email, $password = null) {
     
     $user = $data['user'];
     
-    // 必要なフィールドの存在確認（新APIはid, string_id, email, nameを返す）
+    // 必要なフィールドの存在確認（新APIはid, email, name, status_id, plan_idを返す）
     $requiredFields = ['id', 'email', 'name'];
     foreach ($requiredFields as $field) {
         if (!isset($user[$field])) {
@@ -1013,13 +1020,19 @@ function authenticateWithAinaApi($email, $password = null) {
         }
     }
     
-    // 新APIではstatus_idとrankが含まれていないため、デフォルト値を設定
-    // （認証が成功している時点で、アクティブなユーザーと判断）
+    // 新APIのレスポンスにはstatus_id, plan_id, plan, plan_displayなどが含まれる
+    // これらは既にAPIレスポンスに含まれているため、デフォルト値の設定は不要
+    // ただし、古いAPIレスポンスとの互換性のため、存在しない場合のみデフォルト値を設定
     if (!isset($user['status_id'])) {
-        $user['status_id'] = 3; // アクティブ
+        $user['status_id'] = 3; // アクティブ（フォールバック）
     }
+    if (!isset($user['plan_id'])) {
+        $user['plan_id'] = 2; // メンバープラン（フォールバック）
+    }
+    
+    // 後方互換性のため、rankフィールドも設定
     if (!isset($user['rank'])) {
-        $user['rank'] = 'メンバープラン'; // デフォルトプラン
+        $user['rank'] = $user['plan_display'] ?? 'メンバープラン';
     }
     
     return ['success' => true, 'user' => $user];
@@ -1029,24 +1042,39 @@ function authenticateWithAinaApi($email, $password = null) {
  * ユーザー認証の検証
  */
 function validateUserAccess($user) {
-    // ステータス確認（アクティブ会員のみ）
+    // ステータス確認（アクティブ会員、エリート会員のみ）
     $userStatus = (int)($user['status_id'] ?? 0);
-    if (!in_array($userStatus, ALLOWED_STATUSES)) {
-        error_log('ユーザーアクセス拒否: 非アクティブステータス - User ID: ' . $user['id'] . ', Status: ' . $userStatus);
+    if (!in_array($userStatus, ALLOWED_STATUSES, true)) {
+        $statusNames = [
+            1 => '仮登録',
+            2 => '契約済み',
+            3 => 'アクティブ会員',
+            4 => 'エリート会員',
+            5 => '未払い',
+            6 => '退会',
+            7 => '電子署名完了',
+            8 => '支払い待ち',
+            9 => 'クーリングオフ'
+        ];
+        $statusName = $statusNames[$userStatus] ?? '不明';
+        
+        error_log('ユーザーアクセス拒否: 非アクティブステータス - User ID: ' . ($user['id'] ?? 'unknown') . ', Status ID: ' . $userStatus . ' (' . $statusName . ')');
         return [
             'valid' => false, 
-            'message' => 'アカウントが非アクティブです。AiNA マイページでアカウント状況を確認してください。',
+            'message' => 'ご利用いただけないアカウント状態です（' . $statusName . '）。AiNA マイページでアカウント状況を確認してください。',
             'error_type' => 'inactive_account'
         ];
     }
     
-    // ランク確認
-    $userRank = trim($user['rank'] ?? '');
-    if (!in_array($userRank, ALLOWED_RANKS)) {
-        error_log('ユーザーアクセス拒否: 不適切なランク - User ID: ' . $user['id'] . ', Rank: ' . $userRank);
+    // プランID確認（メンバープラン以上）
+    $userPlanId = (int)($user['plan_id'] ?? 0);
+    if (!in_array($userPlanId, ALLOWED_PLAN_IDS, true)) {
+        $planDisplay = $user['plan_display'] ?? $user['plan'] ?? 'フリープラン';
+        
+        error_log('ユーザーアクセス拒否: 不適切なプラン - User ID: ' . ($user['id'] ?? 'unknown') . ', Plan ID: ' . $userPlanId . ' (' . $planDisplay . ')');
         return [
             'valid' => false, 
-            'message' => 'メンバープラン以上の会員のみご利用いただけます。現在のプラン: ' . ($userRank ?: '未設定') . '。プランのアップグレードについては AiNA マイページをご確認ください。',
+            'message' => 'メンバープラン以上の会員のみご利用いただけます。現在のプラン: ' . $planDisplay . '。プランのアップグレードについては AiNA マイページをご確認ください。',
             'error_type' => 'insufficient_plan'
         ];
     }
@@ -1248,11 +1276,13 @@ function performApiLogin($email, $password) {
     try {
         $_SESSION['user_id'] = $userId;
         $_SESSION['aina_user_id'] = $apiUser['id'];
-        $_SESSION['user_rank'] = $apiUser['rank'] ?? '';
+        $_SESSION['user_rank'] = $apiUser['rank'] ?? $apiUser['plan_display'] ?? '';
         $_SESSION['user_status'] = $apiUser['status_id'];
+        $_SESSION['user_plan_id'] = $apiUser['plan_id'] ?? null;
+        $_SESSION['user_plan'] = $apiUser['plan'] ?? null;
         $_SESSION['login_time'] = time();
         
-        error_log('ログイン成功: User ID: ' . $userId . ', Email: ' . $email . ', AiNA ID: ' . $apiUser['id']);
+        error_log('ログイン成功: User ID: ' . $userId . ', Email: ' . $email . ', AiNA ID: ' . $apiUser['id'] . ', Plan: ' . ($apiUser['plan_display'] ?? 'unknown') . ', Status: ' . $apiUser['status_id']);
         
         return ['success' => true, 'user_id' => $userId];
     } catch (Exception $e) {
@@ -1333,6 +1363,8 @@ function performLocalLogin($email, $password) {
         $_SESSION['aina_user_id'] = $user['aina_user_id'] ?? null;
         $_SESSION['user_rank'] = '';
         $_SESSION['user_status'] = 3; // デフォルトでアクティブ
+        $_SESSION['user_plan_id'] = null; // ローカル認証ではプランIDなし
+        $_SESSION['user_plan'] = null;
         $_SESSION['login_time'] = time();
 
         error_log('ローカル認証成功: User ID: ' . $user['id'] . ', Email: ' . $email);
