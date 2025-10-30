@@ -844,10 +844,11 @@ function sendNotificationMail($to, $subject, $message, $actionUrl = null, $actio
 }
 
 /**
- * AiNA API認証
+ * AiNA API認証（新API対応）
  */
 function authenticateWithAinaApi($email, $password = null) {
-    $apiUrl = AINA_API_BASE_URL . '/get-user-info';
+    // 新しいAPIエンドポイント: /ainaglam/verify-login
+    $apiUrl = AINA_API_BASE_URL . '/ainaglam/verify-login';
     $apiKey = AINA_API_KEY;
     
     if (empty($apiKey)) {
@@ -919,6 +920,9 @@ function authenticateWithAinaApi($email, $password = null) {
         ];
     }
     
+    // デバッグ用: レスポンスをログに記録
+    error_log('AiNA API Response (Status: ' . $httpStatus . '): ' . substr($response, 0, 500));
+    
     if ($httpStatus >= 400) {
         error_log('AiNA API HTTPエラー: Status ' . $httpStatus . ' Response: ' . $response);
         return [
@@ -974,8 +978,19 @@ function authenticateWithAinaApi($email, $password = null) {
         }
     }
     
-    if (empty($data['users']) || !is_array($data['users'])) {
-        error_log('AiNA API応答エラー: usersデータが存在しないか不正です - ' . json_encode($data));
+    // 新API: authenticatedフィールドのチェック
+    if (!isset($data['authenticated']) || !$data['authenticated']) {
+        error_log('AiNA API認証失敗: authenticated=false');
+        return [
+            'success' => false, 
+            'message' => 'メールアドレスまたはパスワードが正しくありません。',
+            'error_type' => 'auth_failed'
+        ];
+    }
+    
+    // 新API: userオブジェクト（配列ではなく単体オブジェクト）
+    if (empty($data['user']) || !is_array($data['user'])) {
+        error_log('AiNA API応答エラー: userデータが存在しないか不正です - ' . json_encode($data));
         return [
             'success' => false, 
             'message' => 'ユーザー情報を取得できませんでした。',
@@ -983,10 +998,10 @@ function authenticateWithAinaApi($email, $password = null) {
         ];
     }
     
-    $user = $data['users'][0];
+    $user = $data['user'];
     
-    // 必要なフィールドの存在確認
-    $requiredFields = ['id', 'name', 'email', 'status_id'];
+    // 必要なフィールドの存在確認（新APIはid, string_id, email, nameを返す）
+    $requiredFields = ['id', 'email', 'name'];
     foreach ($requiredFields as $field) {
         if (!isset($user[$field])) {
             error_log('AiNA API応答エラー: 必要なフィールド ' . $field . ' が存在しません - ' . json_encode($user));
@@ -996,6 +1011,15 @@ function authenticateWithAinaApi($email, $password = null) {
                 'error_type' => 'incomplete_user_data'
             ];
         }
+    }
+    
+    // 新APIではstatus_idとrankが含まれていないため、デフォルト値を設定
+    // （認証が成功している時点で、アクティブなユーザーと判断）
+    if (!isset($user['status_id'])) {
+        $user['status_id'] = 3; // アクティブ
+    }
+    if (!isset($user['rank'])) {
+        $user['rank'] = 'メンバープラン'; // デフォルトプラン
     }
     
     return ['success' => true, 'user' => $user];
