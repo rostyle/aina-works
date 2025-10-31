@@ -1024,9 +1024,11 @@ function authenticateWithAinaApi($email, $password = null) {
     // これらは既にAPIレスポンスに含まれているため、デフォルト値の設定は不要
     // ただし、古いAPIレスポンスとの互換性のため、存在しない場合のみデフォルト値を設定
     if (!isset($user['status_id'])) {
+        error_log('AiNA API警告: status_idが含まれていません。デフォルト値を使用します。');
         $user['status_id'] = 3; // アクティブ（フォールバック）
     }
     if (!isset($user['plan_id'])) {
+        error_log('AiNA API警告: plan_idが含まれていません。デフォルト値を使用します。');
         $user['plan_id'] = 2; // メンバープラン（フォールバック）
     }
     
@@ -1035,6 +1037,9 @@ function authenticateWithAinaApi($email, $password = null) {
         $user['rank'] = $user['plan_display'] ?? 'メンバープラン';
     }
     
+    // 認証成功時の詳細ログ
+    error_log('AiNA API認証成功: User ID=' . $user['id'] . ', Email=' . $user['email'] . ', Plan ID=' . ($user['plan_id'] ?? 'null') . ', Status ID=' . ($user['status_id'] ?? 'null'));
+    
     return ['success' => true, 'user' => $user];
 }
 
@@ -1042,6 +1047,15 @@ function authenticateWithAinaApi($email, $password = null) {
  * ユーザー認証の検証
  */
 function validateUserAccess($user) {
+    // 定数が未定義の場合のフォールバック（本番環境対応）
+    if (!defined('ALLOWED_STATUSES')) {
+        define('ALLOWED_STATUSES', [3, 4]);
+    }
+    if (!defined('ALLOWED_PLAN_IDS')) {
+        define('ALLOWED_PLAN_IDS', [2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]);
+        error_log('警告: ALLOWED_PLAN_IDsが未定義でした。デフォルト値を使用しています。config/config.phpを更新してください。');
+    }
+    
     // ステータス確認（アクティブ会員、エリート会員のみ）
     $userStatus = (int)($user['status_id'] ?? 0);
     if (!in_array($userStatus, ALLOWED_STATUSES, true)) {
@@ -1071,7 +1085,11 @@ function validateUserAccess($user) {
     if (!in_array($userPlanId, ALLOWED_PLAN_IDS, true)) {
         $planDisplay = $user['plan_display'] ?? $user['plan'] ?? 'フリープラン';
         
+        // 詳細なデバッグログ
         error_log('ユーザーアクセス拒否: 不適切なプラン - User ID: ' . ($user['id'] ?? 'unknown') . ', Plan ID: ' . $userPlanId . ' (' . $planDisplay . ')');
+        error_log('許可されているプランID: ' . json_encode(ALLOWED_PLAN_IDS));
+        error_log('受信したユーザー情報: ' . json_encode($user));
+        
         return [
             'valid' => false, 
             'message' => 'メンバープラン以上の会員のみご利用いただけます。現在のプラン: ' . $planDisplay . '。プランのアップグレードについては AiNA マイページをご確認ください。',
