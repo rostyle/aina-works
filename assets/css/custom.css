@@ -2232,6 +2232,12 @@ body.onboarding-active {
    UTILITY CLASSES
    ========================================================================== */
 
+/* URL折り返し対応（案件詳細など） */
+.prose a {
+    word-break: break-all;
+    overflow-wrap: break-word;
+}
+
 /* Text Truncation */
 .line-clamp-1 {
     display: -webkit-box;
