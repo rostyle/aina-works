@@ -350,15 +350,40 @@ include 'includes/header.php';
                                                 提案期間: <span class="font-medium"><?= (int)$app['proposed_duration'] ?>週間</span>
                                             </p>
 
-                                            <p class="text-xs text-gray-500 mb-4">
+                                            <p class="text-xs text-gray-500 mb-2">
                                                 応募日: <?= formatDate($app['created_at'], 'Y年m月d日 H:i') ?>
                                             </p>
+
+                                            <?php
+                                            // ステータス表示用のラベルとスタイル
+                                            $appStatus = $app['status'] ?? 'pending';
+                                            $statusLabels = [
+                                                'pending' => ['label' => '保留', 'class' => 'bg-yellow-100 text-yellow-700'],
+                                                'accepted' => ['label' => '受諾済み', 'class' => 'bg-green-100 text-green-700'],
+                                                'rejected' => ['label' => '却下済み', 'class' => 'bg-red-100 text-red-700'],
+                                                'withdrawn' => ['label' => '撤回済み', 'class' => 'bg-gray-100 text-gray-700']
+                                            ];
+                                            $statusInfo = $statusLabels[$appStatus] ?? ['label' => '不明', 'class' => 'bg-gray-100 text-gray-700'];
+                                            ?>
+                                            <div class="mb-4">
+                                                <span class="inline-flex items-center px-3 py-1 text-xs font-medium rounded-full <?= $statusInfo['class'] ?>">
+                                                    ステータス: <?= h($statusInfo['label']) ?>
+                                                </span>
+                                            </div>
 
                                             <div class="flex flex-wrap gap-2" data-application-actions>
                                                 <a href="<?= url('job-detail?id=' . $app['job_id']) ?>"
                                                    class="inline-flex items-center px-3 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors">
                                                     案件詳細
                                                 </a>
+                                                <?php if (($app['status'] ?? 'pending') === 'pending'): ?>
+                                                    <button type="button"
+                                                            data-application-id="<?= $app['id'] ?>"
+                                                            data-application-action="withdraw"
+                                                            class="inline-flex items-center px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-lg hover:bg-orange-700 transition-colors">
+                                                        応募を撤回
+                                                    </button>
+                                                <?php endif; ?>
                                             </div>
                                         </div>
                                     </div>
@@ -482,9 +507,26 @@ include 'includes/header.php';
                                                 <p class="text-sm text-gray-600"><?= nl2br(autolink(h($app['cover_letter']))) ?></p>
                                             </div>
 
-                                            <p class="text-xs text-gray-500 mb-4">
+                                            <p class="text-xs text-gray-500 mb-2">
                                                 応募日: <?= formatDate($app['created_at'], 'Y年m月d日 H:i') ?>
                                             </p>
+
+                                            <?php
+                                            // ステータス表示用のラベルとスタイル（依頼者向け）
+                                            $appStatus = $app['status'] ?? 'pending';
+                                            $clientStatusLabels = [
+                                                'pending' => ['label' => '保留', 'class' => 'bg-yellow-100 text-yellow-700'],
+                                                'accepted' => ['label' => '受諾済み', 'class' => 'bg-green-100 text-green-700'],
+                                                'rejected' => ['label' => '却下済み', 'class' => 'bg-red-100 text-red-700'],
+                                                'withdrawn' => ['label' => '撤回済み', 'class' => 'bg-gray-100 text-gray-700']
+                                            ];
+                                            $clientStatusInfo = $clientStatusLabels[$appStatus] ?? ['label' => '不明', 'class' => 'bg-gray-100 text-gray-700'];
+                                            ?>
+                                            <div class="mb-4">
+                                                <span class="inline-flex items-center px-3 py-1 text-xs font-medium rounded-full <?= $clientStatusInfo['class'] ?>">
+                                                    ステータス: <?= h($clientStatusInfo['label']) ?>
+                                                </span>
+                                            </div>
 
                                             <div class="flex flex-wrap gap-2">
                                                 <a href="<?= url('creator-profile?id=' . ($app['creator_id'] ?? 0)) ?>"
@@ -524,10 +566,6 @@ include 'includes/header.php';
                                                             onclick="showBankInfo(<?= (int)$app['job_id'] ?>, <?= (int)$app['creator_id'] ?>)">
                                                         納品後の振込先を見る
                                                     </button>
-                                                <?php else: ?>
-                                                    <span class="inline-flex items-center px-3 py-1 text-xs font-medium rounded-full <?= ($app['status'] === 'accepted') ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700' ?>">
-                                                        <?= ($app['status'] === 'accepted') ? '受諾済み' : (($app['status'] === 'rejected') ? '却下済み' : '処理済み') ?>
-                                                    </span>
                                                 <?php endif; ?>
                                             </div>
                                         </div>
@@ -558,6 +596,11 @@ document.addEventListener('click', async function(e) {
         const confirmed = confirm('この応募を却下しますか？');
         if (!confirmed) return;
     }
+    
+    if (action === 'withdraw') {
+        const confirmed = confirm('この応募を撤回しますか？\n撤回した応募は元に戻せません。');
+        if (!confirmed) return;
+    }
 
     const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
     const formData = new FormData();
@@ -585,15 +628,34 @@ document.addEventListener('click', async function(e) {
                 return;
             }
 
-            // UI更新：ボタン群をバッジに差し替え
+            // UI更新：ステータスバッジとボタン群を更新
             const container = target.closest('[data-application-actions]');
-            if (container) {
+            const article = target.closest('article');
+            
+            if (container && article) {
+                // アクションボタンを削除
                 container.querySelectorAll('[data-application-action]').forEach(btn => btn.remove());
-                const badge = document.createElement('span');
-                const accepted = action === 'accept';
-                badge.className = 'inline-flex items-center px-3 py-1 text-xs font-medium rounded-full ' + (accepted ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700');
-                badge.textContent = accepted ? '受諾済み' : '却下済み';
-                container.appendChild(badge);
+                
+                // ステータスバッジを更新
+                const statusBadge = article.querySelector('.mb-4 span[class*="rounded-full"]');
+                if (statusBadge) {
+                    let badgeClass = 'bg-gray-100 text-gray-700';
+                    let badgeText = '処理済み';
+                    
+                    if (action === 'accept') {
+                        badgeClass = 'bg-green-100 text-green-700';
+                        badgeText = '受諾済み';
+                    } else if (action === 'reject') {
+                        badgeClass = 'bg-red-100 text-red-700';
+                        badgeText = '却下済み';
+                    } else if (action === 'withdraw') {
+                        badgeClass = 'bg-gray-100 text-gray-700';
+                        badgeText = '撤回済み';
+                    }
+                    
+                    statusBadge.className = 'inline-flex items-center px-3 py-1 text-xs font-medium rounded-full ' + badgeClass;
+                    statusBadge.textContent = 'ステータス: ' + badgeText;
+                }
             } else {
                 location.reload();
             }

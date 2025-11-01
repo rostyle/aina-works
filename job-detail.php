@@ -226,7 +226,7 @@ $showSuccess = isset($_GET['applied']) && $_GET['applied'] == '1';
 ?>
 
 <!-- Job Detail Section -->
-<section class="py-8 bg-gray-50 min-h-screen">
+<section class="py-8 bg-gray-50 min-h-screen overflow-x-hidden">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         
         <!-- Success Message -->
@@ -445,7 +445,7 @@ $showSuccess = isset($_GET['applied']) && $_GET['applied'] == '1';
                 <!-- Job Description -->
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                     <h2 class="text-xl font-bold text-gray-900 mb-4">案件の詳細</h2>
-                    <div class="prose max-w-none">
+                    <div class="prose max-w-none break-words" style="word-break: break-word; overflow-wrap: anywhere;">
                         <?= nl2br(autolink(h($job['description']))) ?>
                     </div>
                     <p class="text-xs text-gray-500 mt-1">100円以上、100円単位で入力してください</p>

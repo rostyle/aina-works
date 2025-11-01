@@ -15,7 +15,7 @@ if (!verifyCsrfToken($csrfToken)) {
 // Inputs
 $applicationId = (int)($_POST['application_id'] ?? 0);
 $action = trim((string)($_POST['action'] ?? ''));
-if ($applicationId <= 0 || !in_array($action, ['accept', 'reject'], true)) {
+if ($applicationId <= 0 || !in_array($action, ['accept', 'reject', 'withdraw'], true)) {
     jsonResponse(['error' => '入力が不正です'], 400);
 }
 
@@ -38,14 +38,27 @@ try {
         jsonResponse(['error' => '応募が見つかりません'], 404);
     }
 
-    // Authorization: only the job client can act
-    if ((int)$application['client_id'] !== (int)$currentUser['id']) {
-        jsonResponse(['error' => '権限がありません'], 403);
+    // Authorization check based on action
+    if ($action === 'withdraw') {
+        // Only the creator can withdraw their own application
+        if ((int)$application['creator_id'] !== (int)$currentUser['id']) {
+            jsonResponse(['error' => '権限がありません'], 403);
+        }
+    } else {
+        // Only the job client can accept/reject
+        if ((int)$application['client_id'] !== (int)$currentUser['id']) {
+            jsonResponse(['error' => '権限がありません'], 403);
+        }
     }
 
-    // Only pending applications can be acted upon
-    if (($application['status'] ?? '') !== 'pending') {
+    // Only pending applications can be acted upon (except withdrawn, which creator can do even if pending)
+    if ($action !== 'withdraw' && ($application['status'] ?? '') !== 'pending') {
         jsonResponse(['error' => 'この応募は処理済みです'], 400);
+    }
+    
+    // Withdraw can only be done on pending applications
+    if ($action === 'withdraw' && ($application['status'] ?? '') !== 'pending') {
+        jsonResponse(['error' => '保留中の応募のみ撤回できます'], 400);
     }
 
     $db->beginTransaction();
@@ -178,6 +191,32 @@ try {
             'success' => true,
             'message' => '応募を却下しました',
             'new_status' => 'rejected'
+        ]);
+    } else if ($action === 'withdraw') {
+        // Withdraw application (by creator)
+        $db->update("UPDATE job_applications SET status = 'withdrawn' WHERE id = ?", [$applicationId]);
+        $db->commit();
+
+        // Notify client (best effort)
+        try {
+            $clientEmail = $db->selectOne("SELECT email, full_name FROM users WHERE id = ?", [$application['client_id']]);
+            if ($clientEmail) {
+                $subject = "【AiNA Works】応募が撤回されました - " . ($application['job_title'] ?? '案件');
+                $message = "応募が撤回されました。\n";
+                $message .= "案件: " . ($application['job_title'] ?? '案件') . "\n";
+                $message .= "応募者: " . ($application['creator_name'] ?? '') . "\n\n";
+                $message .= "他の応募者もご確認ください。";
+                $actionUrl = url('job-applications?id=' . $application['job_id'], true);
+                sendNotificationMail($clientEmail['email'], $subject, $message, $actionUrl, '応募管理を見る');
+            }
+        } catch (Exception $notifyErr) {
+            error_log('撤回通知メール送信エラー: ' . $notifyErr->getMessage());
+        }
+
+        jsonResponse([
+            'success' => true,
+            'message' => '応募を撤回しました',
+            'new_status' => 'withdrawn'
         ]);
     }
 } catch (Exception $e) {
