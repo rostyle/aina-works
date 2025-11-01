@@ -63,6 +63,20 @@ $db->update("
     WHERE room_id = ? AND sender_id != ? AND is_read = 0
 ", [$chatRoom['id'], $currentUser['id']]);
 
+// チャットに関連する案件情報を取得（依頼者の場合、相手が応募者である受諾済み案件を探す）
+$relatedJob = null;
+if (empty($currentUser['is_creator'])) {
+    // 現在のユーザーが依頼者の場合、相手がクリエイターとして受諾されている案件を探す
+    $relatedJob = $db->selectOne("
+        SELECT j.*, ja.id as application_id, ja.status as application_status
+        FROM jobs j
+        JOIN job_applications ja ON j.id = ja.job_id
+        WHERE j.client_id = ? AND ja.creator_id = ? AND ja.status = 'accepted'
+        ORDER BY ja.created_at DESC
+        LIMIT 1
+    ", [$currentUser['id'], $otherUserId]);
+}
+
 $pageTitle = h($otherUser['full_name']) . ' とのチャット';
 $pageDescription = 'チャット';
 
@@ -113,6 +127,38 @@ include 'includes/header.php';
                 </div>
             </div>
             <div class="flex items-center space-x-2">
+                <?php if ($relatedJob): ?>
+                    <!-- ステータス変更ドロップダウン -->
+                    <div class="relative">
+                        <button id="status-dropdown-btn" class="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                            </svg>
+                            ステータス変更
+                            <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                        <div id="status-dropdown" class="hidden absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
+                            <div class="py-1" role="menu">
+                                <div class="px-4 py-2 text-xs font-semibold text-gray-500 uppercase border-b">案件: <?= h($relatedJob['title']) ?></div>
+                                <select id="job-status-select" class="w-full px-4 py-2 text-sm border-0 focus:ring-0">
+                                    <option value="open" <?= $relatedJob['status'] === 'open' ? 'selected' : '' ?>>募集中</option>
+                                    <option value="in_progress" <?= $relatedJob['status'] === 'in_progress' ? 'selected' : '' ?>>進行中</option>
+                                    <option value="contracted" <?= $relatedJob['status'] === 'contracted' ? 'selected' : '' ?>>契約済み</option>
+                                    <option value="delivered" <?= $relatedJob['status'] === 'delivered' ? 'selected' : '' ?>>納品済み</option>
+                                    <option value="approved" <?= $relatedJob['status'] === 'approved' ? 'selected' : '' ?>>検収済み</option>
+                                    <option value="completed" <?= $relatedJob['status'] === 'completed' ? 'selected' : '' ?>>完了</option>
+                                    <option value="closed" <?= $relatedJob['status'] === 'closed' ? 'selected' : '' ?>>募集終了</option>
+                                    <option value="cancelled" <?= $relatedJob['status'] === 'cancelled' ? 'selected' : '' ?>>キャンセル</option>
+                                </select>
+                                <button id="save-status-btn" type="button" class="w-full text-left px-4 py-2 text-sm text-white bg-blue-600 hover:bg-blue-700" role="menuitem">
+                                    保存
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
                 <button onclick="scrollToBottom()" class="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
@@ -718,6 +764,87 @@ function showNotification(message, type = 'info') {
         }
     }, 3000);
 }
+
+// ステータス変更機能
+<?php if ($relatedJob): ?>
+document.addEventListener('DOMContentLoaded', function() {
+    const statusDropdownBtn = document.getElementById('status-dropdown-btn');
+    const statusDropdown = document.getElementById('status-dropdown');
+    const statusSelect = document.getElementById('job-status-select');
+    const saveStatusBtn = document.getElementById('save-status-btn');
+    const jobId = <?= (int)$relatedJob['id'] ?>;
+    const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
+    // ドロップダウンの開閉
+    if (statusDropdownBtn && statusDropdown) {
+        statusDropdownBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            statusDropdown.classList.toggle('hidden');
+        });
+
+        // ドキュメントクリックで閉じる
+        document.addEventListener('click', function(e) {
+            if (!statusDropdown.contains(e.target) && !statusDropdownBtn.contains(e.target)) {
+                statusDropdown.classList.add('hidden');
+            }
+        });
+    }
+
+    // ステータス保存
+    if (saveStatusBtn && statusSelect) {
+        saveStatusBtn.addEventListener('click', async function() {
+            const newStatus = statusSelect.value;
+            if (!newStatus) {
+                showNotification('ステータスを選択してください', 'error');
+                return;
+            }
+
+            saveStatusBtn.disabled = true;
+            saveStatusBtn.textContent = '保存中...';
+
+            try {
+                const formData = new FormData();
+                formData.append('job_id', jobId);
+                formData.append('status', newStatus);
+                formData.append('csrf_token', csrf);
+
+                const response = await fetch('api/update-job-settings.php', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const responseText = await response.text();
+                let result;
+                try {
+                    let jsonText = responseText;
+                    const jsonStartIndex = responseText.indexOf('{');
+                    if (jsonStartIndex > 0) {
+                        jsonText = responseText.substring(jsonStartIndex);
+                    }
+                    result = JSON.parse(jsonText);
+                } catch (parseError) {
+                    throw new Error('サーバー応答の解析に失敗しました');
+                }
+
+                if (result && result.success) {
+                    showNotification(result.message || 'ステータスを更新しました', 'success');
+                    statusDropdown.classList.add('hidden');
+                    // ページをリロードして最新の状態を反映
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showNotification(result?.error || 'ステータスの更新に失敗しました', 'error');
+                    saveStatusBtn.disabled = false;
+                    saveStatusBtn.textContent = '保存';
+                }
+            } catch (error) {
+                showNotification('通信エラーが発生しました', 'error');
+                saveStatusBtn.disabled = false;
+                saveStatusBtn.textContent = '保存';
+            }
+        });
+    }
+});
+<?php endif; ?>
 </script>
 
 <?php include 'includes/footer.php'; ?>

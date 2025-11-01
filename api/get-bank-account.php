@@ -1,18 +1,22 @@
 <?php
+// 出力バッファリングを開始してクリーンなJSONレスポンスを確保
+ob_start();
+
+// エラー表示を無効にしてHTMLエラーを防ぐ
+error_reporting(E_ALL);
+ini_set('display_errors', '0');
+
 require_once '../config/config.php';
 
-// 出力バッファを完全にクリア
+// 出力バッファを完全にクリアしてヘッダー問題を回避
 while (ob_get_level()) {
     ob_end_clean();
 }
+ob_start();
 
-// エラー出力を無効化（JSONレスポンス用）
-ini_set('display_errors', '0');
-error_reporting(0);
-
-// JSON レスポンス
+// ヘッダーが送信済みでない場合のみ設定
 if (!headers_sent()) {
-	header('Content-Type: application/json');
+    header('Content-Type: application/json');
 }
 
 // ログイン必須
@@ -34,6 +38,10 @@ try {
 			[$currentUser['id']]
 		);
 
+		if (!$account || $account === false || !is_array($account)) {
+			jsonResponse(['success' => false, 'error' => '振込先情報が登録されていません。プロフィールページから振込先情報を登録してください。'], 404);
+		}
+
 		jsonResponse(['success' => true, 'account' => $account]);
 	}
 
@@ -42,19 +50,20 @@ try {
 	$creatorId = (int)($_GET['creator_id'] ?? 0);
 
 	if (!$jobId || !$creatorId) {
-		jsonResponse(['error' => 'パラメータが不正です'], 400);
+		jsonResponse(['error' => '必要な情報が不足しています。ページを再読み込みして再度お試しください。'], 400);
 	}
 
 	// 案件の所有者と状態確認
 	$job = $db->selectOne("SELECT id, client_id, status FROM jobs WHERE id = ?", [$jobId]);
 	if (!$job) {
-		jsonResponse(['error' => '案件が見つかりません'], 404);
+		jsonResponse(['error' => '案件が見つかりません。案件が削除された可能性があります。'], 404);
 	}
 	if ((int)$job['client_id'] !== (int)$currentUser['id']) {
-		jsonResponse(['error' => '権限がありません'], 403);
+		jsonResponse(['error' => 'この案件の振込先情報を確認する権限がありません。'], 403);
 	}
+	
 	if (!in_array($job['status'], ['delivered','completed'], true)) {
-		jsonResponse(['error' => '納品後に閲覧可能です'], 403);
+		jsonResponse(['error' => '振込先情報は納品後に確認できます。現在の案件ステータスが「納品済み」または「完了」になっているかご確認ください。'], 403);
 	}
 
 	// 受諾済みの応募者か確認
@@ -63,7 +72,7 @@ try {
 		[$jobId, $creatorId]
 	);
 	if (!$accepted) {
-		jsonResponse(['error' => '対象のクリエイターはこの案件の受諾者ではありません'], 403);
+		jsonResponse(['error' => 'このクリエイターはこの案件の受諾者ではありません。'], 403);
 	}
 
 	$account = $db->selectOne(
@@ -72,11 +81,22 @@ try {
 		[$creatorId]
 	);
 
+	if (!$account || $account === false || !is_array($account) || empty($account['bank_name'])) {
+		jsonResponse(['error' => 'クリエイターの振込先情報が登録されていません。クリエイターにプロフィールページから振込先情報を登録してもらう必要があります。'], 404);
+	}
+
 	jsonResponse(['success' => true, 'account' => $account]);
 
 } catch (Exception $e) {
 	error_log('Get bank account error: ' . $e->getMessage());
-	jsonResponse(['error' => 'システムエラーが発生しました'], 500);
+	// 出力バッファをクリアしてからエラーレスポンス
+	while (ob_get_level()) {
+		ob_end_clean();
+	}
+	if (!headers_sent()) {
+		header('Content-Type: application/json');
+	}
+	jsonResponse(['error' => 'システムエラーが発生しました。しばらく時間をおいてから再度お試しください。'], 500);
 }
 
 

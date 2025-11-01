@@ -616,7 +616,20 @@ async function showBankInfo(jobId, creatorId) {
     try {
         const url = `api/get-bank-account.php?job_id=${encodeURIComponent(jobId)}&creator_id=${encodeURIComponent(creatorId)}`;
         const res = await fetch(url, { method: 'GET' });
-        const json = await res.json();
+        const responseText = await res.text();
+        
+        let json;
+        try {
+            const jsonStartIndex = responseText.indexOf('{');
+            const jsonText = jsonStartIndex > 0 ? responseText.substring(jsonStartIndex) : responseText;
+            json = JSON.parse(jsonText);
+        } catch (parseError) {
+            const err = 'サーバーからの応答が正しくありません。しばらく時間をおいてから再度お試しください。';
+            if (typeof showNotification === 'function') showNotification(err, 'error');
+            else alert(err);
+            return;
+        }
+        
         if (json && json.success && json.account) {
             const a = json.account;
             const lines = [];
@@ -635,14 +648,14 @@ async function showBankInfo(jobId, creatorId) {
                 alert(msg);
             }
         } else {
-            const err = (json && (json.error || json.message)) || '振込先を取得できませんでした。案件が納品済みかご確認ください。';
+            const err = (json && json.error) || (json && json.message) || '振込先情報を取得できませんでした。以下をご確認ください：\n・案件のステータスが「納品済み」または「完了」になっているか\n・クリエイターの振込先情報が登録されているか';
             if (typeof showNotification === 'function') showNotification(err, 'error');
             else alert(err);
         }
     } catch (e) {
-        console.error('get bank info error', e);
-        if (typeof showNotification === 'function') showNotification('通信エラーが発生しました', 'error');
-        else alert('通信エラーが発生しました');
+        const err = '通信エラーが発生しました。ネットワーク接続をご確認の上、再度お試しください。';
+        if (typeof showNotification === 'function') showNotification(err, 'error');
+        else alert(err);
     }
 }
 </script>
