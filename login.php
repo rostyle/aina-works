@@ -19,8 +19,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!verifyCsrfToken($_POST['csrf_token'] ?? '')) {
         $errors['general'] = '不正なリクエストです。';
     } else {
+        // メールアドレスとパスワードの前後空白・改行を削除
         $email = trim($_POST['email'] ?? '');
-        $password = $_POST['password'] ?? '';
+        $password = trim($_POST['password'] ?? '');
         
         // バリデーション
         if (empty($email)) {

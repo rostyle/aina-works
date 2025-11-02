@@ -847,6 +847,12 @@ function sendNotificationMail($to, $subject, $message, $actionUrl = null, $actio
  * AiNA API認証（新API対応）
  */
 function authenticateWithAinaApi($email, $password = null) {
+    // 入力値のトリミング（前後空白・改行を削除）
+    $email = trim($email);
+    if ($password !== null) {
+        $password = trim($password);
+    }
+    
     // 新しいAPIエンドポイント: /ainaglam/verify-login
     $apiUrl = AINA_API_BASE_URL . '/ainaglam/verify-login';
     $apiKey = AINA_API_KEY;
@@ -864,6 +870,9 @@ function authenticateWithAinaApi($email, $password = null) {
         'email' => $email,
         'password' => $password
     ]);
+    
+    // デバッグログ（メールアドレスとパスワードの長さのみ記録）
+    error_log('AiNA API認証開始: Email=' . $email . ', Email長=' . strlen($email) . ', Password長=' . strlen($password));
     
     $response = null;
     $httpStatus = 0;
@@ -1050,14 +1059,14 @@ function authenticateWithAinaApi($email, $password = null) {
 function validateUserAccess($user) {
     // 定数が未定義の場合のフォールバック（本番環境対応）
     if (!defined('ALLOWED_STATUSES')) {
-        define('ALLOWED_STATUSES', [3, 4]);
+        define('ALLOWED_STATUSES', [3]);
     }
     if (!defined('ALLOWED_PLAN_IDS')) {
         define('ALLOWED_PLAN_IDS', [2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]);
         error_log('警告: ALLOWED_PLAN_IDsが未定義でした。デフォルト値を使用しています。config/config.phpを更新してください。');
     }
     
-    // ステータス確認（アクティブ会員、エリート会員のみ）
+    // ステータス確認（アクティブ会員のみ）
     $userStatus = (int)($user['status_id'] ?? 0);
     if (!in_array($userStatus, ALLOWED_STATUSES, true)) {
         $statusNames = [
@@ -1243,6 +1252,10 @@ function createOrUpdateUser($apiUser) {
  * APIログイン処理（簡素化版）
  */
 function performApiLogin($email, $password) {
+    // 入力値のトリミング（前後空白・改行を削除）
+    $email = trim($email);
+    $password = trim($password);
+    
     // 入力値の検証
     if (empty($email) || empty($password)) {
         return [
@@ -1319,6 +1332,10 @@ function performApiLogin($email, $password) {
  */
 function performLocalLogin($email, $password) {
     try {
+        // 入力値のトリミング（前後空白・改行を削除）
+        $email = trim($email);
+        $password = trim($password);
+        
         $db = Database::getInstance();
         
         // ローカルDBからユーザー情報を取得
