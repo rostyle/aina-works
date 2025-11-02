@@ -90,13 +90,14 @@ include 'includes/header.php';
                         <h3 class="text-sm font-medium text-red-800 mb-1">ログインに失敗しました</h3>
                         <p class="text-sm text-red-700"><?= h($errors['general']) ?></p>
                         
-                        <?php if (strpos($errors['general'], 'メールアドレスまたはパスワード') !== false): ?>
+                        <?php if (strpos($errors['general'], 'メールアドレス') !== false && (strpos($errors['general'], 'パスワード') !== false || strpos($errors['general'], 'ログインに失敗しました') !== false)): ?>
                             <div class="mt-3 text-xs text-red-600">
                                 <p><strong>解決方法：</strong></p>
                                 <ul class="list-disc list-inside mt-1 space-y-1">
                                     <li>メールアドレスとパスワードを再度確認してください</li>
                                     <li>AiNA マイページと同じログイン情報を使用してください</li>
                                     <li>パスワードを忘れた場合は AiNA マイページでリセットしてください</li>
+                                    <li>しばらく時間をおいて再度お試しください（一時的な接続エラーの可能性があります）</li>
                                 </ul>
                             </div>
                         <?php elseif (strpos($errors['general'], 'プラン') !== false): ?>
@@ -105,15 +106,6 @@ include 'includes/header.php';
                                 <ul class="list-disc list-inside mt-1 space-y-1">
                                     <li>AiNA マイページでプラン状況を確認してください</li>
                                     <li>メンバープラン以上へのアップグレードが必要です</li>
-                                </ul>
-                            </div>
-                        <?php elseif (strpos($errors['general'], 'API認証') !== false): ?>
-                            <div class="mt-3 text-xs text-red-600">
-                                <p><strong>解決方法：</strong></p>
-                                <ul class="list-disc list-inside mt-1 space-y-1">
-                                    <li>システムの設定に問題があります</li>
-                                    <li>APIキーが正しく設定されていない可能性があります</li>
-                                    <li>管理者にお問い合わせください</li>
                                 </ul>
                             </div>
                         <?php elseif (strpos($errors['general'], 'サーバー') !== false || strpos($errors['general'], '接続') !== false): ?>

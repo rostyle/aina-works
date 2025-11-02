@@ -923,11 +923,12 @@ function authenticateWithAinaApi($email, $password = null) {
     if ($httpStatus >= 400) {
         error_log('AiNA API HTTPエラー: Status ' . $httpStatus . ' Response: ' . $response);
         
-        // 401エラーはAPIキーの問題
+        // 401エラーの場合でも、ユーザーには一時的な問題として再試行を促す
         if ($httpStatus === 401) {
+            error_log('AiNA API認証エラー(401): 詳細はログを確認してください - Email: ' . $email);
             return [
                 'success' => false,
-                'message' => 'API認証エラーです。管理者にお問い合わせください。',
+                'message' => 'ログインに失敗しました。メールアドレスとパスワードを確認して、しばらく時間をおいて再度お試しください。',
                 'error_type' => 'api_auth_error'
             ];
         }
