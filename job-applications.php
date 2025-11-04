@@ -616,7 +616,23 @@ document.addEventListener('click', async function(e) {
             method: 'POST',
             body: formData
         });
-        const result = await res.json();
+        
+        // レスポンスがJSONかどうか確認
+        const contentType = res.headers.get('content-type');
+        let result;
+        
+        if (!contentType || !contentType.includes('application/json')) {
+            const text = await res.text();
+            console.error('JSON以外のレスポンス:', text);
+            throw new Error('サーバーからの応答が正しくありません。HTTPステータス: ' + res.status);
+        }
+        
+        try {
+            result = await res.json();
+        } catch (parseErr) {
+            console.error('JSONパースエラー:', parseErr);
+            throw new Error('サーバーからの応答の解析に失敗しました。');
+        }
 
         if (result && result.success) {
             if (typeof showNotification === 'function') {
@@ -667,8 +683,16 @@ document.addEventListener('click', async function(e) {
         }
     } catch (err) {
         console.error('update application status error', err);
+        let errorMessage = 'ネットワークエラーが発生しました';
+        if (err.message) {
+            errorMessage = err.message;
+        } else if (err instanceof TypeError && err.message.includes('fetch')) {
+            errorMessage = 'サーバーに接続できませんでした。ネットワーク接続を確認してください。';
+        }
         if (typeof showNotification === 'function') {
-            showNotification('ネットワークエラーが発生しました', 'error');
+            showNotification(errorMessage, 'error');
+        } else {
+            alert(errorMessage);
         }
         target.disabled = false;
     }

@@ -166,7 +166,7 @@ try {
             'chat_room_id' => $roomId,
             'redirect_to_chat' => url('chat?user_id=' . $application['creator_id'])
         ]);
-    } else {
+    } else if ($action === 'reject') {
         // Reject
         $db->update("UPDATE job_applications SET status = 'rejected' WHERE id = ?", [$applicationId]);
         $db->commit();
