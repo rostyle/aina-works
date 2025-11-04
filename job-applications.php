@@ -617,21 +617,19 @@ document.addEventListener('click', async function(e) {
             body: formData
         });
         
-        // レスポンスがJSONかどうか確認
-        const contentType = res.headers.get('content-type');
+        // レスポンスをテキストとして取得（デバッグ用）
+        const responseText = await res.text();
+        const contentType = res.headers.get('content-type') || '';
+        
+        // Content-TypeがJSONでない場合でも、JSONパースを試みる
         let result;
-        
-        if (!contentType || !contentType.includes('application/json')) {
-            const text = await res.text();
-            console.error('JSON以外のレスポンス:', text);
-            throw new Error('サーバーからの応答が正しくありません。HTTPステータス: ' + res.status);
-        }
-        
         try {
-            result = await res.json();
+            result = JSON.parse(responseText);
         } catch (parseErr) {
             console.error('JSONパースエラー:', parseErr);
-            throw new Error('サーバーからの応答の解析に失敗しました。');
+            console.error('レスポンス内容:', responseText.substring(0, 500));
+            console.error('Content-Type:', contentType);
+            throw new Error('サーバーからの応答の解析に失敗しました。Content-Type: ' + contentType);
         }
 
         if (result && result.success) {

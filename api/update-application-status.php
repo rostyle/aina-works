@@ -1,5 +1,19 @@
 <?php
+// エラー出力を抑制（JSONレスポンスを汚染しないように）
+ini_set('display_errors', '0');
+error_reporting(E_ALL & ~E_NOTICE & ~E_DEPRECATED & ~E_STRICT & ~E_WARNING);
+
+// 出力バッファをクリアしてクリーンなJSONレスポンスを確保
+while (ob_get_level() > 0) {
+    ob_end_clean();
+}
+
 require_once '../config/config.php';
+
+// 再度バッファをクリア（config.phpでバッファが開始される可能性があるため）
+while (ob_get_level() > 0) {
+    ob_end_clean();
+}
 
 // Always return clean JSON
 if (!isLoggedIn()) {
