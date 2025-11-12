@@ -135,7 +135,7 @@ include 'includes/header.php';
 <!-- Search & Filter Section -->
 <section class="bg-white shadow-sm border-b border-gray-200">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <form method="GET" class="space-y-4">
+        <form method="GET" id="job-search-form" class="space-y-4" onsubmit="return handleJobSearchSubmit(event)">
             <!-- Search Bar -->
             <div class="flex flex-col lg:flex-row gap-4">
                 <div class="flex-1">
@@ -154,7 +154,7 @@ include 'includes/header.php';
             <!-- Filters -->
             <div class="hidden lg:grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
                 <!-- Category Filter -->
-                <select name="category_id" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                <select name="category_id" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500" onchange="handleFilterChange(this)">
                     <option value="">すべてのカテゴリ</option>
                     <?php foreach ($categories as $category): ?>
                         <option value="<?= h($category['id']) ?>" <?= $categoryId == $category['id'] ? 'selected' : '' ?>>
@@ -164,7 +164,7 @@ include 'includes/header.php';
                 </select>
 
                 <!-- Status Filter -->
-                <select name="status" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                <select name="status" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500" onchange="handleFilterChange(this)">
                     <option value="">すべてのステータス</option>
                     <option value="open" <?= $status == 'open' ? 'selected' : '' ?>>
                         🟢 募集中
@@ -193,7 +193,7 @@ include 'includes/header.php';
                 </select>
 
                 <!-- Budget Filter -->
-                <select name="budget_min" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                <select name="budget_min" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500" onchange="handleFilterChange(this)">
                     <option value="">予算下限なし</option>
                     <option value="10000" <?= $budgetMin == '10000' ? 'selected' : '' ?>>1万円以上</option>
                     <option value="50000" <?= $budgetMin == '50000' ? 'selected' : '' ?>>5万円以上</option>
@@ -202,7 +202,7 @@ include 'includes/header.php';
                 </select>
 
                 <!-- Urgency Filter -->
-                <select name="urgency" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                <select name="urgency" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500" onchange="handleFilterChange(this)">
                     <option value="">緊急度</option>
                     <option value="low" <?= $urgency == 'low' ? 'selected' : '' ?>>低</option>
                     <option value="medium" <?= $urgency == 'medium' ? 'selected' : '' ?>>中</option>
@@ -212,7 +212,7 @@ include 'includes/header.php';
                 
 
                 <!-- Sort -->
-                <select name="sort" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                <select name="sort" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500" onchange="handleFilterChange(this)">
                     <option value="newest" <?= $sortBy == 'newest' ? 'selected' : '' ?>>新着順</option>
                     <option value="budget_high" <?= $sortBy == 'budget_high' ? 'selected' : '' ?>>予算が高い順</option>
                     <option value="budget_low" <?= $sortBy == 'budget_low' ? 'selected' : '' ?>>予算が安い順</option>
@@ -276,6 +276,78 @@ include 'includes/header.php';
         </form>
     </div>
 </section>
+
+<script>
+// フィルター変更時の処理
+function handleFilterChange(changedElement) {
+    const form = document.getElementById('job-search-form');
+    if (!form) return;
+    
+    const params = new URLSearchParams();
+    
+    // フォームのすべての入力要素を直接取得
+    const inputs = form.querySelectorAll('input[name], select[name]');
+    
+    inputs.forEach(function(element) {
+        const name = element.name;
+        let value = '';
+        
+        if (element.tagName === 'SELECT') {
+            value = element.value ? element.value.trim() : '';
+        } else if (element.tagName === 'INPUT') {
+            value = element.value ? element.value.trim() : '';
+        }
+        
+        // 変更された要素の値は確実に反映
+        if (changedElement && changedElement.name === name) {
+            value = changedElement.value ? changedElement.value.trim() : '';
+        }
+        
+        // 空でない値のみをパラメータに追加
+        if (value !== '') {
+            params.set(name, value);
+        }
+    });
+    
+    // ページパラメータをリセット（新しい検索時は1ページ目に戻る）
+    params.delete('page');
+    
+    // URLを構築してリダイレクト
+    const baseUrl = window.location.pathname;
+    const queryString = params.toString();
+    const newUrl = queryString ? baseUrl + '?' + queryString : baseUrl;
+    
+    window.location.href = newUrl;
+}
+
+// フォーム送信時の処理
+function handleJobSearchSubmit(event) {
+    event.preventDefault();
+    
+    const form = event.target;
+    const formData = new FormData(form);
+    const params = new URLSearchParams();
+    
+    // 空でない値のみをパラメータに追加
+    for (const [key, value] of formData.entries()) {
+        if (value && value.trim() !== '') {
+            params.append(key, value.trim());
+        }
+    }
+    
+    // ページパラメータをリセット（新しい検索時は1ページ目に戻る）
+    params.delete('page');
+    
+    // URLを構築してリダイレクト
+    const baseUrl = window.location.pathname;
+    const queryString = params.toString();
+    const newUrl = queryString ? baseUrl + '?' + queryString : baseUrl;
+    
+    window.location.href = newUrl;
+    
+    return false;
+}
+</script>
 
 <!-- Jobs List -->
 <section class="py-12 bg-gray-50">
