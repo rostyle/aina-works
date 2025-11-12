@@ -8,13 +8,13 @@ $pageDescription = '豊富な案件から自分にピッタリの仕事を見つ
 $db = Database::getInstance();
 
 // 検索・フィルター条件
-$keyword = $_GET['keyword'] ?? '';
-$categoryId = $_GET['category_id'] ?? '';
-$budgetMin = $_GET['budget_min'] ?? '';
-$budgetMax = $_GET['budget_max'] ?? '';
-$location = $_GET['location'] ?? '';
-$urgency = $_GET['urgency'] ?? '';
-$status = $_GET['status'] ?? '';
+$keyword = trim($_GET['keyword'] ?? '');
+$categoryId = trim($_GET['category_id'] ?? '');
+$budgetMin = trim($_GET['budget_min'] ?? '');
+$budgetMax = trim($_GET['budget_max'] ?? '');
+$location = trim($_GET['location'] ?? '');
+$urgency = trim($_GET['urgency'] ?? '');
+$status = trim($_GET['status'] ?? '');
 $sortBy = $_GET['sort'] ?? 'newest';
 $page = max(1, (int)($_GET['page'] ?? 1));
 $perPage = 12;
@@ -23,39 +23,39 @@ $perPage = 12;
 $conditions = [];
 $values = [];
 
-if ($keyword) {
+if ($keyword !== '') {
     $conditions[] = "(j.title LIKE ? OR j.description LIKE ?)";
     $values[] = "%{$keyword}%";
     $values[] = "%{$keyword}%";
 }
 
-if ($categoryId) {
+if ($categoryId !== '') {
     $conditions[] = "j.category_id = ?";
     $values[] = $categoryId;
 }
 
-if ($budgetMin) {
+if ($budgetMin !== '') {
     $conditions[] = "j.budget_max >= ?";
     $values[] = $budgetMin;
 }
 
-if ($budgetMax) {
+if ($budgetMax !== '') {
     $conditions[] = "j.budget_min <= ?";
     $values[] = $budgetMax;
 }
 
-if ($location) {
+if ($location !== '') {
     $conditions[] = "j.location LIKE ?";
     $values[] = "%{$location}%";
 }
 
 
-if ($urgency) {
+if ($urgency !== '') {
     $conditions[] = "j.urgency = ?";
     $values[] = $urgency;
 }
 
-if ($status) {
+if ($status !== '') {
     $conditions[] = "j.status = ?";
     $values[] = $status;
 }
