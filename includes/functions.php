@@ -1017,8 +1017,11 @@ function authenticateWithAinaApi($email, $password = null) {
     
     $user = $data['user'];
     
+    // デバッグ: APIレスポンス全体をログに記録（nameフィールドの有無を確認）
+    error_log('AiNA APIレスポンス - userデータ: ' . json_encode($user, JSON_UNESCAPED_UNICODE));
+    
     // 必要なフィールドの存在確認（新APIはid, email, name, status_id, plan_idを返す）
-    $requiredFields = ['id', 'email', 'name'];
+    $requiredFields = ['id', 'email'];
     foreach ($requiredFields as $field) {
         if (!isset($user[$field])) {
             error_log('AiNA API応答エラー: 必要なフィールド ' . $field . ' が存在しません - ' . json_encode($user));
@@ -1027,6 +1030,33 @@ function authenticateWithAinaApi($email, $password = null) {
                 'message' => 'ユーザー情報が不完全です。管理者にお問い合わせください。',
                 'error_type' => 'incomplete_user_data'
             ];
+        }
+    }
+    
+    // nameフィールドが存在しない、または空の場合は既存のfull_nameまたはフォールバック値を使用
+    if (empty($user['name'])) {
+        // 既存ユーザーのfull_nameを取得
+        try {
+            $db = Database::getInstance();
+            $existingUser = $db->selectOne(
+                "SELECT full_name FROM users WHERE aina_user_id = ? OR email = ?",
+                [$user['id'], $user['email']]
+            );
+            
+            if (!empty($existingUser['full_name'])) {
+                $user['name'] = $existingUser['full_name'];
+                error_log('AiNA API警告: nameフィールドが空のため、既存のfull_name "' . $user['name'] . '" を使用します。');
+            } else {
+                // フォールバック: メールアドレスの@より前の部分を使用
+                $emailParts = explode('@', $user['email']);
+                $user['name'] = $emailParts[0] ?? 'ユーザー';
+                error_log('AiNA API警告: nameフィールドが空のため、フォールバック値 "' . $user['name'] . '" を使用します。');
+            }
+        } catch (Exception $e) {
+            // データベースエラーの場合もフォールバック値を使用
+            $emailParts = explode('@', $user['email']);
+            $user['name'] = $emailParts[0] ?? 'ユーザー';
+            error_log('AiNA API警告: nameフィールドが空で、DB取得エラー - フォールバック値 "' . $user['name'] . '" を使用します。');
         }
     }
     
@@ -1160,16 +1190,29 @@ function createOrUpdateUser($apiUser) {
         $db = Database::getInstance();
         
         // 必要なフィールドの確認
-        if (empty($apiUser['id']) || empty($apiUser['email']) || empty($apiUser['name'])) {
+        if (empty($apiUser['id']) || empty($apiUser['email'])) {
             error_log('ユーザー作成エラー: 必要なフィールドが不足 - ' . json_encode($apiUser));
             return false;
         }
         
-        // 既存ユーザーの確認（aina_user_idまたはemailで）
+        // 既存ユーザーの確認（aina_user_idまたはemailで）- idとfull_nameを同時に取得
         $existingUser = $db->selectOne(
-            "SELECT id FROM users WHERE aina_user_id = ? OR email = ?",
+            "SELECT id, full_name FROM users WHERE aina_user_id = ? OR email = ?",
             [$apiUser['id'], $apiUser['email']]
         );
+        
+        // nameフィールドが空の場合は既存のfull_nameまたはフォールバック値を使用
+        if (empty($apiUser['name'])) {
+            if (!empty($existingUser['full_name'])) {
+                $apiUser['name'] = $existingUser['full_name'];
+                error_log('ユーザー作成警告: nameフィールドが空のため、既存のfull_name "' . $apiUser['name'] . '" を使用します。');
+            } else {
+                // フォールバック: メールアドレスの@より前の部分を使用
+                $emailParts = explode('@', $apiUser['email']);
+                $apiUser['name'] = $emailParts[0] ?? 'ユーザー';
+                error_log('ユーザー作成警告: nameフィールドが空のため、フォールバック値 "' . $apiUser['name'] . '" を使用します。');
+            }
+        }
         
         if ($existingUser) {
             // 既存ユーザーの更新
