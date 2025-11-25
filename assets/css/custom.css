@@ -58,6 +58,46 @@ a:hover {
 }
 
 /* ==========================================================================
+   DARK MODE - 白背景に白文字が適用されないようにする
+   ========================================================================== */
+
+@media (prefers-color-scheme: dark) {
+    /* 白背景やライトグレー背景の要素には白文字を適用しない */
+    .bg-white .text-white:not(.bg-primary-600):not(.bg-primary-700):not(.bg-primary-800):not(.bg-primary-900):not(.bg-secondary-600):not(.bg-secondary-700):not(.bg-secondary-800):not(.bg-secondary-900):not(.bg-blue-600):not(.bg-blue-700):not(.bg-blue-800):not(.bg-blue-900),
+    .bg-gray-50 .text-white:not(.bg-primary-600):not(.bg-primary-700):not(.bg-primary-800):not(.bg-primary-900):not(.bg-secondary-600):not(.bg-secondary-700):not(.bg-secondary-800):not(.bg-secondary-900):not(.bg-blue-600):not(.bg-blue-700):not(.bg-blue-800):not(.bg-blue-900),
+    .bg-gray-100 .text-white:not(.bg-primary-600):not(.bg-primary-700):not(.bg-primary-800):not(.bg-primary-900):not(.bg-secondary-600):not(.bg-secondary-700):not(.bg-secondary-800):not(.bg-secondary-900):not(.bg-blue-600):not(.bg-blue-700):not(.bg-blue-800):not(.bg-blue-900),
+    .bg-gray-200 .text-white:not(.bg-primary-600):not(.bg-primary-700):not(.bg-primary-800):not(.bg-primary-900):not(.bg-secondary-600):not(.bg-secondary-700):not(.bg-secondary-800):not(.bg-secondary-900):not(.bg-blue-600):not(.bg-blue-700):not(.bg-blue-800):not(.bg-blue-900),
+    header .text-white:not(.bg-primary-600):not(.bg-primary-700):not(.bg-primary-800):not(.bg-primary-900):not(.bg-secondary-600):not(.bg-secondary-700):not(.bg-secondary-800):not(.bg-secondary-900):not(.bg-blue-600):not(.bg-blue-700):not(.bg-blue-800):not(.bg-blue-900),
+    .card .text-white:not(.bg-primary-600):not(.bg-primary-700):not(.bg-primary-800):not(.bg-primary-900):not(.bg-secondary-600):not(.bg-secondary-700):not(.bg-secondary-800):not(.bg-secondary-900):not(.bg-blue-600):not(.bg-blue-700):not(.bg-blue-800):not(.bg-blue-900) {
+        color: #111827 !important;
+    }
+    
+    /* 白背景の要素内のすべてのテキストを黒に */
+    .bg-white,
+    .bg-gray-50,
+    .bg-gray-100,
+    .bg-gray-200 {
+        color: #111827 !important;
+    }
+    
+    /* ただし、青や紫の背景の要素は白文字のまま */
+    .bg-primary-600 .text-white,
+    .bg-primary-700 .text-white,
+    .bg-primary-800 .text-white,
+    .bg-primary-900 .text-white,
+    .bg-secondary-600 .text-white,
+    .bg-secondary-700 .text-white,
+    .bg-secondary-800 .text-white,
+    .bg-secondary-900 .text-white,
+    .bg-blue-600 .text-white,
+    .bg-blue-700 .text-white,
+    .bg-blue-800 .text-white,
+    .bg-blue-900 .text-white {
+        color: #ffffff !important;
+    }
+}
+
+/* ==========================================================================
    DESIGN TOKENS & CSS CUSTOM PROPERTIES
    ========================================================================== */
 
@@ -1662,38 +1702,207 @@ textarea:focus {
    DARK MODE FOUNDATION
    ========================================================================== */
 
+/* ダークモードでもライトモードと同じように表示されるように強制 */
 @media (prefers-color-scheme: dark) {
+    /* すべての要素をライトモードの色に強制 */
     :root {
-        --color-gray-50: #0f172a;
-        --color-gray-100: #1e293b;
-        --color-gray-200: #334155;
-        --color-gray-300: #475569;
-        --color-gray-400: #64748b;
-        --color-gray-500: #94a3b8;
-        --color-gray-600: #cbd5e1;
-        --color-gray-700: #e2e8f0;
-        --color-gray-800: #f1f5f9;
-        --color-gray-900: #f8fafc;
+        --color-gray-50: #f8fafc;
+        --color-gray-100: #f1f5f9;
+        --color-gray-200: #e2e8f0;
+        --color-gray-300: #cbd5e1;
+        --color-gray-400: #94a3b8;
+        --color-gray-500: #64748b;
+        --color-gray-600: #475569;
+        --color-gray-700: #334155;
+        --color-gray-800: #1e293b;
+        --color-gray-900: #0f172a;
     }
     
-    .dark-mode-support {
-        color-scheme: dark;
+    /* 背景色をライトモードに強制 */
+    html, body {
+        background-color: #f9fafb !important;
+        color: #111827 !important;
     }
     
-    /* Dark mode specific adjustments */
+    /* 白背景要素を強制 */
+    .bg-white,
+    header,
+    .card,
+    .bg-gray-50,
+    .bg-gray-100,
+    .bg-gray-200 {
+        background-color: #ffffff !important;
+    }
+    
+    .bg-gray-50 {
+        background-color: #f9fafb !important;
+    }
+    
+    .bg-gray-100 {
+        background-color: #f3f4f6 !important;
+    }
+    
+    .bg-gray-200 {
+        background-color: #e5e7eb !important;
+    }
+    
+    /* テキスト色をライトモードに強制 */
+    .text-gray-900,
+    .text-gray-800,
+    .text-gray-700,
+    .text-gray-600,
+    .text-gray-500 {
+        color: #111827 !important;
+    }
+    
+    .text-gray-800 {
+        color: #1f2937 !important;
+    }
+    
+    .text-gray-700 {
+        color: #374151 !important;
+    }
+    
+    .text-gray-600 {
+        color: #4b5563 !important;
+    }
+    
+    .text-gray-500 {
+        color: #6b7280 !important;
+    }
+    
+    /* 白背景の要素には白文字を適用しない */
+    .bg-white .text-white,
+    .bg-gray-50 .text-white,
+    .bg-gray-100 .text-white,
+    .bg-gray-200 .text-white,
+    header .text-white:not(.bg-primary-600):not(.bg-primary-700):not(.bg-primary-800):not(.bg-primary-900):not(.bg-secondary-600):not(.bg-secondary-700):not(.bg-secondary-800):not(.bg-secondary-900),
+    .card .text-white:not(.bg-primary-600):not(.bg-primary-700):not(.bg-primary-800):not(.bg-primary-900):not(.bg-secondary-600):not(.bg-secondary-700):not(.bg-secondary-800):not(.bg-secondary-900) {
+        color: #111827 !important;
+    }
+    
+    /* 入力要素をライトモードに強制 */
+    input,
+    select,
+    textarea {
+        background-color: #ffffff !important;
+        color: #111827 !important;
+        border-color: #e5e7eb !important;
+    }
+    
+    /* カード要素をライトモードに強制 */
     .card {
-        background-color: var(--color-gray-100);
-        border-color: var(--color-gray-300);
+        background-color: #ffffff !important;
+        border-color: #e5e7eb !important;
     }
     
+    /* バッジをライトモードに強制 */
+    .badge-primary {
+        background-color: #dbeafe !important;
+        color: #1e40af !important;
+    }
+    
+    .badge-secondary {
+        background-color: #f3e8ff !important;
+        color: #6b21a8 !important;
+    }
+    
+    /* ボタンのアウトラインをライトモードに強制 */
     .btn-outline {
-        border-color: var(--color-gray-300);
-        color: var(--color-gray-100);
+        border-color: #e5e7eb !important;
+        color: #111827 !important;
+        background-color: #ffffff !important;
     }
     
     .btn-outline:hover {
-        background-color: var(--color-gray-200);
-        color: var(--color-gray-900);
+        background-color: #f3f4f6 !important;
+        color: #111827 !important;
+    }
+    
+    /* ドロップダウンメニューをライトモードに強制 */
+    .bg-white.rounded-lg,
+    .bg-white.shadow-lg,
+    #user-menu-dropdown {
+        background-color: #ffffff !important;
+        border-color: #e5e7eb !important;
+    }
+    
+    /* モバイルメニューをライトモードに強制 */
+    #mobile-menu-panel {
+        background-color: #ffffff !important;
+    }
+    
+    /* 検索サジェストをライトモードに強制 */
+    .search-suggestions {
+        background-color: #ffffff !important;
+        border-color: #e5e7eb !important;
+    }
+    
+    /* AI Dockをライトモードに強制 */
+    .ai-dock {
+        background-color: #ffffff !important;
+        border-color: #e5e7eb !important;
+    }
+    
+    .ai-dock-body {
+        background-color: #fafafa !important;
+    }
+    
+    .ai-result-section {
+        background-color: #ffffff !important;
+        border-color: #e5e7eb !important;
+    }
+    
+    .ai-result-header {
+        background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%) !important;
+        border-color: #e5e7eb !important;
+    }
+    
+    /* オンボーディングツールチップをライトモードに強制 */
+    .onboarding-tooltip-content {
+        background-color: #ffffff !important;
+        border-color: #e5e7eb !important;
+    }
+    
+    .onboarding-tooltip-title {
+        color: #111827 !important;
+    }
+    
+    .onboarding-tooltip-text {
+        color: #4b5563 !important;
+    }
+    
+    .onboarding-tooltip-header,
+    .onboarding-tooltip-footer {
+        border-color: #e5e7eb !important;
+    }
+    
+    .onboarding-btn-secondary {
+        background-color: #f3f4f6 !important;
+        color: #374151 !important;
+        border-color: #d1d5db !important;
+    }
+    
+    .onboarding-btn-secondary:hover {
+        background-color: #e5e7eb !important;
+        color: #1f2937 !important;
+        border-color: #9ca3af !important;
+    }
+    
+    .onboarding-arrow.arrow-top {
+        border-top-color: #ffffff !important;
+    }
+    
+    .onboarding-arrow.arrow-bottom {
+        border-bottom-color: #ffffff !important;
+    }
+    
+    .onboarding-arrow.arrow-left {
+        border-left-color: #ffffff !important;
+    }
+    
+    .onboarding-arrow.arrow-right {
+        border-right-color: #ffffff !important;
     }
 }
 

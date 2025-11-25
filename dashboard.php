@@ -95,11 +95,26 @@ include 'includes/header.php';
         <div id="dashboard-stats" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
             <style>
             @media (prefers-color-scheme: dark) {
-                .dashboard-card { background-color: #ffffff !important; border-color: #e5e7eb !important; }
-                .dashboard-card .text-gray-900 { color: #111827 !important; }
-                .dashboard-card .text-gray-500 { color: #6b7280 !important; }
-                .dashboard-card .text-gray-600 { color: #4b5563 !important; }
-                .dashboard-card .border-gray-200 { border-color: #e5e7eb !important; }
+                .dashboard-card { 
+                    background-color: #ffffff !important; 
+                    border-color: #e5e7eb !important; 
+                }
+                .dashboard-card .text-gray-900 { 
+                    color: #111827 !important; 
+                }
+                .dashboard-card .text-gray-500 { 
+                    color: #6b7280 !important; 
+                }
+                .dashboard-card .text-gray-600 { 
+                    color: #4b5563 !important; 
+                }
+                .dashboard-card .border-gray-200 { 
+                    border-color: #e5e7eb !important; 
+                }
+                /* 白背景の要素には白文字を適用しない */
+                .dashboard-card .text-white:not(.bg-primary-600):not(.bg-primary-700):not(.bg-primary-800):not(.bg-primary-900):not(.bg-secondary-600):not(.bg-secondary-700):not(.bg-secondary-800):not(.bg-secondary-900) {
+                    color: #111827 !important;
+                }
             }
             </style>
             <!-- 公開作品 -->

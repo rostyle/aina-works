@@ -141,19 +141,126 @@ $navItems = [
         /* ダークモード環境での自動反転抑止（全体はライト基調を維持） */
         :root { color-scheme: light; }
         @media (prefers-color-scheme: dark) {
-            html, body { background-color: #f9fafb; color: #111827; }
-            header, .bg-white { background-color: #ffffff !important; }
-            .bg-gray-50 { background-color: #f9fafb !important; }
-            input, select, textarea { 
+            /* 基本要素をライトモードに強制 */
+            html, body { 
+                background-color: #f9fafb !important; 
+                color: #111827 !important; 
+            }
+            
+            /* ヘッダーと白背景要素を強制 */
+            header, 
+            .bg-white,
+            .bg-gray-50,
+            .bg-gray-100,
+            .bg-gray-200 {
+                background-color: #ffffff !important;
+            }
+            
+            .bg-gray-50 {
+                background-color: #f9fafb !important;
+            }
+            
+            .bg-gray-100 {
+                background-color: #f3f4f6 !important;
+            }
+            
+            .bg-gray-200 {
+                background-color: #e5e7eb !important;
+            }
+            
+            /* 入力要素をライトモードに強制 */
+            input, 
+            select, 
+            textarea { 
                 background-color: #ffffff !important; 
                 color: #111827 !important; 
                 border-color: #e5e7eb !important;
             }
-            .text-gray-900, .text-gray-800, .text-gray-700 { color: #111827 !important; }
+            
+            /* テキスト色をライトモードに強制 */
+            .text-gray-900, 
+            .text-gray-800, 
+            .text-gray-700,
+            .text-gray-600,
+            .text-gray-500 { 
+                color: #111827 !important; 
+            }
+            
+            .text-gray-800 {
+                color: #1f2937 !important;
+            }
+            
+            .text-gray-700 {
+                color: #374151 !important;
+            }
+            
+            .text-gray-600 {
+                color: #4b5563 !important;
+            }
+            
+            .text-gray-500 {
+                color: #6b7280 !important;
+            }
+            
+            /* 白背景の要素には白文字を適用しない */
+            .bg-white .text-white:not(.bg-primary-600):not(.bg-primary-700):not(.bg-primary-800):not(.bg-primary-900):not(.bg-secondary-600):not(.bg-secondary-700):not(.bg-secondary-800):not(.bg-secondary-900),
+            .bg-gray-50 .text-white:not(.bg-primary-600):not(.bg-primary-700):not(.bg-primary-800):not(.bg-primary-900):not(.bg-secondary-600):not(.bg-secondary-700):not(.bg-secondary-800):not(.bg-secondary-900),
+            .bg-gray-100 .text-white:not(.bg-primary-600):not(.bg-primary-700):not(.bg-primary-800):not(.bg-primary-900):not(.bg-secondary-600):not(.bg-secondary-700):not(.bg-secondary-800):not(.bg-secondary-900),
+            header .text-white:not(.bg-primary-600):not(.bg-primary-700):not(.bg-primary-800):not(.bg-primary-900):not(.bg-secondary-600):not(.bg-secondary-700):not(.bg-secondary-800):not(.bg-secondary-900) {
+                color: #111827 !important;
+            }
+            
             /* Card等のコンポーネントをライト基調に固定 */
-            .card { background-color: #ffffff !important; border-color: #e5e7eb !important; }
-            .badge-primary { background-color: #dbeafe !important; color: #1e40af !important; }
-            .badge-secondary { background-color: #f3e8ff !important; color: #6b21a8 !important; }
+            .card { 
+                background-color: #ffffff !important; 
+                border-color: #e5e7eb !important; 
+            }
+            
+            .badge-primary { 
+                background-color: #dbeafe !important; 
+                color: #1e40af !important; 
+            }
+            
+            .badge-secondary { 
+                background-color: #f3e8ff !important; 
+                color: #6b21a8 !important; 
+            }
+            
+            /* ドロップダウンメニューをライトモードに強制 */
+            #user-menu-dropdown {
+                background-color: #ffffff !important;
+                border-color: #e5e7eb !important;
+            }
+            
+            #user-menu-dropdown a {
+                color: #374151 !important;
+            }
+            
+            #user-menu-dropdown a:hover {
+                background-color: #f3f4f6 !important;
+                color: #111827 !important;
+            }
+            
+            /* モバイルメニューをライトモードに強制 */
+            #mobile-menu-panel {
+                background-color: #ffffff !important;
+            }
+            
+            #mobile-menu-panel a {
+                color: #374151 !important;
+            }
+            
+            #mobile-menu-panel .text-gray-700 {
+                color: #374151 !important;
+            }
+            
+            #mobile-menu-panel .text-gray-500 {
+                color: #6b7280 !important;
+            }
+            
+            #mobile-menu-panel .border-gray-200 {
+                border-color: #e5e7eb !important;
+            }
         }
     </style>
 </head>
