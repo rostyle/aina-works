@@ -225,6 +225,205 @@ include 'includes/header.php';
 $showSuccess = isset($_GET['applied']) && $_GET['applied'] == '1';
 ?>
 
+<style>
+/* ダークモードでもライトモードと同じように表示 */
+@media (prefers-color-scheme: dark) {
+    /* 案件詳細ページの白背景要素を強制 */
+    .bg-white,
+    #application-modal .bg-white,
+    section.bg-gray-50 {
+        background-color: #ffffff !important;
+    }
+    
+    section.bg-gray-50 {
+        background-color: #f9fafb !important;
+    }
+    
+    /* テキスト色をライトモードに強制 */
+    .text-gray-900,
+    .text-gray-800,
+    .text-gray-700,
+    .text-gray-600,
+    .text-gray-500 {
+        color: #111827 !important;
+    }
+    
+    .text-gray-800 {
+        color: #1f2937 !important;
+    }
+    
+    .text-gray-700 {
+        color: #374151 !important;
+    }
+    
+    .text-gray-600 {
+        color: #4b5563 !important;
+    }
+    
+    .text-gray-500 {
+        color: #6b7280 !important;
+    }
+    
+    /* 白背景の要素には白文字を適用しない */
+    .bg-white .text-white:not(.bg-blue-600):not(.bg-blue-700):not(.bg-gray-600):not(.bg-gray-700),
+    #application-modal .text-white:not(.bg-blue-600):not(.bg-blue-700):not(.bg-gray-600):not(.bg-gray-700) {
+        color: #111827 !important;
+    }
+    
+    /* モーダルの背景とボーダー */
+    #application-modal {
+        background-color: rgba(0, 0, 0, 0.5) !important;
+    }
+    
+    #application-modal .bg-white {
+        background-color: #ffffff !important;
+        border-color: #e5e7eb !important;
+    }
+    
+    /* 入力要素をライトモードに強制 */
+    #application-modal input,
+    #application-modal textarea,
+    #application-modal select,
+    input,
+    textarea,
+    select {
+        background-color: #ffffff !important;
+        color: #111827 !important;
+        border-color: #e5e7eb !important;
+    }
+    
+    /* バッジの色をライトモードに強制 */
+    .bg-blue-100 {
+        background-color: #dbeafe !important;
+    }
+    
+    .text-blue-800 {
+        color: #1e40af !important;
+    }
+    
+    .bg-green-100,
+    .bg-yellow-100,
+    .bg-purple-100,
+    .bg-indigo-100,
+    .bg-red-100,
+    .bg-orange-100 {
+        background-color: inherit !important;
+    }
+    
+    .text-green-800,
+    .text-yellow-800,
+    .text-purple-800,
+    .text-indigo-800,
+    .text-red-800,
+    .text-orange-800 {
+        color: inherit !important;
+    }
+    
+    /* ステータスバッジの背景色を維持 */
+    .bg-green-100 {
+        background-color: #d1fae5 !important;
+    }
+    
+    .text-green-800 {
+        color: #065f46 !important;
+    }
+    
+    .bg-yellow-100 {
+        background-color: #fef3c7 !important;
+    }
+    
+    .text-yellow-800 {
+        color: #92400e !important;
+    }
+    
+    .bg-blue-100 {
+        background-color: #dbeafe !important;
+    }
+    
+    .text-blue-800 {
+        color: #1e40af !important;
+    }
+    
+    .bg-purple-100 {
+        background-color: #e9d5ff !important;
+    }
+    
+    .text-purple-800 {
+        color: #6b21a8 !important;
+    }
+    
+    .bg-indigo-100 {
+        background-color: #e0e7ff !important;
+    }
+    
+    .text-indigo-800 {
+        color: #3730a3 !important;
+    }
+    
+    .bg-red-100 {
+        background-color: #fee2e2 !important;
+    }
+    
+    .text-red-800 {
+        color: #991b1b !important;
+    }
+    
+    .bg-orange-100 {
+        background-color: #fed7aa !important;
+    }
+    
+    .text-orange-800 {
+        color: #9a3412 !important;
+    }
+    
+    /* ボーダー色をライトモードに強制 */
+    .border-gray-200,
+    .border-gray-300 {
+        border-color: #e5e7eb !important;
+    }
+    
+    .border-green-200,
+    .border-yellow-200,
+    .border-blue-200,
+    .border-purple-200,
+    .border-indigo-200,
+    .border-red-200,
+    .border-orange-200,
+    .border-orange-300 {
+        border-color: inherit !important;
+    }
+    
+    /* リンクの色をライトモードに強制 */
+    .text-blue-600,
+    a.text-blue-600 {
+        color: #2563eb !important;
+    }
+    
+    .text-blue-600:hover,
+    a.text-blue-600:hover {
+        color: #1d4ed8 !important;
+    }
+    
+    /* SVGアイコンの色を維持 */
+    .text-green-500,
+    .text-green-600,
+    .text-yellow-500,
+    .text-yellow-600,
+    .text-blue-500,
+    .text-blue-600,
+    .text-purple-500,
+    .text-purple-600,
+    .text-indigo-500,
+    .text-indigo-600,
+    .text-red-500,
+    .text-red-600,
+    .text-orange-500,
+    .text-orange-600 {
+        color: inherit !important;
+    }
+}
+</style>
+
 <!-- Job Detail Section -->
 <section class="py-8 bg-gray-50 min-h-screen overflow-x-hidden">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">

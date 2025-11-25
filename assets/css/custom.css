@@ -1904,6 +1904,96 @@ textarea:focus {
     .onboarding-arrow.arrow-right {
         border-right-color: #ffffff !important;
     }
+    
+    /* モーダルをライトモードに強制 */
+    [id*="modal"],
+    [id*="Modal"],
+    .modal {
+        background-color: rgba(0, 0, 0, 0.5) !important;
+    }
+    
+    [id*="modal"] .bg-white,
+    [id*="Modal"] .bg-white,
+    .modal .bg-white {
+        background-color: #ffffff !important;
+        border-color: #e5e7eb !important;
+    }
+    
+    [id*="modal"] input,
+    [id*="modal"] textarea,
+    [id*="modal"] select,
+    [id*="Modal"] input,
+    [id*="Modal"] textarea,
+    [id*="Modal"] select,
+    .modal input,
+    .modal textarea,
+    .modal select {
+        background-color: #ffffff !important;
+        color: #111827 !important;
+        border-color: #e5e7eb !important;
+    }
+    
+    /* すべてのフォーム要素をライトモードに強制 */
+    form input,
+    form textarea,
+    form select {
+        background-color: #ffffff !important;
+        color: #111827 !important;
+        border-color: #e5e7eb !important;
+    }
+    
+    /* バッジとステータス表示をライトモードに強制 */
+    .bg-green-50,
+    .bg-yellow-50,
+    .bg-blue-50,
+    .bg-purple-50,
+    .bg-indigo-50,
+    .bg-red-50,
+    .bg-orange-50 {
+        background-color: inherit !important;
+    }
+    
+    .bg-green-50 {
+        background-color: #f0fdf4 !important;
+    }
+    
+    .bg-yellow-50 {
+        background-color: #fefce8 !important;
+    }
+    
+    .bg-blue-50 {
+        background-color: #eff6ff !important;
+    }
+    
+    .bg-purple-50 {
+        background-color: #faf5ff !important;
+    }
+    
+    .bg-indigo-50 {
+        background-color: #eef2ff !important;
+    }
+    
+    .bg-red-50 {
+        background-color: #fef2f2 !important;
+    }
+    
+    .bg-orange-50 {
+        background-color: #fff7ed !important;
+    }
+    
+    /* プロセ（prose）クラス内のテキストをライトモードに強制 */
+    .prose,
+    .prose * {
+        color: #111827 !important;
+    }
+    
+    .prose a {
+        color: #2563eb !important;
+    }
+    
+    .prose a:hover {
+        color: #1d4ed8 !important;
+    }
 }
 
 /* ==========================================================================
