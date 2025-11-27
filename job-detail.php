@@ -228,10 +228,16 @@ $showSuccess = isset($_GET['applied']) && $_GET['applied'] == '1';
 <style>
 /* ダークモードでもライトモードと同じように表示 */
 @media (prefers-color-scheme: dark) {
+    /* 案件詳細ページのすべての要素をライトモードに強制 */
+    * {
+        color-scheme: light !important;
+    }
+    
     /* 案件詳細ページの白背景要素を強制 */
     .bg-white,
     #application-modal .bg-white,
-    section.bg-gray-50 {
+    section.bg-gray-50,
+    [class*="bg-white"] {
         background-color: #ffffff !important;
     }
     
@@ -239,12 +245,18 @@ $showSuccess = isset($_GET['applied']) && $_GET['applied'] == '1';
         background-color: #f9fafb !important;
     }
     
-    /* テキスト色をライトモードに強制 */
+    /* すべてのテキスト色をライトモードに強制 */
+    * {
+        color: inherit !important;
+    }
+    
     .text-gray-900,
     .text-gray-800,
     .text-gray-700,
     .text-gray-600,
-    .text-gray-500 {
+    .text-gray-500,
+    .text-gray-400,
+    .text-gray-300 {
         color: #111827 !important;
     }
     
@@ -264,9 +276,13 @@ $showSuccess = isset($_GET['applied']) && $_GET['applied'] == '1';
         color: #6b7280 !important;
     }
     
-    /* 白背景の要素には白文字を適用しない */
-    .bg-white .text-white:not(.bg-blue-600):not(.bg-blue-700):not(.bg-gray-600):not(.bg-gray-700),
-    #application-modal .text-white:not(.bg-blue-600):not(.bg-blue-700):not(.bg-gray-600):not(.bg-gray-700) {
+    .text-gray-400 {
+        color: #9ca3af !important;
+    }
+    
+    /* 白背景の要素には白文字を適用しない（ただし、青や紫の背景の要素は除く） */
+    .bg-white .text-white:not(.bg-blue-600):not(.bg-blue-700):not(.bg-blue-800):not(.bg-blue-900):not(.bg-gray-600):not(.bg-gray-700):not(.bg-gray-800):not(.bg-gray-900):not(.bg-green-600):not(.bg-green-700):not(.bg-green-800):not(.bg-green-900):not(.bg-red-600):not(.bg-red-700):not(.bg-red-800):not(.bg-red-900):not(.bg-primary-600):not(.bg-primary-700):not(.bg-primary-800):not(.bg-primary-900):not(.bg-secondary-600):not(.bg-secondary-700):not(.bg-secondary-800):not(.bg-secondary-900),
+    #application-modal .text-white:not(.bg-blue-600):not(.bg-blue-700):not(.bg-blue-800):not(.bg-blue-900):not(.bg-gray-600):not(.bg-gray-700):not(.bg-gray-800):not(.bg-gray-900):not(.bg-green-600):not(.bg-green-700):not(.bg-green-800):not(.bg-green-900):not(.bg-red-600):not(.bg-red-700):not(.bg-red-800):not(.bg-red-900):not(.bg-primary-600):not(.bg-primary-700):not(.bg-primary-800):not(.bg-primary-900):not(.bg-secondary-600):not(.bg-secondary-700):not(.bg-secondary-800):not(.bg-secondary-900) {
         color: #111827 !important;
     }
     
@@ -280,19 +296,31 @@ $showSuccess = isset($_GET['applied']) && $_GET['applied'] == '1';
         border-color: #e5e7eb !important;
     }
     
-    /* 入力要素をライトモードに強制 */
+    /* すべての入力要素をライトモードに強制 */
     #application-modal input,
     #application-modal textarea,
     #application-modal select,
     input,
     textarea,
-    select {
+    select,
+    [type="text"],
+    [type="email"],
+    [type="password"],
+    [type="number"],
+    [type="search"],
+    [type="tel"],
+    [type="url"] {
         background-color: #ffffff !important;
         color: #111827 !important;
         border-color: #e5e7eb !important;
     }
     
-    /* バッジの色をライトモードに強制 */
+    input::placeholder,
+    textarea::placeholder {
+        color: #9ca3af !important;
+    }
+    
+    /* バッジとステータス表示の色をライトモードに強制 */
     .bg-blue-100 {
         background-color: #dbeafe !important;
     }
@@ -301,25 +329,6 @@ $showSuccess = isset($_GET['applied']) && $_GET['applied'] == '1';
         color: #1e40af !important;
     }
     
-    .bg-green-100,
-    .bg-yellow-100,
-    .bg-purple-100,
-    .bg-indigo-100,
-    .bg-red-100,
-    .bg-orange-100 {
-        background-color: inherit !important;
-    }
-    
-    .text-green-800,
-    .text-yellow-800,
-    .text-purple-800,
-    .text-indigo-800,
-    .text-red-800,
-    .text-orange-800 {
-        color: inherit !important;
-    }
-    
-    /* ステータスバッジの背景色を維持 */
     .bg-green-100 {
         background-color: #d1fae5 !important;
     }
@@ -334,14 +343,6 @@ $showSuccess = isset($_GET['applied']) && $_GET['applied'] == '1';
     
     .text-yellow-800 {
         color: #92400e !important;
-    }
-    
-    .bg-blue-100 {
-        background-color: #dbeafe !important;
-    }
-    
-    .text-blue-800 {
-        color: #1e40af !important;
     }
     
     .bg-purple-100 {
@@ -382,18 +383,15 @@ $showSuccess = isset($_GET['applied']) && $_GET['applied'] == '1';
         border-color: #e5e7eb !important;
     }
     
-    .border-green-200,
-    .border-yellow-200,
-    .border-blue-200,
-    .border-purple-200,
-    .border-indigo-200,
-    .border-red-200,
-    .border-orange-200,
-    .border-orange-300 {
-        border-color: inherit !important;
+    /* リンクの色をライトモードに強制 */
+    a:not([class*="text-white"]):not(.bg-blue-600):not(.bg-blue-700):not(.bg-blue-800):not(.bg-blue-900):not(.bg-gray-600):not(.bg-gray-700):not(.bg-gray-800):not(.bg-gray-900):not(.bg-green-600):not(.bg-green-700):not(.bg-green-800):not(.bg-green-900):not(.bg-red-600):not(.bg-red-700):not(.bg-red-800):not(.bg-red-900):not(.bg-primary-600):not(.bg-primary-700):not(.bg-primary-800):not(.bg-primary-900):not(.bg-secondary-600):not(.bg-secondary-700):not(.bg-secondary-800):not(.bg-secondary-900) {
+        color: #2563eb !important;
     }
     
-    /* リンクの色をライトモードに強制 */
+    a:hover:not([class*="text-white"]):not(.bg-blue-600):not(.bg-blue-700):not(.bg-blue-800):not(.bg-blue-900):not(.bg-gray-600):not(.bg-gray-700):not(.bg-gray-800):not(.bg-gray-900):not(.bg-green-600):not(.bg-green-700):not(.bg-green-800):not(.bg-green-900):not(.bg-red-600):not(.bg-red-700):not(.bg-red-800):not(.bg-red-900):not(.bg-primary-600):not(.bg-primary-700):not(.bg-primary-800):not(.bg-primary-900):not(.bg-secondary-600):not(.bg-secondary-700):not(.bg-secondary-800):not(.bg-secondary-900) {
+        color: #1d4ed8 !important;
+    }
+    
     .text-blue-600,
     a.text-blue-600 {
         color: #2563eb !important;
@@ -402,24 +400,6 @@ $showSuccess = isset($_GET['applied']) && $_GET['applied'] == '1';
     .text-blue-600:hover,
     a.text-blue-600:hover {
         color: #1d4ed8 !important;
-    }
-    
-    /* SVGアイコンの色を維持 */
-    .text-green-500,
-    .text-green-600,
-    .text-yellow-500,
-    .text-yellow-600,
-    .text-blue-500,
-    .text-blue-600,
-    .text-purple-500,
-    .text-purple-600,
-    .text-indigo-500,
-    .text-indigo-600,
-    .text-red-500,
-    .text-red-600,
-    .text-orange-500,
-    .text-orange-600 {
-        color: inherit !important;
     }
 }
 </style>

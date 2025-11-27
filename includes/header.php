@@ -29,6 +29,7 @@ $navItems = [
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
   tailwind.config = {
+    darkMode: false, // ダークモードを完全に無効化
     theme: {
       extend: {
                     colors: {
@@ -139,24 +140,59 @@ $navItems = [
         }
         
         /* ダークモード環境での自動反転抑止（全体はライト基調を維持） */
-        :root { color-scheme: light; }
+        :root { 
+            color-scheme: light !important;
+        }
+        
+        /* ダークモードでも完全にライトモードと同じ表示に強制 */
         @media (prefers-color-scheme: dark) {
+            /* すべての要素をライトモードに強制 */
+            *,
+            *::before,
+            *::after {
+                color-scheme: light !important;
+            }
+            
             /* 基本要素をライトモードに強制 */
-            html, body { 
+            html, 
+            body { 
                 background-color: #f9fafb !important; 
                 color: #111827 !important; 
             }
             
-            /* ヘッダーと白背景要素を強制 */
-            header, 
+            /* すべての背景色をライトモードに強制 */
+            header,
+            main,
+            section,
+            article,
+            aside,
+            nav,
+            footer,
+            div,
+            span,
+            p,
+            h1, h2, h3, h4, h5, h6,
+            a,
+            button,
             .bg-white,
             .bg-gray-50,
             .bg-gray-100,
-            .bg-gray-200 {
+            .bg-gray-200,
+            .bg-gray-300,
+            .card,
+            [class*="bg-"]:not([class*="bg-primary"]):not([class*="bg-secondary"]):not([class*="bg-blue"]):not([class*="bg-green"]):not([class*="bg-yellow"]):not([class*="bg-red"]):not([class*="bg-purple"]):not([class*="bg-indigo"]):not([class*="bg-orange"]):not([class*="bg-pink"]):not([class*="bg-cyan"]):not([class*="bg-emerald"]):not([class*="bg-rose"]) {
+                background-color: inherit !important;
+            }
+            
+            /* 白背景要素を強制 */
+            header,
+            .bg-white,
+            .card {
                 background-color: #ffffff !important;
             }
             
-            .bg-gray-50 {
+            .bg-gray-50,
+            section.bg-gray-50 {
                 background-color: #f9fafb !important;
             }
             
@@ -168,22 +204,32 @@ $navItems = [
                 background-color: #e5e7eb !important;
             }
             
-            /* 入力要素をライトモードに強制 */
-            input, 
-            select, 
-            textarea { 
-                background-color: #ffffff !important; 
-                color: #111827 !important; 
-                border-color: #e5e7eb !important;
+            .bg-gray-300 {
+                background-color: #d1d5db !important;
             }
             
-            /* テキスト色をライトモードに強制 */
+            /* すべてのテキスト色をライトモードに強制 */
+            *,
+            *::before,
+            *::after {
+                color: inherit !important;
+            }
+            
+            html,
+            body,
+            p,
+            span,
+            div,
+            h1, h2, h3, h4, h5, h6,
+            a:not([class*="text-white"]):not([class*="bg-primary"]):not([class*="bg-secondary"]):not([class*="bg-blue"]):not([class*="bg-green"]):not([class*="bg-red"]),
             .text-gray-900, 
             .text-gray-800, 
             .text-gray-700,
             .text-gray-600,
-            .text-gray-500 { 
-                color: #111827 !important; 
+            .text-gray-500,
+            .text-gray-400,
+            .text-gray-300 {
+                color: #111827 !important;
             }
             
             .text-gray-800 {
@@ -202,12 +248,42 @@ $navItems = [
                 color: #6b7280 !important;
             }
             
-            /* 白背景の要素には白文字を適用しない */
-            .bg-white .text-white:not(.bg-primary-600):not(.bg-primary-700):not(.bg-primary-800):not(.bg-primary-900):not(.bg-secondary-600):not(.bg-secondary-700):not(.bg-secondary-800):not(.bg-secondary-900),
-            .bg-gray-50 .text-white:not(.bg-primary-600):not(.bg-primary-700):not(.bg-primary-800):not(.bg-primary-900):not(.bg-secondary-600):not(.bg-secondary-700):not(.bg-secondary-800):not(.bg-secondary-900),
-            .bg-gray-100 .text-white:not(.bg-primary-600):not(.bg-primary-700):not(.bg-primary-800):not(.bg-primary-900):not(.bg-secondary-600):not(.bg-secondary-700):not(.bg-secondary-800):not(.bg-secondary-900),
-            header .text-white:not(.bg-primary-600):not(.bg-primary-700):not(.bg-primary-800):not(.bg-primary-900):not(.bg-secondary-600):not(.bg-secondary-700):not(.bg-secondary-800):not(.bg-secondary-900) {
+            .text-gray-400 {
+                color: #9ca3af !important;
+            }
+            
+            .text-gray-300 {
+                color: #d1d5db !important;
+            }
+            
+            /* 白背景の要素には白文字を適用しない（ただし、青や紫の背景の要素は除く） */
+            .bg-white .text-white:not(.bg-primary-600):not(.bg-primary-700):not(.bg-primary-800):not(.bg-primary-900):not(.bg-secondary-600):not(.bg-secondary-700):not(.bg-secondary-800):not(.bg-secondary-900):not(.bg-blue-600):not(.bg-blue-700):not(.bg-blue-800):not(.bg-blue-900):not(.bg-gray-600):not(.bg-gray-700):not(.bg-gray-800):not(.bg-gray-900),
+            .bg-gray-50 .text-white:not(.bg-primary-600):not(.bg-primary-700):not(.bg-primary-800):not(.bg-primary-900):not(.bg-secondary-600):not(.bg-secondary-700):not(.bg-secondary-800):not(.bg-secondary-900):not(.bg-blue-600):not(.bg-blue-700):not(.bg-blue-800):not(.bg-blue-900):not(.bg-gray-600):not(.bg-gray-700):not(.bg-gray-800):not(.bg-gray-900),
+            .bg-gray-100 .text-white:not(.bg-primary-600):not(.bg-primary-700):not(.bg-primary-800):not(.bg-primary-900):not(.bg-secondary-600):not(.bg-secondary-700):not(.bg-secondary-800):not(.bg-secondary-900):not(.bg-blue-600):not(.bg-blue-700):not(.bg-blue-800):not(.bg-blue-900):not(.bg-gray-600):not(.bg-gray-700):not(.bg-gray-800):not(.bg-gray-900),
+            header .text-white:not(.bg-primary-600):not(.bg-primary-700):not(.bg-primary-800):not(.bg-primary-900):not(.bg-secondary-600):not(.bg-secondary-700):not(.bg-secondary-800):not(.bg-secondary-900):not(.bg-blue-600):not(.bg-blue-700):not(.bg-blue-800):not(.bg-blue-900):not(.bg-gray-600):not(.bg-gray-700):not(.bg-gray-800):not(.bg-gray-900),
+            .card .text-white:not(.bg-primary-600):not(.bg-primary-700):not(.bg-primary-800):not(.bg-primary-900):not(.bg-secondary-600):not(.bg-secondary-700):not(.bg-secondary-800):not(.bg-secondary-900):not(.bg-blue-600):not(.bg-blue-700):not(.bg-blue-800):not(.bg-blue-900):not(.bg-gray-600):not(.bg-gray-700):not(.bg-gray-800):not(.bg-gray-900) {
                 color: #111827 !important;
+            }
+            
+            /* 入力要素をライトモードに強制 */
+            input, 
+            select, 
+            textarea,
+            [type="text"],
+            [type="email"],
+            [type="password"],
+            [type="number"],
+            [type="search"],
+            [type="tel"],
+            [type="url"] { 
+                background-color: #ffffff !important; 
+                color: #111827 !important; 
+                border-color: #e5e7eb !important;
+            }
+            
+            input::placeholder,
+            textarea::placeholder {
+                color: #9ca3af !important;
             }
             
             /* Card等のコンポーネントをライト基調に固定 */
@@ -224,6 +300,12 @@ $navItems = [
             .badge-secondary { 
                 background-color: #f3e8ff !important; 
                 color: #6b21a8 !important; 
+            }
+            
+            /* ボーダー色をライトモードに強制 */
+            .border-gray-200,
+            .border-gray-300 {
+                border-color: #e5e7eb !important;
             }
             
             /* ドロップダウンメニューをライトモードに強制 */
@@ -260,6 +342,25 @@ $navItems = [
             
             #mobile-menu-panel .border-gray-200 {
                 border-color: #e5e7eb !important;
+            }
+            
+            /* リンクの色をライトモードに強制 */
+            a:not([class*="text-white"]):not([class*="bg-primary"]):not([class*="bg-secondary"]):not([class*="bg-blue"]):not([class*="bg-green"]):not([class*="bg-red"]) {
+                color: #2563eb !important;
+            }
+            
+            a:hover:not([class*="text-white"]):not([class*="bg-primary"]):not([class*="bg-secondary"]):not([class*="bg-blue"]):not([class*="bg-green"]):not([class*="bg-red"]) {
+                color: #1d4ed8 !important;
+            }
+            
+            .text-blue-600,
+            a.text-blue-600 {
+                color: #2563eb !important;
+            }
+            
+            .text-blue-600:hover,
+            a.text-blue-600:hover {
+                color: #1d4ed8 !important;
             }
         }
     </style>
