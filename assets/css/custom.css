@@ -2647,3 +2647,53 @@ body.onboarding-active {
     }
 }
 
+/* ==========================================================================
+   FORCE LIGHT MODE OVERRIDES
+   ========================================================================== */
+@media (prefers-color-scheme: dark) {
+    /* Tailwindのdarkモードクラスを無効化 */
+    [class*="dark:"],
+    .dark,
+    :root.dark {
+        color-scheme: light !important;
+    }
+    
+    /* 詳細度を上げて背景色と文字色を強制 */
+    body, 
+    div, 
+    span, 
+    p, 
+    h1, h2, h3, h4, h5, h6, 
+    a, 
+    ul, li, 
+    form, input, textarea, select, button,
+    section, header, footer, nav, aside, main, article {
+        border-color: inherit;
+    }
+
+    /* 特定のコンポーネントに対する強力な上書き */
+    .bg-white,
+    .bg-gray-50,
+    .bg-gray-100 {
+        background-color: #ffffff !important;
+        color: #111827 !important;
+    }
+    
+    .bg-gray-50 {
+        background-color: #f9fafb !important;
+    }
+    
+    .bg-gray-100 {
+        background-color: #f3f4f6 !important;
+    }
+    
+    /* リンク色の再強制 */
+    a:not([class*="bg-"]):not([class*="text-white"]) {
+        color: #2563eb !important;
+    }
+    
+    a:hover:not([class*="bg-"]):not([class*="text-white"]) {
+        color: #1d4ed8 !important;
+    }
+}
+

@@ -17,6 +17,28 @@ function renderAdminHeader(string $title = 'Admin', string $active = ''): void {
     echo '<title>' . h($title) . ' - Admin</title>';
     echo '<link rel="icon" type="image/x-icon" href="' . h(asset('images/favicon.ico')) . '">';
     echo '<script src="https://cdn.tailwindcss.com"></script>';
+    echo '<script>tailwind.config = { darkMode: false, theme: { extend: {} } }</script>';
+    echo '<style>
+        :root { color-scheme: light !important; }
+        @media (prefers-color-scheme: dark) {
+            *, *::before, *::after { color-scheme: light !important; color: inherit !important; }
+            html, body { background-color: #f9fafb !important; color: #111827 !important; }
+            header, nav, footer, section, article, aside, main, div, span, p, a, button, input, select, textarea, table, th, td {
+                background-color: inherit; /* 基本は継承 */
+            }
+            /* 白背景強制 */
+            .bg-white, header, .bg-white\/90 { background-color: #ffffff !important; }
+            .bg-gray-50 { background-color: #f9fafb !important; }
+            /* テキスト色強制 */
+            .text-gray-900 { color: #111827 !important; }
+            .text-gray-700 { color: #374151 !important; }
+            .text-gray-600 { color: #4b5563 !important; }
+            /* ボーダー */
+            .border-gray-200 { border-color: #e5e7eb !important; }
+            /* 入力フォーム */
+            input, select, textarea { background-color: #ffffff !important; color: #111827 !important; border-color: #d1d5db !important; }
+        }
+    </style>';
     echo '<meta name="csrf-token" content="' . h(generateCsrfToken()) . '">';
     echo '</head><body class="bg-gray-50">';
     echo '<header class="bg-white/90 backdrop-blur border-b border-gray-200 sticky top-0 z-30">';
