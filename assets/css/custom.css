@@ -1800,13 +1800,36 @@ textarea:focus {
         color: #d1d5db !important;
     }
     
-    /* 白背景上の白文字のみを黒に（グラデーション・ボタンは除外） */
-    .bg-white:not([class*="bg-gradient"]) .text-white:not(.btn):not(button):not([class*="bg-primary"]):not([class*="bg-secondary"]):not([class*="bg-blue-"]):not([class*="bg-purple-"]),
-    .bg-gray-50:not([class*="bg-gradient"]) .text-white:not(.btn):not(button):not([class*="bg-primary"]):not([class*="bg-secondary"]):not([class*="bg-blue-"]):not([class*="bg-purple-"]),
-    .bg-gray-100:not([class*="bg-gradient"]) .text-white:not(.btn):not(button):not([class*="bg-primary"]):not([class*="bg-secondary"]):not([class*="bg-blue-"]):not([class*="bg-purple-"]),
-    header:not([class*="bg-gradient"]) .text-white:not(.btn):not(button):not([class*="bg-primary"]):not([class*="bg-secondary"]):not([class*="bg-blue-"]):not([class*="bg-purple-"]),
-    .card .text-white:not(.btn):not(button):not([class*="bg-primary"]):not([class*="bg-secondary"]):not([class*="bg-blue-"]):not([class*="bg-purple-"]) {
+    /* 白背景上の白文字のみを黒に（ボタン・カラー背景の子孫要素は完全除外） */
+    .bg-white:not([class*="bg-gradient"]) > .text-white:not(.btn):not(button):not([class*="bg-primary"]):not([class*="bg-secondary"]):not([class*="bg-blue-"]):not([class*="bg-purple-"]):not([class*="bg-red-"]):not([class*="bg-green-"]),
+    .bg-gray-50:not([class*="bg-gradient"]) > .text-white:not(.btn):not(button):not([class*="bg-primary"]):not([class*="bg-secondary"]):not([class*="bg-blue-"]):not([class*="bg-purple-"]):not([class*="bg-red-"]):not([class*="bg-green-"]),
+    .bg-gray-100:not([class*="bg-gradient"]) > .text-white:not(.btn):not(button):not([class*="bg-primary"]):not([class*="bg-secondary"]):not([class*="bg-blue-"]):not([class*="bg-purple-"]):not([class*="bg-red-"]):not([class*="bg-green-"]) {
         color: #111827 !important;
+    }
+    
+    /* ボタンとカラー背景内の白文字は常に保護 */
+    .btn .text-white,
+    button .text-white,
+    a[class*="bg-primary"] .text-white,
+    a[class*="bg-secondary"] .text-white,
+    a[class*="bg-blue-"] .text-white,
+    a[class*="bg-purple-"] .text-white,
+    a[class*="bg-red-"] .text-white,
+    a[class*="bg-green-"] .text-white,
+    a[class*="bg-yellow-"] .text-white,
+    a[class*="bg-orange-"] .text-white,
+    a[class*="bg-indigo-"] .text-white,
+    [class*="bg-primary"] .text-white,
+    [class*="bg-secondary"] .text-white,
+    [class*="bg-blue-"] .text-white,
+    [class*="bg-purple-"] .text-white,
+    [class*="bg-red-"] .text-white,
+    [class*="bg-green-"] .text-white,
+    [class*="bg-yellow-"] .text-white,
+    [class*="bg-orange-"] .text-white,
+    [class*="bg-indigo-"] .text-white,
+    [class*="bg-gradient"] .text-white {
+        color: #ffffff !important;
     }
     
     /* リンク色（ボタン・グラデーション背景上は除外） */

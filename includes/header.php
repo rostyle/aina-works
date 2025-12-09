@@ -195,6 +195,25 @@ $navItems = [
                 color: #111827 !important;
             }
             
+            /* ボタン・カラー背景内の白文字を保護 */
+            .btn .text-white,
+            button .text-white,
+            a[class*="bg-primary"] .text-white,
+            a[class*="bg-secondary"] .text-white,
+            a[class*="bg-blue-"] .text-white,
+            a[class*="bg-purple-"] .text-white,
+            a[class*="bg-red-"] .text-white,
+            a[class*="bg-green-"] .text-white,
+            [class*="bg-primary"] .text-white,
+            [class*="bg-secondary"] .text-white,
+            [class*="bg-blue-"] .text-white,
+            [class*="bg-purple-"] .text-white,
+            [class*="bg-red-"] .text-white,
+            [class*="bg-green-"] .text-white,
+            [class*="bg-gradient"] .text-white {
+                color: #ffffff !important;
+            }
+            
             /* 入力要素 */
             input:not([class*="bg-gradient"] input), 
             select:not([class*="bg-gradient"] select), 
