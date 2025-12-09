@@ -1702,9 +1702,9 @@ textarea:focus {
    DARK MODE FOUNDATION
    ========================================================================== */
 
-/* ダークモードでもライトモードと同じように表示されるように強制 */
+/* ダークモードでもライトモードと同じように表示（グラデーション・ボタンは保護） */
 @media (prefers-color-scheme: dark) {
-    /* すべての要素をライトモードの色に強制 */
+    /* CSS変数とcolor-schemeをライトモードに */
     :root {
         --color-gray-50: #f8fafc;
         --color-gray-100: #f1f5f9;
@@ -1719,130 +1719,125 @@ textarea:focus {
         color-scheme: light !important;
     }
     
-    /* すべての要素にcolor-schemeを適用 */
     *,
     *::before,
     *::after {
         color-scheme: light !important;
     }
     
-    /* 背景色をライトモードに強制 */
+    /* 基本背景と文字色 */
     html, 
     body {
         background-color: #f9fafb !important;
         color: #111827 !important;
     }
     
-    /* すべてのセクション要素をライトモードに強制 */
-    main,
-    section,
-    article,
-    aside,
-    nav,
-    footer {
-        background-color: inherit !important;
-        color: inherit !important;
-    }
-    
-    /* 白背景要素を強制 */
-    .bg-white,
-    header,
-    .card,
-    [class*="bg-white"] {
+    /* ヘッダーのみ白背景に */
+    header.bg-white {
         background-color: #ffffff !important;
     }
     
-    .bg-gray-50,
-    section.bg-gray-50 {
+    /* 白・灰色背景のセクション（グラデーションは除外） */
+    section.bg-white:not([class*="bg-gradient"]),
+    section.bg-gray-50:not([class*="bg-gradient"]) {
         background-color: #f9fafb !important;
     }
     
-    .bg-gray-100 {
+    /* 白・灰色背景要素（グラデーション・ボタンは除外） */
+    .bg-white:not([class*="bg-gradient"]):not(.btn):not(button):not([class*="hover\\:bg-"]),
+    .card {
+        background-color: #ffffff !important;
+    }
+    
+    .bg-gray-50:not([class*="bg-gradient"]):not(.btn):not(button) {
+        background-color: #f9fafb !important;
+    }
+    
+    .bg-gray-100:not([class*="bg-gradient"]):not(.btn):not(button) {
         background-color: #f3f4f6 !important;
     }
     
-    .bg-gray-200 {
+    .bg-gray-200:not([class*="bg-gradient"]):not(.btn):not(button) {
         background-color: #e5e7eb !important;
     }
     
-    .bg-gray-300 {
+    .bg-gray-300:not([class*="bg-gradient"]):not(.btn):not(button) {
         background-color: #d1d5db !important;
     }
     
-    /* テキスト色をライトモードに強制 */
-    .text-gray-900,
-    .text-gray-800,
-    .text-gray-700,
-    .text-gray-600,
-    .text-gray-500,
-    .text-gray-400,
-    .text-gray-300 {
+    /* テキスト色（グラデーション背景・ボタン内は除外） */
+    .text-gray-900:not([class*="bg-gradient"] *):not(.btn *):not(button *),
+    .text-gray-800:not([class*="bg-gradient"] *):not(.btn *):not(button *),
+    .text-gray-700:not([class*="bg-gradient"] *):not(.btn *):not(button *),
+    .text-gray-600:not([class*="bg-gradient"] *):not(.btn *):not(button *),
+    .text-gray-500:not([class*="bg-gradient"] *):not(.btn *):not(button *),
+    .text-gray-400:not([class*="bg-gradient"] *):not(.btn *):not(button *),
+    .text-gray-300:not([class*="bg-gradient"] *):not(.btn *):not(button *) {
         color: #111827 !important;
     }
     
-    .text-gray-800 {
+    .text-gray-800:not([class*="bg-gradient"] *):not(.btn *):not(button *) {
         color: #1f2937 !important;
     }
     
-    .text-gray-700 {
+    .text-gray-700:not([class*="bg-gradient"] *):not(.btn *):not(button *) {
         color: #374151 !important;
     }
     
-    .text-gray-600 {
+    .text-gray-600:not([class*="bg-gradient"] *):not(.btn *):not(button *) {
         color: #4b5563 !important;
     }
     
-    .text-gray-500 {
+    .text-gray-500:not([class*="bg-gradient"] *):not(.btn *):not(button *) {
         color: #6b7280 !important;
     }
     
-    .text-gray-400 {
+    .text-gray-400:not([class*="bg-gradient"] *):not(.btn *):not(button *) {
         color: #9ca3af !important;
     }
     
-    .text-gray-300 {
+    .text-gray-300:not([class*="bg-gradient"] *):not(.btn *):not(button *) {
         color: #d1d5db !important;
     }
     
-    /* 白背景の要素には白文字を適用しない（ただし、青や紫の背景の要素は除く） */
-    .bg-white .text-white:not(.bg-primary-600):not(.bg-primary-700):not(.bg-primary-800):not(.bg-primary-900):not(.bg-secondary-600):not(.bg-secondary-700):not(.bg-secondary-800):not(.bg-secondary-900):not(.bg-blue-600):not(.bg-blue-700):not(.bg-blue-800):not(.bg-blue-900):not(.bg-gray-600):not(.bg-gray-700):not(.bg-gray-800):not(.bg-gray-900):not(.bg-green-600):not(.bg-green-700):not(.bg-green-800):not(.bg-green-900):not(.bg-red-600):not(.bg-red-700):not(.bg-red-800):not(.bg-red-900),
-    .bg-gray-50 .text-white:not(.bg-primary-600):not(.bg-primary-700):not(.bg-primary-800):not(.bg-primary-900):not(.bg-secondary-600):not(.bg-secondary-700):not(.bg-secondary-800):not(.bg-secondary-900):not(.bg-blue-600):not(.bg-blue-700):not(.bg-blue-800):not(.bg-blue-900):not(.bg-gray-600):not(.bg-gray-700):not(.bg-gray-800):not(.bg-gray-900):not(.bg-green-600):not(.bg-green-700):not(.bg-green-800):not(.bg-green-900):not(.bg-red-600):not(.bg-red-700):not(.bg-red-800):not(.bg-red-900),
-    .bg-gray-100 .text-white:not(.bg-primary-600):not(.bg-primary-700):not(.bg-primary-800):not(.bg-primary-900):not(.bg-secondary-600):not(.bg-secondary-700):not(.bg-secondary-800):not(.bg-secondary-900):not(.bg-blue-600):not(.bg-blue-700):not(.bg-blue-800):not(.bg-blue-900):not(.bg-gray-600):not(.bg-gray-700):not(.bg-gray-800):not(.bg-gray-900):not(.bg-green-600):not(.bg-green-700):not(.bg-green-800):not(.bg-green-900):not(.bg-red-600):not(.bg-red-700):not(.bg-red-800):not(.bg-red-900),
-    .bg-gray-200 .text-white:not(.bg-primary-600):not(.bg-primary-700):not(.bg-primary-800):not(.bg-primary-900):not(.bg-secondary-600):not(.bg-secondary-700):not(.bg-secondary-800):not(.bg-secondary-900):not(.bg-blue-600):not(.bg-blue-700):not(.bg-blue-800):not(.bg-blue-900):not(.bg-gray-600):not(.bg-gray-700):not(.bg-gray-800):not(.bg-gray-900):not(.bg-green-600):not(.bg-green-700):not(.bg-green-800):not(.bg-green-900):not(.bg-red-600):not(.bg-red-700):not(.bg-red-800):not(.bg-red-900),
-    header .text-white:not(.bg-primary-600):not(.bg-primary-700):not(.bg-primary-800):not(.bg-primary-900):not(.bg-secondary-600):not(.bg-secondary-700):not(.bg-secondary-800):not(.bg-secondary-900):not(.bg-blue-600):not(.bg-blue-700):not(.bg-blue-800):not(.bg-blue-900):not(.bg-gray-600):not(.bg-gray-700):not(.bg-gray-800):not(.bg-gray-900):not(.bg-green-600):not(.bg-green-700):not(.bg-green-800):not(.bg-green-900):not(.bg-red-600):not(.bg-red-700):not(.bg-red-800):not(.bg-red-900),
-    .card .text-white:not(.bg-primary-600):not(.bg-primary-700):not(.bg-primary-800):not(.bg-primary-900):not(.bg-secondary-600):not(.bg-secondary-700):not(.bg-secondary-800):not(.bg-secondary-900):not(.bg-blue-600):not(.bg-blue-700):not(.bg-blue-800):not(.bg-blue-900):not(.bg-gray-600):not(.bg-gray-700):not(.bg-gray-800):not(.bg-gray-900):not(.bg-green-600):not(.bg-green-700):not(.bg-green-800):not(.bg-green-900):not(.bg-red-600):not(.bg-red-700):not(.bg-red-800):not(.bg-red-900) {
+    /* 白背景上の白文字のみを黒に（グラデーション・ボタンは除外） */
+    .bg-white:not([class*="bg-gradient"]) .text-white:not(.btn):not(button):not([class*="bg-primary"]):not([class*="bg-secondary"]):not([class*="bg-blue-"]):not([class*="bg-purple-"]),
+    .bg-gray-50:not([class*="bg-gradient"]) .text-white:not(.btn):not(button):not([class*="bg-primary"]):not([class*="bg-secondary"]):not([class*="bg-blue-"]):not([class*="bg-purple-"]),
+    .bg-gray-100:not([class*="bg-gradient"]) .text-white:not(.btn):not(button):not([class*="bg-primary"]):not([class*="bg-secondary"]):not([class*="bg-blue-"]):not([class*="bg-purple-"]),
+    header:not([class*="bg-gradient"]) .text-white:not(.btn):not(button):not([class*="bg-primary"]):not([class*="bg-secondary"]):not([class*="bg-blue-"]):not([class*="bg-purple-"]),
+    .card .text-white:not(.btn):not(button):not([class*="bg-primary"]):not([class*="bg-secondary"]):not([class*="bg-blue-"]):not([class*="bg-purple-"]) {
         color: #111827 !important;
     }
     
-    /* リンクの色をライトモードに強制 */
-    a:not([class*="text-white"]):not(.bg-primary-600):not(.bg-primary-700):not(.bg-primary-800):not(.bg-primary-900):not(.bg-secondary-600):not(.bg-secondary-700):not(.bg-secondary-800):not(.bg-secondary-900):not(.bg-blue-600):not(.bg-blue-700):not(.bg-blue-800):not(.bg-blue-900):not(.bg-gray-600):not(.bg-gray-700):not(.bg-gray-800):not(.bg-gray-900):not(.bg-green-600):not(.bg-green-700):not(.bg-green-800):not(.bg-green-900):not(.bg-red-600):not(.bg-red-700):not(.bg-red-800):not(.bg-red-900) {
+    /* リンク色（ボタン・グラデーション背景上は除外） */
+    a:not([class*="text-white"]):not(.btn):not(button):not([class*="bg-gradient"] a):not([class*="bg-primary"] a):not([class*="bg-blue-"] a):not([class*="bg-purple-"] a) {
         color: #2563eb !important;
     }
     
-    a:hover:not([class*="text-white"]):not(.bg-primary-600):not(.bg-primary-700):not(.bg-primary-800):not(.bg-primary-900):not(.bg-secondary-600):not(.bg-secondary-700):not(.bg-secondary-800):not(.bg-secondary-900):not(.bg-blue-600):not(.bg-blue-700):not(.bg-blue-800):not(.bg-blue-900):not(.bg-gray-600):not(.bg-gray-700):not(.bg-gray-800):not(.bg-gray-900):not(.bg-green-600):not(.bg-green-700):not(.bg-green-800):not(.bg-green-900):not(.bg-red-600):not(.bg-red-700):not(.bg-red-800):not(.bg-red-900) {
+    a:hover:not([class*="text-white"]):not(.btn):not(button):not([class*="bg-gradient"] a):not([class*="bg-primary"] a):not([class*="bg-blue-"] a):not([class*="bg-purple-"] a) {
         color: #1d4ed8 !important;
     }
     
-    .text-blue-600,
-    a.text-blue-600 {
+    .text-blue-600:not([class*="bg-gradient"] *):not(.btn *):not(button *),
+    a.text-blue-600:not([class*="bg-gradient"] a):not(.btn):not(button) {
         color: #2563eb !important;
     }
     
-    .text-blue-600:hover,
-    a.text-blue-600:hover {
+    .text-blue-600:hover:not([class*="bg-gradient"] *):not(.btn *):not(button *),
+    a.text-blue-600:hover:not([class*="bg-gradient"] a):not(.btn):not(button) {
         color: #1d4ed8 !important;
     }
     
-    /* ボーダー色をライトモードに強制 */
-    .border-gray-200,
-    .border-gray-300 {
+    /* ボーダー色（ボタンは除外） */
+    .border-gray-200:not(.btn):not(button),
+    .border-gray-300:not(.btn):not(button) {
         border-color: #e5e7eb !important;
     }
     
-    /* 入力要素をライトモードに強制 */
-    input,
-    select,
-    textarea {
+    /* 入力要素（グラデーション背景内は除外） */
+    input:not([class*="bg-gradient"] input),
+    select:not([class*="bg-gradient"] select),
+    textarea:not([class*="bg-gradient"] textarea) {
         background-color: #ffffff !important;
         color: #111827 !important;
         border-color: #e5e7eb !important;
@@ -2648,7 +2643,7 @@ body.onboarding-active {
 }
 
 /* ==========================================================================
-   FORCE LIGHT MODE OVERRIDES
+   FORCE LIGHT MODE OVERRIDES (グラデーションとボタンは保護)
    ========================================================================== */
 @media (prefers-color-scheme: dark) {
     /* Tailwindのdarkモードクラスを無効化 */
@@ -2658,41 +2653,44 @@ body.onboarding-active {
         color-scheme: light !important;
     }
     
-    /* 詳細度を上げて背景色と文字色を強制 */
-    body, 
-    div, 
-    span, 
-    p, 
-    h1, h2, h3, h4, h5, h6, 
-    a, 
-    ul, li, 
-    form, input, textarea, select, button,
-    section, header, footer, nav, aside, main, article {
-        border-color: inherit;
-    }
-
-    /* 特定のコンポーネントに対する強力な上書き */
-    .bg-white,
-    .bg-gray-50,
-    .bg-gray-100 {
+    /* 白・灰色背景のみをライトモードに（グラデーション・ボタン・カラー背景は除外） */
+    .bg-white:not([class*="bg-gradient"]):not(.btn):not(button),
+    section.bg-white:not([class*="bg-gradient"]) {
         background-color: #ffffff !important;
-        color: #111827 !important;
     }
     
-    .bg-gray-50 {
+    .bg-gray-50:not([class*="bg-gradient"]):not(.btn):not(button),
+    section.bg-gray-50:not([class*="bg-gradient"]) {
         background-color: #f9fafb !important;
     }
     
-    .bg-gray-100 {
+    .bg-gray-100:not([class*="bg-gradient"]):not(.btn):not(button) {
         background-color: #f3f4f6 !important;
     }
     
-    /* リンク色の再強制 */
-    a:not([class*="bg-"]):not([class*="text-white"]) {
+    .bg-gray-200:not([class*="bg-gradient"]):not(.btn):not(button) {
+        background-color: #e5e7eb !important;
+    }
+    
+    /* テキスト色（グラデーション背景・ボタン内は除外） */
+    p:not([class*="bg-gradient"] *):not(.btn *):not(button *),
+    span:not([class*="bg-gradient"] *):not(.btn *):not(button *),
+    div:not([class*="bg-gradient"]):not(.btn):not(button) {
+        color: inherit;
+    }
+    
+    .text-gray-900:not([class*="bg-gradient"] *):not(.btn *):not(button *),
+    .text-gray-700:not([class*="bg-gradient"] *):not(.btn *):not(button *),
+    .text-gray-600:not([class*="bg-gradient"] *):not(.btn *):not(button *) {
+        color: #111827 !important;
+    }
+    
+    /* リンク色（ボタン・グラデーション背景上は除外） */
+    a:not(.btn):not(button):not([class*="bg-gradient"] a):not([class*="bg-primary"] a):not([class*="bg-blue-"] a):not([class*="text-white"]) {
         color: #2563eb !important;
     }
     
-    a:hover:not([class*="bg-"]):not([class*="text-white"]) {
+    a:hover:not(.btn):not(button):not([class*="bg-gradient"] a):not([class*="bg-primary"] a):not([class*="bg-blue-"] a):not([class*="text-white"]) {
         color: #1d4ed8 !important;
     }
 }
