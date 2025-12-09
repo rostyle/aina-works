@@ -228,8 +228,13 @@ $showSuccess = isset($_GET['applied']) && $_GET['applied'] == '1';
 <style>
 /* ダークモードでもライトモードと同じように表示 */
 @media (prefers-color-scheme: dark) {
-    /* 案件詳細ページのすべての要素をライトモードに強制 */
-    * {
+    /* ページ全体をライトモードとして扱う */
+    :root {
+        color-scheme: light !important;
+    }
+
+    /* すべての要素をライトモードに強制 */
+    *, *::before, *::after {
         color-scheme: light !important;
     }
     
@@ -246,8 +251,8 @@ $showSuccess = isset($_GET['applied']) && $_GET['applied'] == '1';
     }
     
     /* すべてのテキスト色をライトモードに強制 */
-    * {
-        color: inherit !important;
+    body, p, h1, h2, h3, h4, h5, h6, span, div, li, td, th {
+        color: #111827 !important;
     }
     
     .text-gray-900,
