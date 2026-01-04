@@ -108,6 +108,7 @@
     </footer>
 
     <!-- Enhanced JavaScript -->
+    <script src="<?= asset('js/loading.js') ?>"></script>
     <script src="<?= asset('js/main.js') ?>"></script>
     
     <script>
@@ -441,23 +442,8 @@
             initScrollAnimations();
             initNewsletterSignup();
             
-            // Add loading states to forms
-            document.querySelectorAll('form').forEach(form => {
-                form.addEventListener('submit', function() {
-                    const submitButton = this.querySelector('button[type="submit"]');
-                    if (submitButton && !submitButton.disabled) {
-                        const originalText = submitButton.innerHTML;
-                        submitButton.innerHTML = '<div class="loading loading-sm mr-2"></div>送信中...';
-                        submitButton.disabled = true;
-                        
-                        // Re-enable after timeout (fallback)
-                        setTimeout(() => {
-                            submitButton.innerHTML = originalText;
-                            submitButton.disabled = false;
-                        }, 10000);
-                    }
-                });
-            });
+            // フォームローディングは loading.js の initFormLoadingHandlers() で処理される
+            // 既存のコードは新しいシステムに置き換え済み
         });
 
         // Performance optimization: Debounce scroll events

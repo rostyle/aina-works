@@ -5,8 +5,16 @@
 // いいね機能
 async function toggleLike(workId, buttonElement) {
     try {
-        // ボタンを無効化
-        buttonElement.disabled = true;
+        // ローディング状態を適用
+        if (window.loadingManager) {
+            window.loadingManager.setButtonLoading(buttonElement, { 
+                text: '処理中...',
+                showSpinner: true,
+                preserveWidth: false
+            });
+        } else {
+            buttonElement.disabled = true;
+        }
         
         const response = await fetch('./api/like.php', {
             method: 'POST',
@@ -25,14 +33,26 @@ async function toggleLike(workId, buttonElement) {
             // UIを更新
             updateLikeButton(buttonElement, result.is_liked, result.like_count);
         } else {
-            alert('エラー: ' + (result.message || '不明なエラー'));
+            if (typeof showNotification === 'function') {
+                showNotification(result.message || 'エラーが発生しました', 'error');
+            } else {
+                alert('エラー: ' + (result.message || '不明なエラー'));
+            }
         }
     } catch (error) {
         console.error('Like error:', error);
-        alert('いいね機能でエラーが発生しました');
+        if (typeof showNotification === 'function') {
+            showNotification('いいね機能でエラーが発生しました', 'error');
+        } else {
+            alert('いいね機能でエラーが発生しました');
+        }
     } finally {
-        // ボタンを有効化
-        buttonElement.disabled = false;
+        // ローディング状態を解除
+        if (window.loadingManager) {
+            window.loadingManager.removeButtonLoading(buttonElement);
+        } else {
+            buttonElement.disabled = false;
+        }
     }
 }
 
@@ -63,8 +83,16 @@ function updateLikeButton(buttonElement, isLiked, likeCount) {
 // お気に入り機能
 async function toggleFavorite(targetType, targetId, buttonElement) {
     try {
-        // ボタンを無効化
-        buttonElement.disabled = true;
+        // ローディング状態を適用
+        if (window.loadingManager) {
+            window.loadingManager.setButtonLoading(buttonElement, { 
+                text: '処理中...',
+                showSpinner: true,
+                preserveWidth: false
+            });
+        } else {
+            buttonElement.disabled = true;
+        }
         
         // 現在の状態を判定
         const isFavorited = buttonElement.classList.contains('favorited');
@@ -89,14 +117,26 @@ async function toggleFavorite(targetType, targetId, buttonElement) {
             // UIを更新
             updateFavoriteButton(buttonElement, result.is_favorite);
         } else {
-            alert('エラー: ' + (result.message || '不明なエラー'));
+            if (typeof showNotification === 'function') {
+                showNotification(result.message || 'エラーが発生しました', 'error');
+            } else {
+                alert('エラー: ' + (result.message || '不明なエラー'));
+            }
         }
     } catch (error) {
         console.error('Favorite error:', error);
-        alert('お気に入り機能でエラーが発生しました');
+        if (typeof showNotification === 'function') {
+            showNotification('お気に入り機能でエラーが発生しました', 'error');
+        } else {
+            alert('お気に入り機能でエラーが発生しました');
+        }
     } finally {
-        // ボタンを有効化
-        buttonElement.disabled = false;
+        // ローディング状態を解除
+        if (window.loadingManager) {
+            window.loadingManager.removeButtonLoading(buttonElement);
+        } else {
+            buttonElement.disabled = false;
+        }
     }
 }
 

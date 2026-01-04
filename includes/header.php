@@ -63,6 +63,7 @@ $navItems = [
         }
     </script>
     <link rel="stylesheet" href="<?= asset('css/custom.css') ?>">
+    <link rel="stylesheet" href="<?= asset('css/loading.css') ?>">
     <meta name="theme-color" content="#ffffff">
     <meta name="csrf-token" content="<?= generateCsrfToken() ?>">
     <style>

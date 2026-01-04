@@ -1022,8 +1022,17 @@ async function sendMessage(event) {
     
     const form = event.target;
     const formData = new FormData(form);
+    const submitBtn = form.querySelector('button[type="submit"]');
     
     try {
+        // ローディング状態を適用
+        if (window.loadingManager) {
+            window.loadingManager.setFormLoading(form, { message: '送信中...' });
+        } else if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = '送信中...';
+        }
+        
         const response = await fetch('api/send-message.php', {
             method: 'POST',
             body: formData
@@ -1032,15 +1041,22 @@ async function sendMessage(event) {
         const result = await response.json();
         
         if (result.success) {
-            showNotification(result.message, 'success');
+            showNotification(result.message || 'メッセージを送信しました', 'success');
             closeMessageModal();
         } else {
-            showNotification(result.error || 'エラーが発生しました', 'error');
+            showNotification(result.message || result.error || 'エラーが発生しました', 'error');
         }
         
     } catch (error) {
         console.error('Message send error:', error);
         showNotification('ネットワークエラーが発生しました', 'error');
+    } finally {
+        // ローディング状態を解除
+        if (window.loadingManager) {
+            window.loadingManager.removeFormLoading(form);
+        } else if (submitBtn) {
+            submitBtn.disabled = false;
+        }
     }
 }
 
@@ -1050,8 +1066,17 @@ async function requestJob(event) {
     
     const form = event.target;
     const formData = new FormData(form);
+    const submitBtn = form.querySelector('button[type="submit"]');
     
     try {
+        // ローディング状態を適用
+        if (window.loadingManager) {
+            window.loadingManager.setFormLoading(form, { message: '送信中...' });
+        } else if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = '送信中...';
+        }
+        
         const response = await fetch('api/request-job.php', {
             method: 'POST',
             body: formData
@@ -1060,15 +1085,22 @@ async function requestJob(event) {
         const result = await response.json();
         
         if (result.success) {
-            showNotification(result.message, 'success');
+            showNotification(result.message || '案件依頼を送信しました', 'success');
             closeJobRequestModal();
         } else {
-            showNotification(result.error || 'エラーが発生しました', 'error');
+            showNotification(result.message || result.error || 'エラーが発生しました', 'error');
         }
         
     } catch (error) {
         console.error('Job request error:', error);
         showNotification('ネットワークエラーが発生しました', 'error');
+    } finally {
+        // ローディング状態を解除
+        if (window.loadingManager) {
+            window.loadingManager.removeFormLoading(form);
+        } else if (submitBtn) {
+            submitBtn.disabled = false;
+        }
     }
 }
 

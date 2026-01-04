@@ -938,18 +938,26 @@ document.addEventListener('DOMContentLoaded', function() {
     if (form) {
         form.addEventListener('submit', function(e) {
             console.log('フォーム送信開始');
-            try {
-                const fd = new FormData(form);
-                for (const [k, v] of fd.entries()) {
-                    console.log(k + ':', v);
-                }
-            } catch (err) {
-                console.log('FormDataのログでエラー:', err);
-            }
-            if (submitBtn) {
+            
+            // ローディング状態を適用
+            if (window.loadingManager) {
+                window.loadingManager.setFormLoading(form, { message: '応募を送信中...' });
+            } else if (submitBtn) {
                 submitBtn.disabled = true;
                 submitBtn.textContent = '送信中...';
             }
+            
+            // タイムアウト時のフォールバック（10秒後に自動解除）
+            setTimeout(() => {
+                if (form.dataset.loading === 'true') {
+                    if (window.loadingManager) {
+                        window.loadingManager.removeFormLoading(form);
+                    } else if (submitBtn) {
+                        submitBtn.disabled = false;
+                    }
+                    console.warn('Form loading timeout - auto removed');
+                }
+            }, 10000);
         });
     }
     

@@ -213,6 +213,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const durationWeeks = parseInt(document.getElementById('duration_weeks')?.value || '0', 10);
         const urgency = (document.querySelector('input[name="urgency"]:checked')?.value) || 'medium';
 
+        // ボタンのローディング状態を適用
+        if (window.loadingManager && btn) {
+            window.loadingManager.setButtonLoading(btn, { text: 'AI分析中...' });
+        } else if (btn) {
+            btn.disabled = true;
+            const originalText = btn.textContent;
+            btn.textContent = 'AI分析中...';
+            btn.dataset.originalText = originalText;
+        }
+
         openDock();
         showLoading();
         setProgress(8);
@@ -246,6 +256,17 @@ document.addEventListener('DOMContentLoaded', () => {
             const json = await res.json();
             clearInterval(timer);
             setProgress(100);
+            
+            // ボタンのローディング状態を解除
+            if (window.loadingManager && btn) {
+                window.loadingManager.removeButtonLoading(btn);
+            } else if (btn) {
+                btn.disabled = false;
+                if (btn.dataset.originalText) {
+                    btn.textContent = btn.dataset.originalText;
+                    delete btn.dataset.originalText;
+                }
+            }
 
             if (!json.success) {
                 throw new Error(json.error || 'AI提案の取得に失敗しました');
@@ -262,6 +283,17 @@ document.addEventListener('DOMContentLoaded', () => {
             renderResult(data);
             burst(json.meta?.xp_awarded || 50);
         } catch (e) {
+            // ボタンのローディング状態を解除
+            if (window.loadingManager && btn) {
+                window.loadingManager.removeButtonLoading(btn);
+            } else if (btn) {
+                btn.disabled = false;
+                if (btn.dataset.originalText) {
+                    btn.textContent = btn.dataset.originalText;
+                    delete btn.dataset.originalText;
+                }
+            }
+            
             renderError(e?.message || 'AI処理中にエラーが発生しました');
         }
     }

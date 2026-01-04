@@ -416,11 +416,17 @@ async function sendMessage(event) {
         return;
     }
     
-    // 送信ボタンを無効化
+    // ローディング状態を開始
     const submitBtn = form.querySelector('button[type="submit"]');
-    submitBtn.disabled = true;
     
     try {
+        // ローディング状態を適用
+        if (window.loadingManager && submitBtn) {
+            window.loadingManager.setButtonLoading(submitBtn, { text: '送信中...' });
+        } else if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = '送信中...';
+        }
         const response = await fetch('api/send-chat-message.php', {
             method: 'POST',
             body: formData
@@ -477,7 +483,12 @@ async function sendMessage(event) {
         });
         showNotification('ネットワークエラーが発生しました: ' + error.message, 'error');
     } finally {
-        submitBtn.disabled = false;
+        // ローディング状態を解除
+        if (window.loadingManager && submitBtn) {
+            window.loadingManager.removeButtonLoading(submitBtn);
+        } else if (submitBtn) {
+            submitBtn.disabled = false;
+        }
         messageInput.focus();
     }
 }
@@ -485,7 +496,14 @@ async function sendMessage(event) {
 // ファイルメッセージ送信
 async function sendFileMessage(formData) {
     const submitBtn = document.querySelector('button[type="submit"]');
-    submitBtn.disabled = true;
+    
+    // ローディング状態を開始
+    if (window.loadingManager && submitBtn) {
+        window.loadingManager.setButtonLoading(submitBtn, { text: 'アップロード中...' });
+    } else if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'アップロード中...';
+    }
     
     try {
         const response = await fetch('api/upload-chat-file.php', {
@@ -534,7 +552,12 @@ async function sendFileMessage(formData) {
         console.error('File send error:', error);
         showNotification('ネットワークエラーが発生しました: ' + error.message, 'error');
     } finally {
-        submitBtn.disabled = false;
+        // ローディング状態を解除
+        if (window.loadingManager && submitBtn) {
+            window.loadingManager.removeButtonLoading(submitBtn);
+        } else if (submitBtn) {
+            submitBtn.disabled = false;
+        }
         document.getElementById('message-input').focus();
     }
 }
