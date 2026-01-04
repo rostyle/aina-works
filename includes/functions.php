@@ -119,23 +119,25 @@ function redirect($url) {
     exit;
 }
 
-/**
- * JSONレスポンス
- */
-function jsonResponse($data, $status = 200) {
-    // 出力バッファをクリアしてクリーンなレスポンスを確保
-    while (ob_get_level()) {
-        ob_end_clean();
+if (!function_exists('jsonResponse')) {
+    /**
+     * JSONレスポンス
+     */
+    function jsonResponse($data, $status = 200) {
+        // 出力バッファをクリアしてクリーンなレスポンスを確保
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+        
+        if (!headers_sent()) {
+            http_response_code($status);
+            header('Content-Type: application/json');
+            header('X-Content-Type-Options: nosniff');
+        }
+        
+        echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+        exit;
     }
-    
-    if (!headers_sent()) {
-        http_response_code($status);
-        header('Content-Type: application/json');
-        header('X-Content-Type-Options: nosniff');
-    }
-    
-    echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
-    exit;
 }
 
 /**

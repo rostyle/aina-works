@@ -155,22 +155,24 @@ class ErrorHandler {
     }
 }
 
-/**
- * 統一されたjsonResponse関数（後方互換性のため）
- */
-function jsonResponse($data, $status = 200) {
-    if (isset($data['success']) && !$data['success']) {
-        ErrorHandler::jsonError(
-            $data['message'] ?? $data['error'] ?? 'エラーが発生しました',
-            $status,
-            $data['errors'] ?? null,
-            $data['error_code'] ?? null
-        );
-    } else {
-        ErrorHandler::jsonSuccess(
-            $data['message'] ?? null,
-            isset($data['data']) ? $data['data'] : (isset($data['success']) ? null : $data),
-            $status
-        );
+if (!function_exists('jsonResponse')) {
+    /**
+     * 統一されたjsonResponse関数（後方互換性のため）
+     */
+    function jsonResponse($data, $status = 200) {
+        if (isset($data['success']) && !$data['success']) {
+            ErrorHandler::jsonError(
+                $data['message'] ?? $data['error'] ?? 'エラーが発生しました',
+                $status,
+                $data['errors'] ?? null,
+                $data['error_code'] ?? null
+            );
+        } else {
+            ErrorHandler::jsonSuccess(
+                $data['message'] ?? null,
+                isset($data['data']) ? $data['data'] : (isset($data['success']) ? null : $data),
+                $status
+            );
+        }
     }
 }
