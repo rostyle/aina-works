@@ -1,61 +1,25 @@
 <?php
-// エラー出力を完全に抑制
-error_reporting(0);
-ini_set('display_errors', 0);
-
-// 出力バッファリングを開始（予期せぬ出力を防ぐ）
-ob_start();
-
-try {
-    require_once '../config/config.php';
-    
-    // JSONレスポンスのヘッダー設定
-    header('Content-Type: application/json');
-    header('X-Content-Type-Options: nosniff');
-} catch (Exception $e) {
-    // 設定ファイル読み込みエラー
-    ob_clean();
-    http_response_code(500);
-    header('Content-Type: application/json');
-    echo json_encode(['success' => false, 'message' => 'システム設定エラーが発生しました']);
-    exit;
-}
+require_once '../config/config.php';
 
 // ログインチェック
 if (!isLoggedIn()) {
-    ob_clean();
-    http_response_code(401);
-    header('Content-Type: application/json');
-    echo json_encode(['success' => false, 'message' => 'ログインが必要です']);
-    exit;
+    ErrorHandler::jsonAuthError();
 }
 
 // POSTリクエストのみ受け付け
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    ob_clean();
-    http_response_code(405);
-    header('Content-Type: application/json');
-    echo json_encode(['success' => false, 'message' => 'POSTリクエストのみ受け付けます']);
-    exit;
+    ErrorHandler::jsonError('POSTリクエストのみ受け付けます', 405, null, 'METHOD_NOT_ALLOWED');
 }
 
 $user = getCurrentUser();
 if (!$user) {
-    ob_clean();
-    http_response_code(401);
-    header('Content-Type: application/json');
-    echo json_encode(['success' => false, 'message' => 'ユーザー情報を取得できません']);
-    exit;
+    ErrorHandler::jsonError(Messages::USER_NOT_FOUND, 401, null, 'USER_NOT_FOUND');
 }
 
 // JSONデータを取得
 $input = json_decode(file_get_contents('php://input'), true);
 if (!$input) {
-    ob_clean();
-    http_response_code(400);
-    header('Content-Type: application/json');
-    echo json_encode(['success' => false, 'message' => '無効なJSONデータです']);
-    exit;
+    ErrorHandler::jsonError('無効なJSONデータです', 400, null, 'INVALID_JSON');
 }
 
 $action = $input['action'] ?? '';
@@ -63,28 +27,25 @@ $targetType = $input['target_type'] ?? '';
 $targetId = (int)($input['target_id'] ?? 0);
 
 // バリデーション
-if (!in_array($action, ['add', 'remove'])) {
-    ob_clean();
-    http_response_code(400);
-    header('Content-Type: application/json');
-    echo json_encode(['success' => false, 'message' => '無効なアクションです']);
-    exit;
+$validation = new ValidationResult();
+
+$error = validateIn($action, ['add', 'remove'], 'アクション');
+if ($error) {
+    $validation->addError('action', $error);
 }
 
-if (!in_array($targetType, ['work', 'creator'])) {
-    ob_clean();
-    http_response_code(400);
-    header('Content-Type: application/json');
-    echo json_encode(['success' => false, 'message' => '無効なターゲットタイプです']);
-    exit;
+$error = validateIn($targetType, ['work', 'creator'], 'ターゲットタイプ');
+if ($error) {
+    $validation->addError('target_type', $error);
 }
 
-if ($targetId <= 0) {
-    ob_clean();
-    http_response_code(400);
-    header('Content-Type: application/json');
-    echo json_encode(['success' => false, 'message' => '無効なターゲットIDです']);
-    exit;
+$error = validatePositiveInteger($targetId, 'ターゲットID');
+if ($error) {
+    $validation->addError('target_id', $error);
+}
+
+if (!$validation->isValid) {
+    ErrorHandler::jsonValidationError($validation);
 }
 
 $db = Database::getInstance();
@@ -101,30 +62,18 @@ try {
         }
         
         if (!$target) {
-            ob_clean();
-            http_response_code(404);
-            header('Content-Type: application/json');
-            echo json_encode(['success' => false, 'message' => '対象が見つかりません']);
-            exit;
+            ErrorHandler::jsonNotFoundError('対象');
         }
         
         // 自分自身をお気に入りに追加できないようにする
         if ($targetType === 'creator' && $targetId === $user['id']) {
-            ob_clean();
-            http_response_code(400);
-            header('Content-Type: application/json');
-            echo json_encode(['success' => false, 'message' => '自分自身をお気に入りに追加することはできません']);
-            exit;
+            ErrorHandler::jsonError(Messages::USER_SELF_OPERATION, 400, null, 'OWN_RESOURCE');
         }
         
         if ($targetType === 'work') {
             $work = $db->selectOne("SELECT user_id FROM works WHERE id = ?", [$targetId]);
             if ($work && $work['user_id'] === $user['id']) {
-                ob_clean();
-                http_response_code(400);
-                header('Content-Type: application/json');
-                echo json_encode(['success' => false, 'message' => '自分の作品をお気に入りに追加することはできません']);
-                exit;
+                ErrorHandler::jsonError('自分の作品をお気に入りに追加することはできません', 400, null, 'OWN_RESOURCE');
             }
         }
         
@@ -135,10 +84,7 @@ try {
         );
         
         if ($existing) {
-            ob_clean();
-            header('Content-Type: application/json');
-            echo json_encode(['success' => true, 'message' => '既にお気に入りに追加されています', 'is_favorite' => true]);
-            exit;
+            ErrorHandler::jsonSuccess(Messages::FAVORITE_ALREADY_ADDED, ['is_favorite' => true]);
         }
         
         // お気に入りに追加
@@ -189,9 +135,7 @@ try {
             // メール送信エラーでもお気に入り追加は成功として処理
         }
         
-        ob_clean();
-        header('Content-Type: application/json');
-        echo json_encode(['success' => true, 'message' => 'お気に入りに追加しました', 'is_favorite' => true]);
+        ErrorHandler::jsonSuccess('お気に入りに追加しました', ['is_favorite' => true]);
         
     } else {
         // お気に入りから削除
@@ -200,21 +144,15 @@ try {
             [$user['id'], $targetType, $targetId]
         );
         
-        ob_clean();
-        header('Content-Type: application/json');
         if ($deleted > 0) {
-            echo json_encode(['success' => true, 'message' => 'お気に入りから削除しました', 'is_favorite' => false]);
+            ErrorHandler::jsonSuccess('お気に入りから削除しました', ['is_favorite' => false]);
         } else {
-            echo json_encode(['success' => true, 'message' => 'お気に入りに登録されていませんでした', 'is_favorite' => false]);
+            ErrorHandler::jsonSuccess('お気に入りに登録されていませんでした', ['is_favorite' => false]);
         }
     }
     
 } catch (Exception $e) {
-    error_log("Favorite API error: " . $e->getMessage());
-    ob_clean();
-    http_response_code(500);
-    header('Content-Type: application/json');
-    echo json_encode(['success' => false, 'message' => 'サーバーエラーが発生しました']);
+    ErrorHandler::handleException($e, 'Favorite API error: ' . $e->getMessage());
 }
 
 // 出力バッファリングを終了

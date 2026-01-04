@@ -1,16 +1,14 @@
 <?php
 require_once '../config/config.php';
 
-header('Content-Type: application/json');
-
 // ログイン確認
 if (!isLoggedIn()) {
-    jsonResponse(['error' => 'ログインが必要です'], 401);
+    ErrorHandler::jsonAuthError();
 }
 
 // CSRFトークン検証
 if (!verifyCsrfToken($_POST['csrf_token'] ?? '')) {
-    jsonResponse(['error' => '不正なリクエストです'], 403);
+    ErrorHandler::jsonCsrfError();
 }
 
 try {
@@ -22,27 +20,46 @@ try {
     $message = trim($_POST['message'] ?? '');
     
     // バリデーション
-    if (!$recipientId) {
-        jsonResponse(['error' => '受信者が指定されていません'], 400);
+    $validation = new ValidationResult();
+    
+    $error = validatePositiveInteger($recipientId, '受信者');
+    if ($error) {
+        $validation->addError('recipient_id', $error);
     }
     
-    if (empty($subject)) {
-        jsonResponse(['error' => '件名を入力してください'], 400);
+    $error = validateRequired($subject, '件名');
+    if ($error) {
+        $validation->addError('subject', $error);
     }
     
-    if (empty($message)) {
-        jsonResponse(['error' => 'メッセージ内容を入力してください'], 400);
+    $error = validateLength($subject, null, 200, '件名');
+    if ($error) {
+        $validation->addError('subject', $error);
+    }
+    
+    $error = validateRequired($message, 'メッセージ内容');
+    if ($error) {
+        $validation->addError('message', $error);
+    }
+    
+    $error = validateLength($message, null, 5000, 'メッセージ内容');
+    if ($error) {
+        $validation->addError('message', $error);
+    }
+    
+    if (!$validation->isValid) {
+        ErrorHandler::jsonValidationError($validation);
     }
     
     // 受信者の存在確認
     $recipient = $db->selectOne("SELECT id, full_name FROM users WHERE id = ? AND is_active = 1", [$recipientId]);
     if (!$recipient) {
-        jsonResponse(['error' => '受信者が見つかりません'], 404);
+        ErrorHandler::jsonNotFoundError('受信者');
     }
     
     // 自分自身へのメッセージ送信を防ぐ
     if ($currentUser['id'] === $recipientId) {
-        jsonResponse(['error' => '自分自身にメッセージを送ることはできません'], 400);
+        ErrorHandler::jsonError(Messages::USER_SELF_OPERATION, 400, null, 'OWN_RESOURCE');
     }
     
     // メッセージをデータベースに保存
@@ -76,16 +93,11 @@ try {
             // メール送信エラーでもメッセージ送信は成功として処理
         }
         
-        jsonResponse([
-            'success' => true,
-            'message' => 'メッセージを送信しました',
-            'message_id' => $messageId
-        ]);
+        ErrorHandler::jsonSuccess('メッセージを送信しました', ['message_id' => $messageId]);
     } else {
-        jsonResponse(['error' => 'メッセージの送信に失敗しました'], 500);
+        ErrorHandler::jsonError('メッセージの送信に失敗しました', 500, null, 'SEND_FAILED');
     }
     
 } catch (Exception $e) {
-    error_log("Message send error: " . $e->getMessage());
-    jsonResponse(['error' => 'システムエラーが発生しました'], 500);
+    ErrorHandler::handleException($e, 'Message send error: ' . $e->getMessage());
 }

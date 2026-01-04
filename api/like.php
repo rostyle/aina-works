@@ -4,26 +4,34 @@ require_once '../config/config.php';
 // Like API: always return clean JSON
 
 if (!isLoggedIn()) {
-    jsonResponse(['success' => false, 'message' => 'ログインが必要です'], 401);
+    ErrorHandler::jsonAuthError();
 }
 
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
-    jsonResponse(['success' => false, 'message' => 'POSTリクエストのみ受け付けます'], 405);
+    ErrorHandler::jsonError('POSTリクエストのみ受け付けます', 405, null, 'METHOD_NOT_ALLOWED');
 }
 
 $user = getCurrentUser();
 if (!$user) {
-    jsonResponse(['success' => false, 'message' => 'ユーザー情報を取得できません'], 401);
+    ErrorHandler::jsonError(Messages::USER_NOT_FOUND, 401, null, 'USER_NOT_FOUND');
 }
 
 $input = json_decode(file_get_contents('php://input'), true);
 if (!is_array($input)) {
-    jsonResponse(['success' => false, 'message' => '無効なJSONデータです'], 400);
+    ErrorHandler::jsonError('無効なJSONデータです', 400, null, 'INVALID_JSON');
 }
 
+// バリデーション
+$validation = new ValidationResult();
 $workId = (int)($input['work_id'] ?? 0);
-if ($workId <= 0) {
-    jsonResponse(['success' => false, 'message' => '無効な作品IDです'], 400);
+
+$error = validatePositiveInteger($workId, '作品ID');
+if ($error) {
+    $validation->addError('work_id', $error);
+}
+
+if (!$validation->isValid) {
+    ErrorHandler::jsonValidationError($validation);
 }
 
 $db = Database::getInstance();
@@ -36,12 +44,12 @@ try {
     );
 
     if (!$work) {
-        jsonResponse(['success' => false, 'message' => '作品が見つかりません'], 404);
+        ErrorHandler::jsonNotFoundError('作品');
     }
 
     // 自分の作品にはいいねできない
     if ((int)$work['user_id'] === (int)$user['id']) {
-        jsonResponse(['success' => false, 'message' => '自分の作品にいいねすることはできません'], 400);
+        ErrorHandler::jsonError(Messages::WORK_OWN_LIKE, 400, null, 'OWN_RESOURCE');
     }
 
     // 現在のいいね状態
@@ -74,17 +82,14 @@ try {
 
     $db->commit();
 
-    jsonResponse([
-        'success' => true,
-        'message' => $message,
+    ErrorHandler::jsonSuccess($message, [
         'is_liked' => $isLiked,
         'like_count' => $newLikeCount,
-    ], 200);
+    ]);
 } catch (Exception $e) {
     if (isset($db)) {
         try { $db->rollback(); } catch (Exception $e2) {}
     }
-    error_log('Like API error: ' . $e->getMessage());
-    jsonResponse(['success' => false, 'message' => 'サーバーエラーが発生しました'], 500);
+    ErrorHandler::handleException($e, 'Like API error: ' . $e->getMessage());
 }
 

@@ -21,12 +21,12 @@ if (!headers_sent()) {
 
 // ログイン確認
 if (!isLoggedIn()) {
-    jsonResponse(['error' => 'ログインが必要です'], 401);
+    ErrorHandler::jsonAuthError();
 }
 
 // CSRFトークン検証
 if (!verifyCsrfToken($_POST['csrf_token'] ?? '')) {
-    jsonResponse(['error' => '不正なリクエストです'], 403);
+    ErrorHandler::jsonCsrfError();
 }
 
 try {
@@ -37,12 +37,25 @@ try {
     $message = trim($_POST['message'] ?? '');
     
     // バリデーション
-    if (!$roomId) {
-        jsonResponse(['error' => 'チャットルームが指定されていません'], 400);
+    $validation = new ValidationResult();
+    
+    $error = validatePositiveInteger($roomId, 'チャットルーム');
+    if ($error) {
+        $validation->addError('room_id', $error);
     }
     
-    if (empty($message)) {
-        jsonResponse(['error' => 'メッセージを入力してください'], 400);
+    $error = validateRequired($message, 'メッセージ');
+    if ($error) {
+        $validation->addError('message', $error);
+    }
+    
+    $error = validateLength($message, null, 1000, 'メッセージ');
+    if ($error) {
+        $validation->addError('message', $error);
+    }
+    
+    if (!$validation->isValid) {
+        ErrorHandler::jsonValidationError($validation);
     }
     
     // チャットルームの存在確認と権限チェック
@@ -52,7 +65,7 @@ try {
     ", [$roomId, $currentUser['id'], $currentUser['id']]);
     
     if (!$chatRoom) {
-        jsonResponse(['error' => 'チャットルームが見つかりません'], 404);
+        ErrorHandler::jsonNotFoundError('チャットルーム');
     }
     
     // メッセージをデータベースに保存
@@ -100,23 +113,19 @@ try {
             // メール送信エラーでもチャット送信は成功として処理
         }
         
-        jsonResponse([
-            'success' => true,
-            'message' => [
-                'id' => $sentMessage['id'],
-                'sender_id' => $sentMessage['sender_id'],
-                'message' => $sentMessage['message'],
-                'sender_name' => $sentMessage['sender_name'],
-                'sender_image' => $sentMessage['sender_image'],
-                'time' => date('H:i', strtotime($sentMessage['created_at'])),
-                'is_read' => false
-            ]
+        ErrorHandler::jsonSuccess('メッセージを送信しました', [
+            'id' => $sentMessage['id'],
+            'sender_id' => $sentMessage['sender_id'],
+            'message' => $sentMessage['message'],
+            'sender_name' => $sentMessage['sender_name'],
+            'sender_image' => $sentMessage['sender_image'],
+            'time' => date('H:i', strtotime($sentMessage['created_at'])),
+            'is_read' => false
         ]);
     } else {
-        jsonResponse(['error' => 'メッセージの送信に失敗しました'], 500);
+        ErrorHandler::jsonError('メッセージの送信に失敗しました', 500, null, 'SEND_FAILED');
     }
     
 } catch (Exception $e) {
-    error_log("Chat message send error: " . $e->getMessage());
-    jsonResponse(['error' => 'システムエラーが発生しました'], 500);
+    ErrorHandler::handleException($e, 'Chat message send error: ' . $e->getMessage());
 }

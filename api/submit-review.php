@@ -5,12 +5,12 @@ header('Content-Type: application/json');
 
 // ログイン確認
 if (!isLoggedIn()) {
-    jsonResponse(['error' => 'ログインが必要です'], 401);
+    ErrorHandler::jsonAuthError();
 }
 
 // CSRFトークン検証
 if (!verifyCsrfToken($_POST['csrf_token'] ?? '')) {
-    jsonResponse(['error' => '不正なリクエストです'], 403);
+    ErrorHandler::jsonCsrfError();
 }
 
 try {
@@ -21,32 +21,32 @@ try {
     $rating = (int)($_POST['rating'] ?? 0);
     $comment = trim($_POST['comment'] ?? '');
     
-    // デバッグログ
-    error_log("Review submission - User ID: " . $currentUser['id'] . ", Work ID: $workId, Rating: $rating, Comment: " . substr($comment, 0, 50));
-    
     // バリデーション
-    $errors = [];
+    $validation = new ValidationResult();
     
-    if (!$workId) {
-        $errors[] = '作品が指定されていません';
+    $error = validatePositiveInteger($workId, '作品');
+    if ($error) {
+        $validation->addError('work_id', $error);
     }
     
-    if ($rating < 1 || $rating > 5) {
-        $errors[] = '評価は1〜5の範囲で入力してください';
+    $error = validateRange($rating, 1, 5, '評価');
+    if ($error) {
+        $validation->addError('rating', $error);
     }
     
-    // コメントは必須
-    if (empty($comment)) {
-        $errors[] = 'コメントを入力してください';
+    $error = validateRequired($comment, 'コメント');
+    if ($error) {
+        $validation->addError('comment', $error);
     }
     
-    if (strlen($comment) > 1000) {
-        $errors[] = 'コメントは1000文字以内で入力してください';
+    $error = validateLength($comment, null, 1000, 'コメント');
+    if ($error) {
+        $validation->addError('comment', $error);
     }
     
-    if (!empty($errors)) {
-        error_log("Review submission errors: " . implode(', ', $errors));
-        $_SESSION['flash_message'] = implode(' ', $errors);
+    if (!$validation->isValid) {
+        error_log("Review submission errors: " . $validation->getErrorsAsString());
+        $_SESSION['flash_message'] = $validation->getErrorsAsString();
         $_SESSION['flash_type'] = 'error';
         header('Location: ../work-detail?id=' . $workId);
         exit;
@@ -61,23 +61,15 @@ try {
     ", [$workId]);
     
     if (!$work) {
-        $_SESSION['flash_message'] = '作品が見つかりません';
+        $_SESSION['flash_message'] = Messages::WORK_NOT_FOUND;
         $_SESSION['flash_type'] = 'error';
         header('Location: ../work');
         exit;
     }
     
-    // ログインチェック
-    if (!isLoggedIn()) {
-        $_SESSION['flash_message'] = 'ログインが必要です';
-        $_SESSION['flash_type'] = 'error';
-        header('Location: ../login');
-        exit;
-    }
-    
     // 自分の作品にはレビューできない
     if ($work['creator_id'] == $currentUser['id']) {
-        $_SESSION['flash_message'] = '自分の作品にはレビューできません';
+        $_SESSION['flash_message'] = Messages::WORK_REVIEW_OWN;
         $_SESSION['flash_type'] = 'error';
         header('Location: ../work-detail?id=' . $workId);
         exit;
@@ -135,11 +127,9 @@ try {
         header('Location: ../work-detail?id=' . $workId);
         exit;
     } else {
-        jsonResponse(['error' => 'レビューの保存に失敗しました'], 500);
+        ErrorHandler::jsonError('レビューの保存に失敗しました', 500, null, 'SAVE_FAILED');
     }
     
 } catch (Exception $e) {
-    error_log("Review submission error: " . $e->getMessage());
-    error_log("Stack trace: " . $e->getTraceAsString());
-    jsonResponse(['error' => 'システムエラーが発生しました: ' . $e->getMessage()], 500);
+    ErrorHandler::handleException($e, 'Review submission error: ' . $e->getMessage());
 }
