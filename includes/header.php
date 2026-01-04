@@ -300,8 +300,11 @@ $navItems = [
                         $activeClass = $isActive ? 'text-primary-600 bg-primary-50' : 'text-gray-600 hover:text-primary-600';
                         ?>
                         <a href="<?= url($item['url']) ?>"
-                           class="px-3 py-2 rounded-md text-sm font-medium transition-colors <?= $activeClass ?>">
-                            <?= $item['label'] ?>
+                           class="flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors <?= $activeClass ?>">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="<?= $item['icon'] ?>" />
+                            </svg>
+                            <span><?= $item['label'] ?></span>
                         </a>
                     <?php endforeach; ?>
                 </nav>

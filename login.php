@@ -62,115 +62,130 @@ include 'includes/header.php';
 <!-- Login Section -->
 <section class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
     <div class="max-w-md w-full space-y-8">
-        <div>
-            <div class="mx-auto h-12 w-12 flex items-center justify-center rounded-full bg-gradient-to-r from-blue-600 to-purple-600">
-                <span class="text-white font-bold text-xl">CM</span>
+        <div class="text-center">
+            <div class="mx-auto h-20 w-20 flex items-center justify-center rounded-2xl bg-white shadow-xl border border-gray-100 mb-8 transform hover:scale-105 transition-transform duration-300">
+                <img src="<?= asset('images/logo.png') ?>" alt="AiNA Works Logo" class="h-12 w-auto">
             </div>
-            <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
+            <h2 class="text-3xl font-extrabold text-gray-900 tracking-tight">
                 AiNA Worksにログイン
             </h2>
-            <div class="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <div class="text-center">
-                    <p class="text-sm font-medium text-blue-800 mb-2">
-                        AiNAマイページのログイン情報でログインしてください
-                    </p>
-                    <p class="text-xs text-blue-600">
-                        メンバープラン以上でアクティブな会員のみ使用できます
-                    </p>
+            <div class="mt-4 bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 rounded-2xl p-5 shadow-sm">
+                <div class="flex items-center space-x-3">
+                    <div class="flex-shrink-0 w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center shadow-lg shadow-blue-200">
+                        <svg class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <div class="text-left">
+                        <p class="text-sm font-bold text-gray-900">
+                            AiNAマイページのログイン情報を使用
+                        </p>
+                        <p class="text-xs text-gray-600 mt-0.5">
+                            メンバープラン以上のアクティブ会員限定
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>
 
         <?php if (!empty($errors['general'])): ?>
-            <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-8">
+            <div class="bg-red-50 border border-red-200 rounded-2xl p-5 shadow-sm animate-shake">
                 <div class="flex">
-                    <svg class="h-5 w-5 text-red-400 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
-                    </svg>
-                    <div class="flex-1">
-                        <h3 class="text-sm font-medium text-red-800 mb-1">ログインに失敗しました</h3>
-                        <p class="text-sm text-red-700"><?= h($errors['general']) ?></p>
+                    <div class="flex-shrink-0 w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                        <svg class="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                    </div>
+                    <div class="ml-4 flex-1">
+                        <h3 class="text-sm font-bold text-red-800">ログインに失敗しました</h3>
+                        <p class="text-sm text-red-700 mt-1"><?= h($errors['general']) ?></p>
                         
-                        <?php if (strpos($errors['general'], 'メールアドレス') !== false && (strpos($errors['general'], 'パスワード') !== false || strpos($errors['general'], 'ログインに失敗しました') !== false)): ?>
-                            <div class="mt-3 text-xs text-red-600">
-                                <p><strong>解決方法：</strong></p>
-                                <ul class="list-disc list-inside mt-1 space-y-1">
-                                    <li>メールアドレスとパスワードを再度確認してください</li>
-                                    <li>AiNA マイページと同じログイン情報を使用してください</li>
-                                    <li>パスワードを忘れた場合は AiNA マイページでリセットしてください</li>
-                                    <li>しばらく時間をおいて再度お試しください（一時的な接続エラーの可能性があります）</li>
-                                </ul>
-                            </div>
-                        <?php elseif (strpos($errors['general'], 'プラン') !== false): ?>
-                            <div class="mt-3 text-xs text-red-600">
-                                <p><strong>解決方法：</strong></p>
-                                <ul class="list-disc list-inside mt-1 space-y-1">
-                                    <li>AiNA マイページでプラン状況を確認してください</li>
-                                    <li>メンバープラン以上へのアップグレードが必要です</li>
-                                </ul>
-                            </div>
-                        <?php elseif (strpos($errors['general'], 'サーバー') !== false || strpos($errors['general'], '接続') !== false): ?>
-                            <div class="mt-3 text-xs text-red-600">
-                                <p><strong>解決方法：</strong></p>
-                                <ul class="list-disc list-inside mt-1 space-y-1">
-                                    <li>しばらく時間をおいて再度お試しください</li>
-                                    <li>インターネット接続を確認してください</li>
-                                    <li>問題が続く場合は管理者にお問い合わせください</li>
+                        <?php if (strpos($errors['general'], 'メールアドレス') !== false || strpos($errors['general'], 'パスワード') !== false): ?>
+                            <div class="mt-3 bg-white/50 rounded-lg p-3">
+                                <ul class="text-xs text-red-600 space-y-1.5">
+                                    <li class="flex items-center"><span class="mr-2">●</span>入力内容を再度ご確認ください</li>
+                                    <li class="flex items-center"><span class="mr-2">●</span>AiNA マイページと同じ情報が必要です</li>
                                 </ul>
                             </div>
                         <?php endif; ?>
                     </div>
                 </div>
             </div>
+            <style>
+                @keyframes shake {
+                    0%, 100% { transform: translateX(0); }
+                    25% { transform: translateX(-5px); }
+                    75% { transform: translateX(5px); }
+                }
+                .animate-shake { animation: shake 0.4s ease-in-out; }
+            </style>
         <?php endif; ?>
 
         <form class="mt-8 space-y-6" method="POST">
             <input type="hidden" name="csrf_token" value="<?= h(generateCsrfToken()) ?>">
             
-            <div class="rounded-md shadow-sm space-y-4">
-                <div>
-                    <label for="email" class="sr-only">メールアドレス</label>
-                    <input id="email" 
-                           name="email" 
-                           type="email" 
-                           autocomplete="email" 
-                           required 
-                           value="<?= h($email) ?>"
-                           class="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm" 
-                           placeholder="AiNAマイページに登録のメールアドレス">
+            <div class="space-y-5">
+                <div class="group">
+                    <label for="email" class="block text-sm font-bold text-gray-700 mb-2 ml-1 transition-colors group-focus-within:text-blue-600">
+                        メールアドレス
+                    </label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-blue-500 transition-colors">
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.206" />
+                            </svg>
+                        </div>
+                        <input id="email" 
+                               name="email" 
+                               type="email" 
+                               autocomplete="email" 
+                               required 
+                               value="<?= h($email) ?>"
+                               class="appearance-none block w-full pl-12 pr-4 py-4 border border-gray-200 placeholder-gray-400 text-gray-900 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-300" 
+                               placeholder="example@aina-works.com">
+                    </div>
                     <?php if (!empty($errors['email'])): ?>
-                        <p class="mt-2 text-sm text-red-600"><?= h($errors['email']) ?></p>
+                        <p class="mt-2 text-xs text-red-600 font-medium ml-1"><?= h($errors['email']) ?></p>
                     <?php endif; ?>
                 </div>
                 
-                <div>
-                    <label for="password" class="sr-only">パスワード</label>
-                    <input id="password" 
-                           name="password" 
-                           type="password" 
-                           autocomplete="current-password" 
-                           required 
-                           class="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm" 
-                           placeholder="パスワード">
+                <div class="group">
+                    <div class="flex items-center justify-between mb-2">
+                        <label for="password" class="block text-sm font-bold text-gray-700 ml-1 transition-colors group-focus-within:text-blue-600">
+                            パスワード
+                        </label>
+                    </div>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-blue-500 transition-colors">
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                            </svg>
+                        </div>
+                        <input id="password" 
+                               name="password" 
+                               type="password" 
+                               autocomplete="current-password" 
+                               required 
+                               class="appearance-none block w-full pl-12 pr-4 py-4 border border-gray-200 placeholder-gray-400 text-gray-900 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-300" 
+                               placeholder="••••••••">
+                    </div>
                     <?php if (!empty($errors['password'])): ?>
-                        <p class="mt-2 text-sm text-red-600"><?= h($errors['password']) ?></p>
+                        <p class="mt-2 text-xs text-red-600 font-medium ml-1"><?= h($errors['password']) ?></p>
                     <?php endif; ?>
                 </div>
             </div>
 
-
             <div>
                 <button type="submit" 
-                        class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                    <span class="absolute left-0 inset-y-0 flex items-center pl-3">
-                        <svg class="h-5 w-5 text-blue-500 group-hover:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
+                        class="group relative w-full flex justify-center py-4 px-4 border border-transparent text-base font-bold rounded-2xl text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all shadow-lg shadow-blue-200 hover:shadow-blue-300 hover:-translate-y-0.5 active:translate-y-0">
+                    <span class="absolute left-0 inset-y-0 flex items-center pl-4">
+                        <svg class="h-5 w-5 text-white/80 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
                         </svg>
                     </span>
-                    ログイン
+                    ログインする
                 </button>
             </div>
-
         </form>
     </div>
 </section>
