@@ -121,7 +121,7 @@ include 'includes/header.php';
             </style>
         <?php endif; ?>
 
-        <form class="mt-8 space-y-6" method="POST">
+        <form class="mt-8 space-y-6" action="login.php" method="POST">
             <input type="hidden" name="csrf_token" value="<?= h(generateCsrfToken()) ?>">
             
             <div class="space-y-5">

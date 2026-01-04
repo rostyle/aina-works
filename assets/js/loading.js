@@ -315,7 +315,8 @@ function initFormLoadingHandlers() {
 
             // フォームにローディング状態を適用
             loadingManager.setFormLoading(form, {
-                message: form.dataset.loadingMessage || '送信中...'
+                message: form.dataset.loadingMessage || '送信中...',
+                disableAllFields: false // 同期送信時にデータが送信されるようにフィールド無効化を行わない
             });
 
             // タイムアウト時のフォールバック（10秒後に自動解除）
