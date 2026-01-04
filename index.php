@@ -43,189 +43,162 @@ $featuredWorks = $db->select("
 include 'includes/header.php';
 ?>
 
-<!-- Enhanced Hero Section with Modern Design -->
-<section class="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-900 via-primary-800 to-secondary-900 text-white overflow-hidden">
-    <!-- Animated Background Elements -->
-    <div class="absolute inset-0">
-        <!-- Gradient Orbs -->
-        <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-primary-500/20 rounded-full blur-3xl animate-pulse-gentle"></div>
-        <div class="absolute bottom-1/4 right-1/4 w-80 h-80 bg-secondary-500/20 rounded-full blur-3xl animate-pulse-gentle" style="animation-delay: 1s;"></div>
-        <div class="absolute top-1/2 left-1/2 w-64 h-64 bg-accent-emerald/10 rounded-full blur-2xl animate-bounce-gentle" style="animation-delay: 2s;"></div>
-        
-        <!-- Grid Pattern -->
-        <div class="absolute inset-0 opacity-10">
-            <div class="absolute inset-0" style="background-image: linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px); background-size: 50px 50px;"></div>
+<!-- Classic Hero Section with Animation -->
+<section class="relative min-h-screen flex items-center justify-center overflow-hidden bg-slate-900 text-white">
+    <!-- Animated Background Image -->
+    <div class="absolute inset-0 z-0">
+        <div class="absolute inset-0 bg-cover bg-center animate-ken-burns transform-gpu" 
+             style="background-image: url('<?= asset('images/hero-background.jpg') ?>');">
         </div>
+        <!-- Gradient Overlay for Readability -->
+        <div class="absolute inset-0 bg-gradient-to-br from-slate-900/90 via-blue-900/80 to-slate-900/90 mix-blend-multiply"></div>
+        <div class="absolute inset-0 bg-blue-900/30 mix-blend-overlay"></div>
+        <div class="absolute inset-0 bg-black/40"></div>
     </div>
-    
-    <!-- Background Image with Enhanced Overlay -->
-    <div class="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-10" style="background-image: url('<?= asset('images/hero-background.jpg') ?>');"></div>
-    <style>
-    @media (max-width: 640px) {
-        .hero-text-contrast { text-shadow: 0 1px 3px rgba(0,0,0,.5); }
-    }
-    </style>
-    
-    <!-- Content -->
-    <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 z-10">
-        <div class="text-center">
-            <!-- Hero Badge -->
-            <div class="inline-flex items-center px-4 py-2 bg-white/10 backdrop-blur-lg rounded-full text-sm font-medium text-white/90 mb-8 animate-fade-in">
-                <span class="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></span>
-                新しいクリエイティブプラットフォーム
-            </div>
-            
-            <!-- Main Headline -->
-            <h1 class="text-display-lg md:text-display-xl font-bold mb-8 animate-slide-up text-balance hero-text-contrast">
-                <span class="text-gradient-warm">AIスキル</span>で未来を創る
-                <br />
-                <span class="text-white/90">クリエイター</span><span class="text-gradient">マッチング</span>
-            </h1>
-            
-            <!-- Subtitle -->
-            <p class="text-xl md:text-2xl mb-12 text-white/90 max-w-4xl mx-auto leading-relaxed animate-slide-up hero-text-contrast" style="animation-delay: 0.2s;">
-                AIスクール生と企業をつなぐ、革新的なクリエイティブプラットフォーム。
-                <br class="hidden md:block">
-                才能と情熱を持つクリエイターが、素晴らしいプロジェクトと出会える場所
-            </p>
-            
-            <!-- Enhanced Search Bar -->
-            <div class="max-w-3xl mx-auto mb-12 animate-scale-in hero-search-container" style="animation-delay: 0.4s;">
-                <form action="<?= url('works') ?>" method="GET" class="relative group">
-                    <div class="absolute inset-0 bg-gradient-to-r from-primary-500 to-secondary-500 rounded-2xl blur opacity-20 group-hover:opacity-30 transition-opacity duration-500"></div>
-                    <div class="relative bg-white/95 backdrop-blur-lg rounded-2xl p-2 shadow-2xl hero-search-wrapper">
-                        <div class="flex items-center hero-search-form">
-                            <div class="flex-shrink-0 pl-4 hero-search-icon">
-                                <svg class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                </svg>
-                            </div>
-                            <label for="hero-search" class="sr-only">クリエイター検索</label>
-                            <input
-                                type="text"
-                                id="hero-search"
-                                name="keyword"
-                                placeholder="✨ スキル・カテゴリで検索"
-                                aria-describedby="search-help"
-                                class="flex-1 px-4 py-4 text-lg bg-transparent text-gray-900 placeholder-gray-500 border-0 focus:ring-0 focus:outline-none hero-search-input"
-                            />
-                            <script>
-                                // レスポンシブプレースホルダーテキスト
-                                function updatePlaceholder() {
-                                    const input = document.getElementById('hero-search');
-                                    if (window.innerWidth <= 360) {
-                                        input.placeholder = '✨ 検索';
-                                    } else if (window.innerWidth <= 480) {
-                                        input.placeholder = '✨ スキルで検索';
-                                    } else {
-                                        input.placeholder = '✨ スキル・カテゴリで検索';
-                                    }
-                                }
-                                
-                                // 初回実行
-                                updatePlaceholder();
-                                
-                                // リサイズ時に更新
-                                window.addEventListener('resize', updatePlaceholder);
-                            </script>
-                            <button type="submit" class="btn btn-primary btn-lg btn-shimmer mr-2 hero-search-button" aria-label="クリエイターを検索">
-                                <svg class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                </svg>
-                                検索する
-                            </button>
-                            <div id="search-help" class="sr-only">クリエイターの名前、スキル、専門分野で検索できます</div>
-                        </div>
-                    </div>
-                </form>
-            </div>
 
-            <!-- CTA Buttons -->
-            <div class="flex flex-col sm:flex-row gap-4 justify-center mb-16 animate-fade-in" style="animation-delay: 0.6s;">
-                <!-- 登録はAiNA側で実施のため、ローカル登録ボタンは非表示
-                <a href="<?= url('register?type=creator') ?>" class="btn btn-outline btn-lg btn-shimmer group">
-                    <svg class="h-5 w-5 mr-2 group-hover:rotate-12 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
-                    </svg>
-                    クリエイター登録
-                    <span class="ml-2 group-hover:translate-x-1 transition-transform duration-300">→</span>
-                </a>
-                <a href="<?= url('register?type=client') ?>" class="btn btn-secondary btn-lg btn-shimmer group">
-                    <svg class="h-5 w-5 mr-2 group-hover:scale-110 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2V6z" />
-                    </svg>
-                    依頼者登録
-                    <span class="ml-2 group-hover:translate-x-1 transition-transform duration-300">→</span>
-                </a>
-                -->
+    <!-- Content -->
+    <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center pt-20">
+        <!-- Badge -->
+        <div class="inline-flex items-center px-4 py-2 bg-white/10 backdrop-blur-md rounded-full border border-white/20 text-sm font-medium text-white mb-10 shadow-lg animate-fade-in-up">
+            <span class="flex h-2 w-2 relative mr-3">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+            </span>
+            Next Gen Creative Platform
+        </div>
+
+        <!-- Main Headline -->
+        <h1 class="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight mb-8 animate-fade-in-up animation-delay-100 drop-shadow-2xl">
+            AIスキルで<br class="md:hidden" />
+            <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-200 via-white to-blue-200">
+                未来を創る
+            </span>
+        </h1>
+
+        <!-- Subtitle -->
+        <p class="mt-6 text-xl text-slate-200 max-w-3xl mx-auto leading-relaxed animate-fade-in-up animation-delay-200 font-medium drop-shadow-md">
+            AIスクール生と企業をつなぐ、新しいクリエイティブプラットフォーム。<br class="hidden md:block" />
+            あなたの才能と情熱が、ビジネスの未来を加速させます。
+        </p>
+
+        <!-- Search Bar -->
+        <div class="max-w-3xl mx-auto mt-12 relative group animate-fade-in-up animation-delay-300">
+            <form action="<?= url('works') ?>" method="GET" class="relative">
+                <div class="relative flex items-center bg-white/10 backdrop-blur-lg border border-white/30 rounded-full p-2 shadow-2xl transition-all duration-300 hover:bg-white/15 focus-within:bg-white/20 focus-within:ring-2 focus-within:ring-blue-400/50">
+                    <div class="pl-6 text-slate-300">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                    </div>
+                    <input
+                        type="text"
+                        name="keyword"
+                        class="w-full bg-transparent border-none focus:ring-0 text-white placeholder-slate-300 text-lg px-4 py-3 font-medium h-14"
+                        placeholder="キーワードで検索 (例: LP制作, 動画編集...)"
+                        autocomplete="off"
+                    >
+                    <button type="submit" class="hidden md:flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-full font-bold transition-all shadow-lg hover:shadow-blue-500/30 transform hover:-translate-y-0.5 h-12 mr-1">
+                        検索
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Trust Stats (Simple & Clean) -->
+        <div class="mt-20 pt-10 border-t border-white/10 grid grid-cols-2 md:grid-cols-4 gap-8 animate-fade-in-up animation-delay-400">
+            <div class="group">
+                <div class="text-3xl font-bold text-white"><?= number_format($stats['creators']) ?>+</div>
+                <div class="text-sm text-slate-300/80 mt-1 uppercase tracking-wider font-medium">Creators</div>
             </div>
-            
-            <!-- Trust Indicators -->
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto text-center animate-slide-up" style="animation-delay: 0.8s;">
-                <div class="group">
-                    <div class="text-3xl md:text-4xl font-bold text-white mb-2 group-hover:scale-110 transition-transform duration-300">
-                        <?= number_format($stats['creators']) ?>+
-                    </div>
-                    <div class="text-sm text-white/70">登録クリエイター</div>
-                </div>
-                <div class="group">
-                    <div class="text-3xl md:text-4xl font-bold text-white mb-2 group-hover:scale-110 transition-transform duration-300">
-                        <?= number_format($stats['works']) ?>+
-                    </div>
-                    <div class="text-sm text-white/70">公開作品</div>
-                </div>
-                <div class="group">
-                    <div class="text-3xl md:text-4xl font-bold text-white mb-2 group-hover:scale-110 transition-transform duration-300">
-                        <?= number_format($stats['jobs_completed']) ?>+
-                    </div>
-                    <div class="text-sm text-white/70">完了案件</div>
-                </div>
-                <div class="group">
-                    <div class="text-3xl md:text-4xl font-bold text-white mb-2 group-hover:scale-110 transition-transform duration-300">
-                        <?= $stats['satisfaction_rate'] ?>%
-                    </div>
-                    <div class="text-sm text-white/70">満足度</div>
-                </div>
+            <div class="group">
+                <div class="text-3xl font-bold text-white"><?= number_format($stats['works']) ?>+</div>
+                <div class="text-sm text-slate-300/80 mt-1 uppercase tracking-wider font-medium">Works</div>
+            </div>
+            <div class="group">
+                <div class="text-3xl font-bold text-white"><?= number_format($stats['jobs_completed']) ?>+</div>
+                <div class="text-sm text-slate-300/80 mt-1 uppercase tracking-wider font-medium">Projects</div>
+            </div>
+            <div class="group">
+                <div class="text-3xl font-bold text-white"><?= $stats['satisfaction_rate'] ?>%</div>
+                <div class="text-sm text-slate-300/80 mt-1 uppercase tracking-wider font-medium">Satisfaction</div>
             </div>
         </div>
     </div>
-    
+
     <!-- Scroll Indicator -->
-    <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
-        <div class="w-6 h-10 border-2 border-white/30 rounded-full flex justify-center">
-            <div class="w-1 h-3 bg-white/50 rounded-full mt-2 animate-pulse"></div>
+    <div class="absolute bottom-10 left-1/2 -translate-x-1/2 animate-bounce hidden md:block opacity-70">
+        <div class="w-6 h-10 rounded-full border-2 border-white/50 flex justify-center p-1">
+            <div class="w-1 h-3 bg-white rounded-full animate-scroll-down"></div>
         </div>
     </div>
+
+    <style>
+        @keyframes ken-burns {
+            0% { transform: scale(1) translate(0, 0); }
+            50% { transform: scale(1.1) translate(-1%, -1%); }
+            100% { transform: scale(1) translate(0, 0); }
+        }
+        .animate-ken-burns {
+            animation: ken-burns 30s ease-in-out infinite alternate;
+        }
+        .animate-fade-in-up {
+            animation: fadeInUp 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        .animation-delay-100 { animation-delay: 0.1s; }
+        .animation-delay-200 { animation-delay: 0.2s; }
+        .animation-delay-300 { animation-delay: 0.3s; }
+        .animation-delay-400 { animation-delay: 0.4s; }
+        
+        @keyframes fadeInUp {
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
 </section>
 
-<!-- Enhanced Categories Section -->
-<section class="py-24 bg-gradient-to-b from-white to-gray-50" aria-labelledby="categories-heading">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="text-center mb-16 fade-in-on-scroll">
-            <div class="inline-flex items-center px-4 py-2 bg-primary-100 text-primary-800 rounded-full text-sm font-medium mb-6">
-                <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                </svg>
-                人気カテゴリ
-            </div>
-            <h2 id="categories-heading" class="text-display-md md:text-display-lg font-bold text-gray-900 mb-6 text-balance">
-                多様な<span class="text-gradient">スキル</span>を持つ
-                <br />クリエイターが活躍中
+<!-- Categories Bento Grid Section -->
+<section class="py-32 bg-slate-50 relative overflow-hidden" aria-labelledby="categories-heading">
+    <div class="absolute inset-0 bg-[url('<?= asset('images/grid.svg') ?>')] opacity-[0.05]"></div>
+    
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+        <div class="text-center mb-20 animate-on-scroll">
+            <span class="inline-block py-1 px-3 rounded-full bg-blue-100/80 text-blue-600 text-sm font-semibold tracking-wide mb-4">
+                Popular Categories
+            </span>
+            <h2 id="categories-heading" class="text-4xl md:text-5xl font-bold text-slate-900 mb-6 tracking-tight">
+                多様な<span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">スキル</span>、<br class="md:hidden" />
+                無限の可能性
             </h2>
-            <p class="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-                AIスクールで身につけた最新のスキルを活かし、様々な分野で活動するクリエイターたちの作品をご覧ください
+            <p class="text-xl text-slate-500 max-w-2xl mx-auto leading-relaxed">
+                AIスクールで磨かれた最先端の技術を持つクリエイターたちが、<br class="hidden md:block" />
+                あなたのプロジェクトを次のレベルへ引き上げます。
             </p>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-12 categories-grid">
-            <?php foreach ($categories as $category): ?>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <?php foreach ($categories as $index => $category): ?>
+                <?php
+                // Generate unique gradients for each card
+                $gradients = [
+                    'from-blue-500 to-cyan-400',
+                    'from-purple-500 to-pink-400',
+                    'from-orange-500 to-yellow-400',
+                    'from-green-500 to-emerald-400',
+                    'from-red-500 to-rose-400',
+                    'from-indigo-500 to-violet-400'
+                ];
+                $gradient = $gradients[$index % count($gradients)];
+                ?>
                 <a href="<?= url('works?category_id=' . $category['id']) ?>" 
-                   class="group card hover-lift fade-in-on-scroll category-card">
-                    <div class="p-8 text-center">
-                        <!-- Enhanced Icon with Gradient Background -->
-                        <div class="relative mb-6">
-                            <div class="w-20 h-20 mx-auto rounded-2xl flex items-center justify-center text-3xl transition-all duration-500 group-hover:scale-110 group-hover:rotate-3 category-icon"
-                                 style="background: linear-gradient(135deg, <?= h($category['color'] ?? '#3B82F6') ?>15, <?= h($category['color'] ?? '#3B82F6') ?>25); color: <?= h($category['color'] ?? '#3B82F6') ?>;">
+                   class="group relative bg-white rounded-3xl p-8 hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-500 hover:-translate-y-2 border border-slate-100 overflow-hidden">
+                    
+                    <!-- Hover Gradient Background -->
+                    <div class="absolute inset-0 bg-gradient-to-br <?= $gradient ?> opacity-0 group-hover:opacity-5 transition-opacity duration-500"></div>
+                    
+                    <div class="relative z-10 flex flex-col items-center">
+                        <div class="w-24 h-24 rounded-2xl bg-gradient-to-br <?= $gradient ?> p-[2px] mb-6 transform group-hover:scale-110 group-hover:rotate-6 transition-transform duration-500 shadow-lg group-hover:shadow-<?= explode('-', $gradient)[1] ?>-500/30">
+                            <div class="w-full h-full bg-white rounded-xl flex items-center justify-center text-4xl">
                                 <?php
                                 $icons = [
                                     'ロゴ制作' => '🎨',
@@ -238,41 +211,31 @@ include 'includes/header.php';
                                 echo $icons[$category['name']] ?? '📝';
                                 ?>
                             </div>
-                            <!-- Glow Effect -->
-                            <div class="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-20 transition-opacity duration-500"
-                                 style="background: radial-gradient(circle, <?= h($category['color'] ?? '#3B82F6') ?>40, transparent 70%);"></div>
                         </div>
                         
-                        <h3 class="font-bold text-lg text-gray-900 mb-3 group-hover:text-primary-600 transition-colors duration-300">
+                        <h3 class="text-xl font-bold text-slate-900 mb-2 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:<?= $gradient ?> transition-all">
                             <?= h($category['name']) ?>
                         </h3>
                         
-                        <div class="flex items-center justify-center space-x-2 text-sm text-gray-500">
-                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                            <span><?= number_format($category['work_count']) ?>件の作品</span>
-                        </div>
+                        <p class="text-sm font-medium text-slate-400 mb-6 group-hover:text-slate-500 transition-colors">
+                            <?= number_format($category['work_count']) ?> Projects
+                        </p>
                         
-                        <!-- Hover Arrow -->
-                        <div class="mt-4 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
-                            <div class="inline-flex items-center text-sm font-medium text-primary-600">
-                                作品を見る
-                                <svg class="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                                </svg>
-                            </div>
+                        <div class="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                            </svg>
                         </div>
                     </div>
                 </a>
             <?php endforeach; ?>
         </div>
         
-        <!-- View All Categories Button -->
-        <div class="text-center fade-in-on-scroll">
-            <a href="<?= url('works') ?>" class="btn btn-outline btn-lg group">
-                すべてのカテゴリを見る
-                <svg class="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <!-- View All Button -->
+        <div class="text-center mt-16">
+            <a href="<?= url('works') ?>" class="inline-flex items-center gap-2 px-8 py-4 bg-white border border-slate-200 rounded-full text-slate-700 font-semibold hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm hover:shadow-md">
+                <span>すべてのカテゴリを見る</span>
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
                 </svg>
             </a>
@@ -280,136 +243,94 @@ include 'includes/header.php';
     </div>
 </section>
 
-<!-- Enhanced Featured Works Section -->
-<section class="py-24 bg-white relative overflow-hidden" aria-labelledby="works-heading">
-    <!-- Background Pattern -->
-    <div class="absolute inset-0 opacity-5">
-        <div class="absolute inset-0" style="background-image: radial-gradient(circle at 2px 2px, rgba(59, 130, 246, 0.15) 1px, transparent 0); background-size: 40px 40px;"></div>
-    </div>
+<!-- Premium Featured Works Section -->
+<section class="py-32 bg-white relative overflow-hidden" aria-labelledby="works-heading">
+    <!-- Subtle Background Elements -->
+    <div class="absolute top-0 right-0 w-1/3 h-1/3 bg-gradient-to-br from-purple-50 to-blue-50 rounded-bl-[100px] -z-10"></div>
+    <div class="absolute bottom-0 left-0 w-1/4 h-1/4 bg-gradient-to-tr from-pink-50 to-orange-50 rounded-tr-[100px] -z-10"></div>
     
-    <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="text-center mb-16 fade-in-on-scroll">
-            <div class="inline-flex items-center px-4 py-2 bg-secondary-100 text-secondary-800 rounded-full text-sm font-medium mb-6">
-                <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                </svg>
-                おすすめ作品
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex flex-col md:flex-row md:items-end justify-between mb-16 animate-on-scroll">
+            <div>
+                <span class="text-blue-600 font-semibold tracking-wider text-sm uppercase mb-2 block">Selected Works</span>
+                <h2 id="works-heading" class="text-4xl md:text-5xl font-bold text-slate-900 leading-tight">
+                    厳選された<br />
+                    <span class="relative inline-block">
+                        <span class="relative z-10">クリエイティブ</span>
+                        <span class="absolute bottom-2 left-0 w-full h-3 bg-blue-100 -z-10 transform -rotate-1"></span>
+                    </span>
+                </h2>
             </div>
-            <h2 id="works-heading" class="text-display-md md:text-display-lg font-bold text-gray-900 mb-6 text-balance">
-                厳選された<span class="text-gradient">クオリティ</span>の高い
-                <br />作品をご紹介
-            </h2>
-            <p class="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-                プロフェッショナルなクリエイターたちが手がけた、実績と評価の高い作品をピックアップしました
+            <p class="mt-6 md:mt-0 text-slate-500 max-w-md text-right md:text-left">
+                プロフェッショナルによる最高品質の作品群。<br />
+                あなたのインスピレーションを刺激します。
             </p>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
             <?php foreach ($featuredWorks as $work): ?>
-                <div class="group card card-elevated hover-lift fade-in-on-scroll image-overlay">
-                    <!-- Enhanced Image with Overlay Effects -->
-                    <div class="relative overflow-hidden rounded-t-2xl">
+                <div class="group relative flex flex-col gap-4 animate-on-scroll">
+                    <!-- Image Card -->
+                    <div class="relative aspect-[4/3] rounded-2xl overflow-hidden bg-slate-100">
                         <img src="<?= h($work['main_image']) ?>" 
                              alt="<?= h($work['title']) ?>" 
-                             class="w-full h-64 object-cover transition-transform duration-700 group-hover:scale-110">
+                             class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 will-change-transform">
                         
-                        <!-- Gradient Overlay -->
-                        <div class="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                        
-                        <!-- Category Badge -->
-                        <div class="absolute top-4 left-4">
-                            <span class="badge badge-primary backdrop-blur-lg">
-                                <?= h($work['category_name']) ?>
-                            </span>
-                        </div>
-                        
-                        <!-- Action Buttons -->
-                        <div class="absolute top-4 right-4 flex space-x-2 opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-y-2 group-hover:translate-y-0">
+                        <!-- Overlay Actions -->
+                        <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-4 backdrop-blur-[2px]">
+                            <a href="<?= url('work-detail?id=' . $work['id']) ?>" 
+                               class="px-6 py-3 bg-white text-slate-900 rounded-full font-medium transform translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 delay-75 hover:bg-blue-50">
+                                詳細を見る
+                            </a>
                             <button onclick="toggleLike('work', <?= $work['id'] ?>, this)" 
-                                    class="p-2.5 bg-white/90 backdrop-blur-lg rounded-xl hover:bg-white hover:scale-110 transition-all duration-300 shadow-lg"
-                                    title="いいね">
-                                <svg class="h-4 w-4 text-gray-600 hover:text-red-500 transition-colors duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    class="p-3 bg-white/20 backdrop-blur-md border border-white/30 text-white rounded-full transform translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 delay-100 hover:bg-white hover:text-red-500">
+                                <svg class="w-5 h-5" fill="<?= isset($work['is_liked']) && $work['is_liked'] ? 'currentColor' : 'none' ?>" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                                 </svg>
                             </button>
-                            <button class="p-2.5 bg-white/90 backdrop-blur-lg rounded-xl hover:bg-white hover:scale-110 transition-all duration-300 shadow-lg"
-                                    title="シェア">
-                                <svg class="h-4 w-4 text-gray-600 hover:text-primary-600 transition-colors duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
-                                </svg>
-                            </button>
                         </div>
-                        
-                        <!-- View Work Button (appears on hover) -->
-                        <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500">
-                            <a href="<?= url('work-detail?id=' . $work['id']) ?>" 
-                               class="btn btn-primary btn-lg backdrop-blur-lg transform scale-90 group-hover:scale-100 transition-all duration-300">
-                                作品を見る
-                            </a>
-                        </div>
+
+                        <!-- Category Badge -->
+                        <span class="absolute top-4 left-4 px-3 py-1 bg-white/90 backdrop-blur-md rounded-full text-xs font-semibold text-slate-700">
+                            <?= h($work['category_name']) ?>
+                        </span>
                     </div>
-                    
-                    <!-- Enhanced Content -->
-                    <div class="p-8">
-                        <h3 class="text-xl font-bold text-gray-900 mb-3 group-hover:text-primary-600 transition-colors duration-300">
-                            <a href="<?= url('work-detail?id=' . $work['id']) ?>" class="line-clamp-2">
-                                <?= h($work['title']) ?>
-                            </a>
-                        </h3>
-                        
-                        <!-- Creator Info -->
-                        <div class="flex items-center mb-4">
-                            <div class="relative">
+
+                    <!-- Content -->
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-start">
+                            <h3 class="text-xl font-bold text-slate-900 leading-snug group-hover:text-blue-600 transition-colors">
+                                <a href="<?= url('work-detail?id=' . $work['id']) ?>">
+                                    <?= h($work['title']) ?>
+                                </a>
+                            </h3>
+                            <div class="flex items-center gap-1 text-slate-700 font-semibold bg-slate-50 px-2 py-1 rounded-lg">
+                                <span class="text-xs text-slate-400">¥</span>
+                                <?= number_format($work['price_min']) ?>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between pt-2">
+                            <div class="flex items-center gap-2">
                                 <img src="<?= h($work['creator_image'] ?? asset('images/default-avatar.png')) ?>" 
                                      alt="<?= h($work['creator_name']) ?>" 
-                                     class="w-10 h-10 rounded-full mr-3 ring-2 ring-gray-200 group-hover:ring-primary-300 transition-all duration-300">
-                                <div class="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white"></div>
+                                     class="w-6 h-6 rounded-full object-cover ring-2 ring-white shadow-sm">
+                                <span class="text-sm text-slate-600"><?= h($work['creator_name']) ?></span>
                             </div>
-                            <div>
-                                <span class="text-sm font-medium text-gray-900"><?= h($work['creator_name']) ?></span>
-                                <div class="text-xs text-gray-500">プロクリエイター</div>
-                            </div>
-                        </div>
-                        
-                        <!-- Rating and Price -->
-                        <div class="flex items-center justify-between mb-4">
-                            <div class="flex items-center">
-                                <div class="flex items-center mr-2">
-                                    <?= renderStars($work['avg_rating'] ?? 0) ?>
-                                </div>
-                                <span class="text-sm font-medium text-gray-900">
+                            <div class="flex items-center gap-4 text-xs text-slate-400">
+                                <span class="flex items-center gap-1">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    </svg>
+                                    <?= number_format($work['view_count']) ?>
+                                </span>
+                                <span class="flex items-center gap-1">
+                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" class="text-yellow-400">
+                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                    </svg>
                                     <?= number_format($work['avg_rating'] ?? 0, 1) ?>
                                 </span>
-                                <span class="text-sm text-gray-500 ml-1">
-                                    (<?= $work['review_count'] ?? 0 ?>)
-                                </span>
-                            </div>
-                            <div class="text-right">
-                                <div class="text-lg font-bold text-gray-900"><?= formatPrice($work['price_min']) ?>〜</div>
-                                <div class="text-xs text-gray-500">から</div>
-                            </div>
-                        </div>
-                        
-                        <!-- Stats -->
-                        <div class="flex items-center justify-between text-sm text-gray-500 pt-4 border-t border-gray-100">
-                            <div class="flex items-center">
-                                <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                </svg>
-                                <span><?= number_format($work['view_count']) ?></span>
-                            </div>
-                            <div class="flex items-center">
-                                <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                                </svg>
-                                <span id="like-count-<?= $work['id'] ?>"><?= number_format($work['like_count'] ?? 0) ?></span>
-                            </div>
-                            <div class="flex items-center">
-                                <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-8 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                                </svg>
-                                <span><?= $work['review_count'] ?? 0 ?></span>
                             </div>
                         </div>
                     </div>
@@ -418,10 +339,10 @@ include 'includes/header.php';
         </div>
 
         <!-- View All Button -->
-        <div class="text-center fade-in-on-scroll">
-            <a href="<?= url('works') ?>" class="btn btn-primary btn-xl btn-shimmer group">
-                すべての作品を見る
-                <svg class="ml-3 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div class="text-center mt-20">
+            <a href="<?= url('works') ?>" class="inline-flex items-center gap-2 text-slate-900 font-bold border-b-2 border-slate-900 pb-1 hover:text-blue-600 hover:border-blue-600 transition-all">
+                <span>すべての作品を見る</span>
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
                 </svg>
             </a>
@@ -429,215 +350,117 @@ include 'includes/header.php';
     </div>
 </section>
 
-<!-- Enhanced Stats Section -->
-<section class="py-24 bg-gradient-to-b from-gray-50 to-white relative overflow-hidden" aria-labelledby="stats-heading">
-    <!-- Background Pattern -->
-    <div class="absolute inset-0 opacity-5">
-        <div class="absolute inset-0" style="background-image: linear-gradient(45deg, rgba(59, 130, 246, 0.1) 25%, transparent 25%), linear-gradient(-45deg, rgba(168, 85, 247, 0.1) 25%, transparent 25%), linear-gradient(45deg, transparent 75%, rgba(59, 130, 246, 0.1) 75%), linear-gradient(-45deg, transparent 75%, rgba(168, 85, 247, 0.1) 75%); background-size: 60px 60px; background-position: 0 0, 0 30px, 30px -30px, -30px 0px;"></div>
+<!-- Premium Stats Section -->
+<section class="py-24 relative overflow-hidden bg-slate-900 text-white" aria-labelledby="stats-heading">
+    <!-- Abstract Shapes -->
+    <div class="absolute inset-0 overflow-hidden">
+        <div class="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] bg-blue-600/20 rounded-full blur-[100px]"></div>
+        <div class="absolute top-[30%] -right-[10%] w-[40%] h-[40%] bg-purple-600/20 rounded-full blur-[100px]"></div>
     </div>
-    
-    <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="text-center mb-16 fade-in-on-scroll">
-            <div class="inline-flex items-center px-4 py-2 bg-green-100 text-green-800 rounded-full text-sm font-medium mb-6">
-                <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 01-2 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-                実績・成果
-            </div>
-            <h2 id="stats-heading" class="text-display-md md:text-display-lg font-bold text-gray-900 mb-6 text-balance">
-                <span class="text-gradient">AiNA Works</span>の実績
-            </h2>
-            <p class="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-                多くのクリエイターと企業に選ばれ、数多くの成功プロジェクトを生み出しています
-            </p>
-        </div>
 
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
-            <div class="text-center group fade-in-on-scroll">
-                <div class="relative mb-4">
-                    <div class="w-20 h-20 mx-auto bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-500 shadow-lg">
-                        <svg class="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
-                        </svg>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
+            <div class="animate-on-scroll">
+                <span class="text-blue-400 font-semibold tracking-wider text-sm uppercase mb-4 block">Proven Track Record</span>
+                <h2 id="stats-heading" class="text-4xl md:text-5xl font-bold mb-6 leading-tight">
+                    数字で見る<br />
+                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">AiNA Works</span>の信頼
+                </h2>
+                <p class="text-slate-400 text-lg leading-relaxed mb-8">
+                    多くのクリエイターと企業様にご利用いただき、<br />
+                    確かな実績と信頼を積み重ねてきました。
+                </p>
+                
+                <div class="grid grid-cols-2 gap-8">
+                    <div>
+                        <div class="text-4xl font-bold text-white mb-2"><?= number_format($stats['creators']) ?>+</div>
+                        <div class="text-sm text-slate-400">登録クリエイター</div>
                     </div>
-                    <div class="absolute inset-0 bg-gradient-to-br from-primary-400 to-primary-500 rounded-2xl opacity-0 group-hover:opacity-20 transition-opacity duration-500 blur"></div>
-                </div>
-                <div class="text-4xl md:text-5xl font-bold text-primary-600 mb-2 counter" data-target="<?= $stats['creators'] ?>">
-                    0
-                </div>
-                <div class="text-lg font-medium text-gray-900 mb-1">登録クリエイター</div>
-                <div class="text-sm text-gray-500">活躍中のプロフェッショナル</div>
-            </div>
-            
-            <div class="text-center group fade-in-on-scroll" style="animation-delay: 0.1s;">
-                <div class="relative mb-4">
-                    <div class="w-20 h-20 mx-auto bg-gradient-to-br from-secondary-500 to-secondary-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-500 shadow-lg">
-                        <svg class="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
+                    <div>
+                        <div class="text-4xl font-bold text-white mb-2"><?= number_format($stats['works']) ?>+</div>
+                        <div class="text-sm text-slate-400">公開作品数</div>
                     </div>
-                    <div class="absolute inset-0 bg-gradient-to-br from-secondary-400 to-secondary-500 rounded-2xl opacity-0 group-hover:opacity-20 transition-opacity duration-500 blur"></div>
-                </div>
-                <div class="text-4xl md:text-5xl font-bold text-secondary-600 mb-2 counter" data-target="<?= $stats['works'] ?>">
-                    0
-                </div>
-                <div class="text-lg font-medium text-gray-900 mb-1">公開作品</div>
-                <div class="text-sm text-gray-500">クオリティの高い制作物</div>
-            </div>
-            
-            <div class="text-center group fade-in-on-scroll" style="animation-delay: 0.2s;">
-                <div class="relative mb-4">
-                    <div class="w-20 h-20 mx-auto bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-500 shadow-lg">
-                        <svg class="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
+                    <div>
+                        <div class="text-4xl font-bold text-white mb-2"><?= number_format($stats['jobs_completed']) ?>+</div>
+                        <div class="text-sm text-slate-400">マッチング成立</div>
                     </div>
-                    <div class="absolute inset-0 bg-gradient-to-br from-green-400 to-green-500 rounded-2xl opacity-0 group-hover:opacity-20 transition-opacity duration-500 blur"></div>
-                </div>
-                <div class="text-4xl md:text-5xl font-bold text-green-600 mb-2 counter" data-target="<?= $stats['jobs_completed'] ?>">
-                    0
-                </div>
-                <div class="text-lg font-medium text-gray-900 mb-1">完了案件</div>
-                <div class="text-sm text-gray-500">成功したプロジェクト</div>
-            </div>
-            
-            <div class="text-center group fade-in-on-scroll" style="animation-delay: 0.3s;">
-                <div class="relative mb-4">
-                    <div class="w-20 h-20 mx-auto bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-500 shadow-lg">
-                        <svg class="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                        </svg>
+                    <div>
+                        <div class="text-4xl font-bold text-white mb-2"><?= $stats['satisfaction_rate'] ?>%</div>
+                        <div class="text-sm text-slate-400">クライアント満足度</div>
                     </div>
-                    <div class="absolute inset-0 bg-gradient-to-br from-orange-400 to-orange-500 rounded-2xl opacity-0 group-hover:opacity-20 transition-opacity duration-500 blur"></div>
                 </div>
-                <div class="text-4xl md:text-5xl font-bold text-orange-600 mb-2">
-                    <?= $stats['satisfaction_rate'] ?><span class="text-2xl">%</span>
-                </div>
-                <div class="text-lg font-medium text-gray-900 mb-1">満足度</div>
-                <div class="text-sm text-gray-500">クライアント評価</div>
-            </div>
-        </div>
-        
-        <!-- Trust Badges -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 fade-in-on-scroll">
-            <div class="text-center p-6 bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
-                <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mx-auto mb-4">
-                    <svg class="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                    </svg>
-                </div>
-                <h3 class="text-lg font-semibold text-gray-900 mb-2">安心・安全</h3>
-                <p class="text-gray-600">厳格な審査を通過したクリエイターのみが登録</p>
             </div>
             
-            <div class="text-center p-6 bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
-                <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mx-auto mb-4">
-                    <svg class="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
+            <div class="relative animate-on-scroll" style="transition-delay: 200ms;">
+                <!-- Floating Cards Visualization -->
+                <div class="relative w-full aspect-square md:aspect-auto md:h-[500px]">
+                    <div class="absolute top-10 left-10 w-48 h-48 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex flex-col justify-between transform -rotate-6 hover:rotate-0 transition-transform duration-500 hover:z-20 hover:scale-105 shadow-2xl">
+                        <div class="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400">
+                            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" /></svg>
+                        </div>
+                        <div>
+                            <div class="text-2xl font-bold text-white">Creators</div>
+                            <div class="text-xs text-slate-400 mt-1">Top Tier Talent</div>
+                        </div>
+                    </div>
+                    
+                    <div class="absolute top-1/4 right-0 w-56 h-56 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 flex flex-col justify-between transform rotate-12 hover:rotate-0 transition-transform duration-500 hover:z-20 hover:scale-105 shadow-2xl z-10">
+                        <div class="w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400">
+                            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                        </div>
+                        <div>
+                            <div class="text-3xl font-bold text-white">Works</div>
+                            <div class="text-xs text-slate-400 mt-2">High Quality Portfolio</div>
+                        </div>
+                    </div>
+
+                    <div class="absolute bottom-10 left-20 w-64 h-40 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex items-center gap-4 transform -rotate-3 hover:rotate-0 transition-transform duration-500 hover:z-20 hover:scale-105 shadow-2xl">
+                        <div class="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 shrink-0">
+                            <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        </div>
+                        <div>
+                            <div class="text-white font-bold text-lg">Satisfaction</div>
+                            <div class="text-slate-400 text-sm">Consistent Quality</div>
+                        </div>
+                    </div>
                 </div>
-                <h3 class="text-lg font-semibold text-gray-900 mb-2">スピード納期</h3>
-                <p class="text-gray-600">平均3日以内でのプロジェクト開始を実現</p>
-            </div>
-            
-            <div class="text-center p-6 bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
-                <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mx-auto mb-4">
-                    <svg class="w-6 h-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192L5.636 18.364M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
-                    </svg>
-                </div>
-                <h3 class="text-lg font-semibold text-gray-900 mb-2">24/7サポート</h3>
-                <p class="text-gray-600">専任スタッフがプロジェクト完了まで徹底サポート</p>
             </div>
         </div>
     </div>
 </section>
 
-<!-- Enhanced CTA Section -->
-<section class="py-24 bg-gradient-to-br from-primary-900 via-primary-800 to-secondary-900 text-white relative overflow-hidden" aria-labelledby="cta-heading">
-    <!-- Animated Background -->
-    <div class="absolute inset-0">
-        <div class="absolute top-1/4 right-1/4 w-64 h-64 bg-primary-500/10 rounded-full blur-3xl animate-pulse-gentle"></div>
-        <div class="absolute bottom-1/4 left-1/4 w-80 h-80 bg-secondary-500/10 rounded-full blur-3xl animate-pulse-gentle" style="animation-delay: 1s;"></div>
-        <div class="absolute top-1/2 left-1/2 w-96 h-96 bg-accent-emerald/5 rounded-full blur-3xl animate-bounce-gentle" style="animation-delay: 2s;"></div>
-    </div>
+<!-- Magnetic CTA Section -->
+<section class="py-32 relative flex items-center justify-center overflow-hidden bg-white text-center">
+    <div class="absolute inset-0 opacity-[0.03] bg-[url('<?= asset('images/grid.svg') ?>')]"></div>
     
-    <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <div class="fade-in-on-scroll">
-            <div class="inline-flex items-center px-4 py-2 bg-white/10 backdrop-blur-lg rounded-full text-sm font-medium text-white/90 mb-8">
-                <span class="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></span>
-                今すぐ始めよう
-            </div>
-            
-            <h2 id="cta-heading" class="text-display-md md:text-display-lg font-bold mb-8 text-balance">
-                <span class="text-gradient-warm">AiNA Works</span>で
-                <br />新しい可能性を見つけよう
-            </h2>
-            
-            <p class="text-xl md:text-2xl text-white/80 mb-12 max-w-4xl mx-auto leading-relaxed">
-                AIスキルを活かして新しいキャリアを築くか、優秀なクリエイターと出会って
-                <br class="hidden md:block">
-                素晴らしいプロジェクトを実現しましょう
-            </p>
-            
-            <div class="flex flex-col sm:flex-row gap-6 justify-center mb-16">
-                <!-- 登録はAiNA側で実施のため、ローカル登録ボタンは非表示
-                <a href="<?= url('register?type=creator') ?>" class="btn btn-outline btn-xl btn-shimmer group bg-white/10 backdrop-blur-lg border-white/30 text-white hover:bg-white hover:text-primary-600">
-                    <svg class="h-6 w-6 mr-3 group-hover:rotate-12 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
+    <div class="max-w-4xl mx-auto px-4 relative z-10 animate-on-scroll">
+        <h2 class="text-5xl md:text-7xl font-bold text-slate-900 mb-8 tracking-tight">
+            Ready to <span class="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">Start?</span>
+        </h2>
+        
+        <p class="text-xl md:text-2xl text-slate-500 mb-12 max-w-2xl mx-auto">
+            あなたの才能が、誰かの未来を変える。<br />
+            まずは無料で、新しい一歩を踏み出しましょう。
+        </p>
+        
+        <div class="flex flex-col sm:flex-row gap-6 justify-center items-center">
+            <!-- Buttons are rendered by header, but we can add secondary CTA here if needed -->
+            <!-- Using a 'magnetic' button style -->
+            <a href="<?= url('register') ?>" class="group relative px-8 py-4 bg-slate-900 rounded-full text-white font-bold text-lg overflow-hidden shadow-2xl hover:shadow-blue-500/50 transition-shadow duration-300">
+                <div class="absolute inset-0 w-full h-full bg-gradient-to-r from-blue-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <span class="relative flex items-center gap-2">
+                    今すぐ登録する
+                    <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
                     </svg>
-                    クリエイター登録
-                    <span class="ml-3 group-hover:translate-x-1 transition-transform duration-300">→</span>
-                </a>
-                <a href="<?= url('register?type=client') ?>" class="btn btn-secondary btn-xl btn-shimmer group">
-                    <svg class="h-6 w-6 mr-3 group-hover:scale-110 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2V6z" />
-                    </svg>
-                    依頼者登録
-                    <span class="ml-3 group-hover:translate-x-1 transition-transform duration-300">→</span>
-                </a>
-                -->
-            </div>
+                </span>
+            </a>
             
-            <!-- Additional Features -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-left max-w-4xl mx-auto">
-                <div class="flex items-start space-x-4">
-                    <div class="flex-shrink-0 w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">
-                        <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                        </svg>
-                    </div>
-                    <div>
-                        <h3 class="font-semibold text-white mb-2">登録・利用無料</h3>
-                        <p class="text-white/70 text-sm">初期費用なしで今すぐ開始</p>
-                    </div>
-                </div>
-                <div class="flex items-start space-x-4">
-                    <div class="flex-shrink-0 w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">
-                        <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                    </div>
-                    <div>
-                        <h3 class="font-semibold text-white mb-2">安心の保証制度</h3>
-                        <p class="text-white/70 text-sm">満足いただけない場合は全額返金</p>
-                    </div>
-                </div>
-                <div class="flex items-start space-x-4">
-                    <div class="flex-shrink-0 w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">
-                        <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                        </svg>
-                    </div>
-                    <div>
-                        <h3 class="font-semibold text-white mb-2">最短即日マッチング</h3>
-                        <p class="text-white/70 text-sm">AIが最適なマッチングを瞬時に提案</p>
-                    </div>
-                </div>
-            </div>
+            <a href="<?= url('about') ?>" class="text-slate-500 hover:text-slate-900 font-medium transition-colors">
+                AiNA Worksについて知る
+            </a>
         </div>
     </div>
-
 </section>
 
 <script>
