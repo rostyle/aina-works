@@ -468,9 +468,21 @@ include 'includes/header.php';
                                 <?php endif; ?>
 
                                 <!-- Bio Preview -->
-                                <p class="text-xs text-slate-500 text-center line-clamp-3 mb-6 px-2 italic">
-                                    "<?= h(mb_substr($creator['bio'], 0, 80)) ?>..."
-                                </p>
+                                <div class="mb-6 px-2 min-h-[3rem] flex items-center justify-center">
+                                    <?php 
+                                    $bio = $creator['bio'] ?? '';
+                                    if (!empty($bio)): 
+                                        $displayBio = mb_strlen($bio) > 80 ? mb_substr($bio, 0, 80) . '...' : $bio;
+                                    ?>
+                                        <p class="text-xs text-slate-500 text-center line-clamp-3 italic">
+                                            "<?= h($displayBio) ?>"
+                                        </p>
+                                    <?php else: ?>
+                                        <p class="text-xs text-slate-400 text-center">
+                                            プロフィール詳細からスキルや実績をご確認いただけます
+                                        </p>
+                                    <?php endif; ?>
+                                </div>
 
                                 <!-- Footer Action -->
                                 <div class="mt-auto pt-4 border-t border-slate-100 text-center">
