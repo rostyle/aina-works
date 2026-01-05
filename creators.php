@@ -529,15 +529,11 @@ include 'includes/header.php';
 
 <script>
 function changeSort(value) {
-    // 既存のコードはそのまま維持
     const url = new URL(window.location);
     url.searchParams.set('sort', value);
     url.searchParams.delete('page'); 
     window.location.href = url.toString();
 }
-
-// ... helper functions ...
-</script>
 
 function clearFilters() {
     const url = new URL(window.location);
@@ -563,12 +559,15 @@ async function toggleFavorite(targetType, targetId, button) {
                 target_id: targetId
             })
         });
+
         if (response.status === 401) {
             const redirectUrl = 'login.php?redirect=' + encodeURIComponent(window.location.href);
             window.location.href = redirectUrl;
             return;
         }
+
         const result = await response.json();
+
         if (result.success) {
             const svg = button.querySelector('svg');
             if (result.is_favorite) {
@@ -582,6 +581,7 @@ async function toggleFavorite(targetType, targetId, button) {
                 svg.classList.add('text-gray-400');
                 button.setAttribute('data-liked', 'false');
             }
+            
             if (typeof showNotification === 'function') {
                 showNotification(result.message, 'success');
             }
