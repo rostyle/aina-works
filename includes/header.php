@@ -29,7 +29,7 @@ $navItems = [
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
   tailwind.config = {
-    darkMode: false, // ダークモードを完全に無効化
+    darkMode: false, // ダークモードを無効化（ライトモード強制）
     theme: {
       extend: {
                     colors: {
@@ -140,143 +140,7 @@ $navItems = [
             transform: none !important;
         }
         
-        /* ダークモード環境での自動反転抑止（全体はライト基調を維持） */
-        :root { 
-            color-scheme: light !important;
-        }
-        
-        /* ダークモードでも完全にライトモードと同じ表示に強制（グラデーションやボタンは除く） */
-        @media (prefers-color-scheme: dark) {
-            /* color-schemeをライトに設定 */
-            :root,
-            *,
-            *::before,
-            *::after {
-                color-scheme: light !important;
-            }
-            
-            /* 基本要素の背景と文字色 */
-            html, 
-            body { 
-                background-color: #f9fafb !important; 
-                color: #111827 !important; 
-            }
-            
-            /* ヘッダーを白背景に */
-            header.bg-white {
-                background-color: #ffffff !important;
-            }
-            
-            /* 白背景・灰色背景のセクションのみを指定（グラデーションは除外） */
-            section.bg-white:not([class*="bg-gradient"]),
-            section.bg-gray-50:not([class*="bg-gradient"]),
-            .bg-white:not([class*="bg-gradient"]):not(.btn):not(button),
-            .bg-gray-50:not([class*="bg-gradient"]):not(.btn):not(button),
-            .bg-gray-100:not([class*="bg-gradient"]):not(.btn):not(button),
-            .bg-gray-200:not([class*="bg-gradient"]):not(.btn):not(button),
-            .card {
-                background-color: #ffffff !important;
-            }
-            
-            section.bg-gray-50 {
-                background-color: #f9fafb !important;
-            }
-            
-            .bg-gray-100 {
-                background-color: #f3f4f6 !important;
-            }
-            
-            /* テキスト色（ボタンや装飾要素は除く） */
-            .text-gray-900:not(.btn *):not(button *):not([class*="bg-gradient"] *),
-            .text-gray-800:not(.btn *):not(button *):not([class*="bg-gradient"] *),
-            .text-gray-700:not(.btn *):not(button *):not([class*="bg-gradient"] *):not(#mobile-menu-panel [class*="text-white"] *),
-            .text-gray-600:not(.btn *):not(button *):not([class*="bg-gradient"] *),
-            .text-gray-500:not(.btn *):not(button *):not([class*="bg-gradient"] *),
-            .text-gray-400:not(.btn *):not(button *):not([class*="bg-gradient"] *) {
-                color: #111827 !important;
-            }
-            
-            /* ボタン・カラー背景内の白文字を保護 */
-            .btn .text-white,
-            button .text-white,
-            a[class*="bg-primary"] .text-white,
-            a[class*="bg-secondary"] .text-white,
-            a[class*="bg-blue-"] .text-white,
-            a[class*="bg-purple-"] .text-white,
-            a[class*="bg-red-"] .text-white,
-            a[class*="bg-green-"] .text-white,
-            [class*="bg-primary"] .text-white,
-            [class*="bg-secondary"] .text-white,
-            [class*="bg-blue-"] .text-white,
-            [class*="bg-purple-"] .text-white,
-            [class*="bg-red-"] .text-white,
-            [class*="bg-green-"] .text-white,
-            [class*="bg-gradient"] .text-white {
-                color: #ffffff !important;
-            }
-            
-            /* 入力要素 */
-            input:not([class*="bg-gradient"] input), 
-            select:not([class*="bg-gradient"] select), 
-            textarea:not([class*="bg-gradient"] textarea) { 
-                background-color: #ffffff !important; 
-                color: #111827 !important; 
-                border-color: #e5e7eb !important;
-            }
-            
-            input::placeholder,
-            textarea::placeholder {
-                color: #9ca3af !important;
-            }
-            
-            /* ボーダー色 */
-            .border-gray-200:not(.btn):not(button),
-            .border-gray-300:not(.btn):not(button) {
-                border-color: #e5e7eb !important;
-            }
-            
-            /* ドロップダウンとメニュー */
-            #user-menu-dropdown,
-            #mobile-menu-panel {
-                background-color: #ffffff !important;
-                border-color: #e5e7eb !important;
-            }
-            
-            #user-menu-dropdown a,
-            #mobile-menu-panel a:not([class*="bg-gradient"]):not([class*="bg-primary"]) {
-                color: #374151 !important;
-            }
-            
-            #user-menu-dropdown a:hover {
-                background-color: #f3f4f6 !important;
-            }
-            
-            /* カードコンポーネント */
-            .card { 
-                background-color: #ffffff !important; 
-                border-color: #e5e7eb !important; 
-            }
-            
-            /* バッジ */
-            .badge-primary { 
-                background-color: #dbeafe !important; 
-                color: #1e40af !important; 
-            }
-            
-            .badge-secondary { 
-                background-color: #f3e8ff !important; 
-                color: #6b21a8 !important; 
-            }
-            
-            /* リンク（ボタンやグラデーション背景上は除く） */
-            a:not(.btn):not([class*="bg-gradient"] a):not([class*="bg-primary"] a):not([class*="bg-blue-"] a):not([class*="text-white"]) {
-                color: #2563eb !important;
-            }
-            
-            a:hover:not(.btn):not([class*="bg-gradient"] a):not([class*="bg-primary"] a):not([class*="bg-blue-"] a):not([class*="text-white"]) {
-                color: #1d4ed8 !important;
-            }
-        }
+        /* ダークモード設定は custom.css のCSS変数で制御されます */
     </style>
 </head>
 

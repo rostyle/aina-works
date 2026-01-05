@@ -1,4 +1,4 @@
-/* 
+﻿/* 
  * AiNA Works Design System
  * Professional UI Framework for AI & Creative Works Platform
  */
@@ -7,7 +7,7 @@
    GLOBAL LINK STYLES
    ========================================================================== */
 
-/* 青背景内のリンクは白色で表示 */
+/* 髱定レ譎ｯ蜀・・繝ｪ繝ｳ繧ｯ縺ｯ逋ｽ濶ｲ縺ｧ陦ｨ遉ｺ */
 .bg-blue-500 a,
 .bg-blue-600 a,
 .bg-blue-700 a {
@@ -20,7 +20,7 @@
     color: #E5E7EB !important;
 }
 
-/* グレー背景内のリンクは濃い青色で表示 */
+/* 繧ｰ繝ｬ繝ｼ閭梧勹蜀・・繝ｪ繝ｳ繧ｯ縺ｯ豼・＞髱定牡縺ｧ陦ｨ遉ｺ */
 .bg-gray-100 a,
 .bg-gray-200 a {
     color: #1d4ed8 !important;
@@ -34,7 +34,7 @@
     text-decoration: underline;
 }
 
-/* 全般的なリンクスタイル */
+/* 蜈ｨ闊ｬ逧・↑繝ｪ繝ｳ繧ｯ繧ｹ繧ｿ繧､繝ｫ */
 a {
     color: #2563eb;
     text-decoration: underline;
@@ -46,7 +46,7 @@ a:hover {
     text-decoration: underline;
 }
 
-/* チャットメッセージ内のリンク */
+/* 繝√Ε繝・ヨ繝｡繝・そ繝ｼ繧ｸ蜀・・繝ｪ繝ｳ繧ｯ */
 .chat-message a {
     color: inherit;
     text-decoration: underline;
@@ -58,44 +58,14 @@ a:hover {
 }
 
 /* ==========================================================================
-   DARK MODE - 白背景に白文字が適用されないようにする
+   DARK MODE - 逋ｽ閭梧勹縺ｫ逋ｽ譁・ｭ励′驕ｩ逕ｨ縺輔ｌ縺ｪ縺・ｈ縺・↓縺吶ｋ
    ========================================================================== */
 
-@media (prefers-color-scheme: dark) {
-    /* 白背景やライトグレー背景の要素には白文字を適用しない */
-    .bg-white .text-white:not(.bg-primary-600):not(.bg-primary-700):not(.bg-primary-800):not(.bg-primary-900):not(.bg-secondary-600):not(.bg-secondary-700):not(.bg-secondary-800):not(.bg-secondary-900):not(.bg-blue-600):not(.bg-blue-700):not(.bg-blue-800):not(.bg-blue-900),
-    .bg-gray-50 .text-white:not(.bg-primary-600):not(.bg-primary-700):not(.bg-primary-800):not(.bg-primary-900):not(.bg-secondary-600):not(.bg-secondary-700):not(.bg-secondary-800):not(.bg-secondary-900):not(.bg-blue-600):not(.bg-blue-700):not(.bg-blue-800):not(.bg-blue-900),
-    .bg-gray-100 .text-white:not(.bg-primary-600):not(.bg-primary-700):not(.bg-primary-800):not(.bg-primary-900):not(.bg-secondary-600):not(.bg-secondary-700):not(.bg-secondary-800):not(.bg-secondary-900):not(.bg-blue-600):not(.bg-blue-700):not(.bg-blue-800):not(.bg-blue-900),
-    .bg-gray-200 .text-white:not(.bg-primary-600):not(.bg-primary-700):not(.bg-primary-800):not(.bg-primary-900):not(.bg-secondary-600):not(.bg-secondary-700):not(.bg-secondary-800):not(.bg-secondary-900):not(.bg-blue-600):not(.bg-blue-700):not(.bg-blue-800):not(.bg-blue-900),
-    header .text-white:not(.bg-primary-600):not(.bg-primary-700):not(.bg-primary-800):not(.bg-primary-900):not(.bg-secondary-600):not(.bg-secondary-700):not(.bg-secondary-800):not(.bg-secondary-900):not(.bg-blue-600):not(.bg-blue-700):not(.bg-blue-800):not(.bg-blue-900),
-    .card .text-white:not(.bg-primary-600):not(.bg-primary-700):not(.bg-primary-800):not(.bg-primary-900):not(.bg-secondary-600):not(.bg-secondary-700):not(.bg-secondary-800):not(.bg-secondary-900):not(.bg-blue-600):not(.bg-blue-700):not(.bg-blue-800):not(.bg-blue-900) {
-        color: #111827 !important;
-    }
-    
-    /* 白背景の要素内のすべてのテキストを黒に */
-    .bg-white,
-    .bg-gray-50,
-    .bg-gray-100,
-    .bg-gray-200 {
-        color: #111827 !important;
-    }
-    
-    /* ただし、青や紫の背景の要素は白文字のまま */
-    .bg-primary-600 .text-white,
-    .bg-primary-700 .text-white,
-    .bg-primary-800 .text-white,
-    .bg-primary-900 .text-white,
-    .bg-secondary-600 .text-white,
-    .bg-secondary-700 .text-white,
-    .bg-secondary-800 .text-white,
-    .bg-secondary-900 .text-white,
-    .bg-blue-600 .text-white,
-    .bg-blue-700 .text-white,
-    .bg-blue-800 .text-white,
-    .bg-blue-900 .text-white {
-        color: #ffffff !important;
-    }
-}
+/* ==========================================================================
+   DARK MODE SUPPORT
+   ========================================================================== */
+
+
 
 /* ==========================================================================
    DESIGN TOKENS & CSS CUSTOM PROPERTIES
@@ -263,6 +233,7 @@ a:hover {
         opacity: 0;
         transform: translateY(20px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -274,6 +245,7 @@ a:hover {
         opacity: 0;
         transform: translateY(30px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -285,6 +257,7 @@ a:hover {
         opacity: 0;
         transform: translateY(-30px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -296,6 +269,7 @@ a:hover {
         opacity: 0;
         transform: scale(0.9);
     }
+
     to {
         opacity: 1;
         transform: scale(1);
@@ -307,6 +281,7 @@ a:hover {
         opacity: 0;
         transform: translateX(-30px);
     }
+
     to {
         opacity: 1;
         transform: translateX(0);
@@ -318,6 +293,7 @@ a:hover {
         opacity: 0;
         transform: translateX(30px);
     }
+
     to {
         opacity: 1;
         transform: translateX(0);
@@ -325,27 +301,39 @@ a:hover {
 }
 
 @keyframes bounce {
-    0%, 20%, 53%, 80%, 100% {
+
+    0%,
+    20%,
+    53%,
+    80%,
+    100% {
         animation-timing-function: cubic-bezier(0.215, 0.610, 0.355, 1.000);
-        transform: translate3d(0,0,0);
+        transform: translate3d(0, 0, 0);
     }
-    40%, 43% {
+
+    40%,
+    43% {
         animation-timing-function: cubic-bezier(0.755, 0.050, 0.855, 0.060);
         transform: translate3d(0, -10px, 0);
     }
+
     70% {
         animation-timing-function: cubic-bezier(0.755, 0.050, 0.855, 0.060);
         transform: translate3d(0, -5px, 0);
     }
+
     90% {
-        transform: translate3d(0,-2px,0);
+        transform: translate3d(0, -2px, 0);
     }
 }
 
 @keyframes pulse {
-    0%, 100% {
+
+    0%,
+    100% {
         opacity: 1;
     }
+
     50% {
         opacity: .5;
     }
@@ -361,6 +349,7 @@ a:hover {
     0% {
         background-position: -200% 0;
     }
+
     100% {
         background-position: 200% 0;
     }
@@ -821,8 +810,8 @@ textarea:focus {
     transition: all var(--transition-base);
 }
 
-.form-floating .form-input:focus ~ .form-label,
-.form-floating .form-input:not(:placeholder-shown) ~ .form-label {
+.form-floating .form-input:focus~.form-label,
+.form-floating .form-input:not(:placeholder-shown)~.form-label {
     opacity: 0.65;
     transform: scale(0.85) translateY(-0.5rem) translateX(0.15rem);
 }
@@ -1009,6 +998,7 @@ textarea:focus {
         transform: translateX(100%);
         opacity: 0;
     }
+
     to {
         transform: translateX(0);
         opacity: 1;
@@ -1020,6 +1010,7 @@ textarea:focus {
         transform: translateX(0);
         opacity: 1;
     }
+
     to {
         transform: translateX(100%);
         opacity: 0;
@@ -1039,18 +1030,53 @@ textarea:focus {
     animation: slideInRight 0.3s ease-out forwards;
 }
 
-.mobile-menu-item.animate-in:nth-child(1) { animation-delay: 0.1s; }
-.mobile-menu-item.animate-in:nth-child(2) { animation-delay: 0.15s; }
-.mobile-menu-item.animate-in:nth-child(3) { animation-delay: 0.2s; }
-.mobile-menu-item.animate-in:nth-child(4) { animation-delay: 0.25s; }
-.mobile-menu-item.animate-in:nth-child(5) { animation-delay: 0.3s; }
-.mobile-menu-item.animate-in:nth-child(6) { animation-delay: 0.35s; }
-.mobile-menu-item.animate-in:nth-child(7) { animation-delay: 0.4s; }
-.mobile-menu-item.animate-in:nth-child(8) { animation-delay: 0.45s; }
-.mobile-menu-item.animate-in:nth-child(9) { animation-delay: 0.5s; }
-.mobile-menu-item.animate-in:nth-child(10) { animation-delay: 0.55s; }
-.mobile-menu-item.animate-in:nth-child(11) { animation-delay: 0.6s; }
-.mobile-menu-item.animate-in:nth-child(12) { animation-delay: 0.65s; }
+.mobile-menu-item.animate-in:nth-child(1) {
+    animation-delay: 0.1s;
+}
+
+.mobile-menu-item.animate-in:nth-child(2) {
+    animation-delay: 0.15s;
+}
+
+.mobile-menu-item.animate-in:nth-child(3) {
+    animation-delay: 0.2s;
+}
+
+.mobile-menu-item.animate-in:nth-child(4) {
+    animation-delay: 0.25s;
+}
+
+.mobile-menu-item.animate-in:nth-child(5) {
+    animation-delay: 0.3s;
+}
+
+.mobile-menu-item.animate-in:nth-child(6) {
+    animation-delay: 0.35s;
+}
+
+.mobile-menu-item.animate-in:nth-child(7) {
+    animation-delay: 0.4s;
+}
+
+.mobile-menu-item.animate-in:nth-child(8) {
+    animation-delay: 0.45s;
+}
+
+.mobile-menu-item.animate-in:nth-child(9) {
+    animation-delay: 0.5s;
+}
+
+.mobile-menu-item.animate-in:nth-child(10) {
+    animation-delay: 0.55s;
+}
+
+.mobile-menu-item.animate-in:nth-child(11) {
+    animation-delay: 0.6s;
+}
+
+.mobile-menu-item.animate-in:nth-child(12) {
+    animation-delay: 0.65s;
+}
 
 /* Mobile Menu Button Hover Effects */
 #mobile-menu-button:hover .icon-menu span {
@@ -1136,11 +1162,11 @@ textarea:focus {
     .no-print {
         display: none !important;
     }
-    
+
     .print-only {
         display: block !important;
     }
-    
+
     * {
         color-adjust: exact !important;
         -webkit-print-color-adjust: exact !important;
@@ -1156,15 +1182,15 @@ textarea:focus {
     .bg-gray-50 {
         background-color: #ffffff;
     }
-    
+
     .text-gray-600 {
         color: #000000;
     }
-    
+
     .border-gray-200 {
         border-color: #000000;
     }
-    
+
     .card {
         border: 2px solid #000000;
     }
@@ -1172,6 +1198,7 @@ textarea:focus {
 
 /* Reduced Motion Support */
 @media (prefers-reduced-motion: reduce) {
+
     *,
     *::before,
     *::after {
@@ -1184,6 +1211,7 @@ textarea:focus {
 
 /* Focus Visible for Better Keyboard Navigation */
 @supports selector(:focus-visible) {
+
     button:focus,
     a:focus,
     input:focus,
@@ -1191,7 +1219,7 @@ textarea:focus {
     textarea:focus {
         outline: none;
     }
-    
+
     button:focus-visible,
     a:focus-visible,
     input:focus-visible,
@@ -1221,43 +1249,68 @@ textarea:focus {
 
 /* Enhanced Mobile-First Breakpoints */
 @media (max-width: 640px) {
-    .text-display-2xl { font-size: 2.5rem; }
-    .text-display-xl { font-size: 2.25rem; }
-    .text-display-lg { font-size: 2rem; }
-    .text-display-md { font-size: 1.75rem; }
-    
+    .text-display-2xl {
+        font-size: 2.5rem;
+    }
+
+    .text-display-xl {
+        font-size: 2.25rem;
+    }
+
+    .text-display-lg {
+        font-size: 2rem;
+    }
+
+    .text-display-md {
+        font-size: 1.75rem;
+    }
+
     /* Mobile-optimized spacing */
-    .py-24 { padding-top: 4rem; padding-bottom: 4rem; }
-    .py-16 { padding-top: 3rem; padding-bottom: 3rem; }
-    
+    .py-24 {
+        padding-top: 4rem;
+        padding-bottom: 4rem;
+    }
+
+    .py-16 {
+        padding-top: 3rem;
+        padding-bottom: 3rem;
+    }
+
     /* Mobile card adjustments */
-    .card { margin-bottom: 1rem; }
-    .card-elevated { box-shadow: var(--shadow-md); }
-    
+    .card {
+        margin-bottom: 1rem;
+    }
+
+    .card-elevated {
+        box-shadow: var(--shadow-md);
+    }
+
     /* Mobile button adjustments */
-    .btn-xl { 
+    .btn-xl {
         padding: var(--spacing-4) var(--spacing-6);
         font-size: var(--font-size-lg);
     }
-    .btn-lg { 
+
+    .btn-lg {
         padding: var(--spacing-3) var(--spacing-5);
         font-size: var(--font-size-base);
     }
-    
+
     /* Mobile search bar fixes */
     .hero-search-container {
         padding: 0 1rem;
     }
-    
+
     .hero-search-form {
         flex-direction: column;
         gap: 0.75rem;
         padding: 1rem;
     }
-    
+
     .hero-search-input {
         min-height: 48px;
-        font-size: 16px; /* Prevent zoom on iOS */
+        font-size: 16px;
+        /* Prevent zoom on iOS */
         border-radius: 1rem;
         padding: 0.75rem 1rem;
         background: rgba(255, 255, 255, 0.95);
@@ -1266,20 +1319,20 @@ textarea:focus {
         transition: all 0.3s ease;
         backdrop-filter: blur(10px);
     }
-    
+
     .hero-search-input:focus {
         border-color: var(--color-primary-500);
         box-shadow: 0 6px 20px rgba(59, 130, 246, 0.3);
         background: rgba(255, 255, 255, 1);
         transform: translateY(-2px);
     }
-    
+
     .hero-search-input::placeholder {
         color: #9ca3af;
         font-weight: 400;
         opacity: 0.8;
     }
-    
+
     .hero-search-button {
         width: 100%;
         justify-content: center;
@@ -1291,17 +1344,17 @@ textarea:focus {
         letter-spacing: 0.025em;
         transition: all 0.3s ease;
     }
-    
+
     .hero-search-button:hover {
         background: linear-gradient(135deg, var(--color-primary-600), var(--color-primary-700));
         box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
         transform: translateY(-2px);
     }
-    
+
     .hero-search-icon {
         display: none;
     }
-    
+
     .hero-search-wrapper {
         background: rgba(255, 255, 255, 0.1);
         backdrop-filter: blur(20px);
@@ -1309,17 +1362,17 @@ textarea:focus {
         border-radius: 1.5rem;
         box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
     }
-    
+
     /* Mobile category grid - 2 columns instead of 6 */
     .categories-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
         gap: 1rem !important;
     }
-    
+
     .category-card {
         padding: 1.5rem 1rem !important;
     }
-    
+
     .category-icon {
         width: 3rem !important;
         height: 3rem !important;
@@ -1329,14 +1382,19 @@ textarea:focus {
 
 /* Tablet Optimizations */
 @media (min-width: 641px) and (max-width: 1024px) {
-    .text-display-2xl { font-size: 3.5rem; }
-    .text-display-xl { font-size: 3rem; }
-    
+    .text-display-2xl {
+        font-size: 3.5rem;
+    }
+
+    .text-display-xl {
+        font-size: 3rem;
+    }
+
     /* Tablet grid adjustments */
     .grid-cols-1.md\:grid-cols-2.lg\:grid-cols-3 {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
-    
+
     /* Tablet category grid - 3 columns */
     .categories-grid {
         grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
@@ -1346,38 +1404,62 @@ textarea:focus {
 
 /* Large Screen Optimizations */
 @media (min-width: 1920px) {
-    .max-w-7xl { max-width: 90rem; }
-    
-    .text-display-2xl { font-size: 5.5rem; }
-    .text-display-xl { font-size: 4.5rem; }
-    
+    .max-w-7xl {
+        max-width: 90rem;
+    }
+
+    .text-display-2xl {
+        font-size: 5.5rem;
+    }
+
+    .text-display-xl {
+        font-size: 4.5rem;
+    }
+
     /* Larger screens get more generous spacing */
-    .py-24 { padding-top: 8rem; padding-bottom: 8rem; }
+    .py-24 {
+        padding-top: 8rem;
+        padding-bottom: 8rem;
+    }
 }
 
 /* Touch-Friendly Interactions */
 @media (hover: none) and (pointer: coarse) {
-    .btn, .card, a {
-        min-height: 44px; /* iOS/Android minimum touch target */
+
+    .btn,
+    .card,
+    a {
+        min-height: 44px;
+        /* iOS/Android minimum touch target */
     }
-    
+
     .hover\:scale-110:hover,
     .hover\:-translate-y-1:hover,
     .hover\:-translate-y-2:hover,
     .hover\:-translate-y-4:hover {
-        transform: none; /* Disable hover transforms on touch devices */
+        transform: none;
+        /* Disable hover transforms on touch devices */
     }
-    
+
     .group:hover .group-hover\:scale-110 {
         transform: none;
     }
 }
 
 /* High DPI Display Optimizations */
-@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
-    .shadow-sm { box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08); }
-    .shadow-md { box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.08); }
-    .shadow-lg { box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15), 0 4px 6px rgba(0, 0, 0, 0.10); }
+@media (-webkit-min-device-pixel-ratio: 2),
+(min-resolution: 192dpi) {
+    .shadow-sm {
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08);
+    }
+
+    .shadow-md {
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.08);
+    }
+
+    .shadow-lg {
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15), 0 4px 6px rgba(0, 0, 0, 0.10);
+    }
 }
 
 /* ==========================================================================
@@ -1433,7 +1515,7 @@ textarea:focus {
 }
 
 .form-error::before {
-    content: "⚠";
+    content: "笞";
     margin-right: var(--spacing-1);
 }
 
@@ -1447,7 +1529,7 @@ textarea:focus {
 }
 
 .form-success::before {
-    content: "✓";
+    content: "笨・;
     margin-right: var(--spacing-1);
 }
 
@@ -1546,7 +1628,7 @@ textarea:focus {
     height: 100vh;
     background: #ffffff;
     border-left: 2px solid #e5e7eb;
-    box-shadow: -12px 0 32px rgba(0,0,0,0.1);
+    box-shadow: -12px 0 32px rgba(0, 0, 0, 0.1);
     z-index: 50;
     transform: translateX(100%);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -1590,7 +1672,7 @@ textarea:focus {
     border-radius: 12px;
     border: 1px solid #e5e7eb;
     overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .ai-result-header {
@@ -1637,29 +1719,30 @@ textarea:focus {
     background: #059669;
 }
 
-/* SP版では全画面表示 */
+/* SP迚医〒縺ｯ蜈ｨ逕ｻ髱｢陦ｨ遉ｺ */
 @media (max-width: 768px) {
     .ai-dock {
         width: 100vw;
         border-left: none;
         box-shadow: none;
     }
-    
-    
+
+
     .ai-result-section {
         margin: 12px;
         border-radius: 8px;
     }
-    
+
     .ai-result-header {
         padding: 10px 12px;
     }
-    
+
     .ai-result-content {
         padding: 12px;
     }
-    
-    .ai-copy-btn, .ai-apply-btn {
+
+    .ai-copy-btn,
+    .ai-apply-btn {
         padding: 8px 12px;
         font-size: 14px;
         min-height: 40px;
@@ -1682,6 +1765,7 @@ textarea:focus {
 
 /* Optimize Animation Performance */
 @media (prefers-reduced-motion: no-preference) {
+
     .animate-fade-in,
     .animate-slide-up,
     .animate-slide-down,
@@ -1696,380 +1780,6 @@ textarea:focus {
 .backdrop-blur-sm {
     -webkit-backdrop-filter: blur(var(--blur-amount, 8px));
     backdrop-filter: blur(var(--blur-amount, 8px));
-}
-
-/* ==========================================================================
-   DARK MODE FOUNDATION
-   ========================================================================== */
-
-/* ダークモードでもライトモードと同じように表示（グラデーション・ボタンは保護） */
-@media (prefers-color-scheme: dark) {
-    /* CSS変数とcolor-schemeをライトモードに */
-    :root {
-        --color-gray-50: #f8fafc;
-        --color-gray-100: #f1f5f9;
-        --color-gray-200: #e2e8f0;
-        --color-gray-300: #cbd5e1;
-        --color-gray-400: #94a3b8;
-        --color-gray-500: #64748b;
-        --color-gray-600: #475569;
-        --color-gray-700: #334155;
-        --color-gray-800: #1e293b;
-        --color-gray-900: #0f172a;
-        color-scheme: light !important;
-    }
-    
-    *,
-    *::before,
-    *::after {
-        color-scheme: light !important;
-    }
-    
-    /* 基本背景と文字色 */
-    html, 
-    body {
-        background-color: #f9fafb !important;
-        color: #111827 !important;
-    }
-    
-    /* ヘッダーのみ白背景に */
-    header.bg-white {
-        background-color: #ffffff !important;
-    }
-    
-    /* 白・灰色背景のセクション（グラデーションは除外） */
-    section.bg-white:not([class*="bg-gradient"]),
-    section.bg-gray-50:not([class*="bg-gradient"]) {
-        background-color: #f9fafb !important;
-    }
-    
-    /* 白・灰色背景要素（グラデーション・ボタンは除外） */
-    .bg-white:not([class*="bg-gradient"]):not(.btn):not(button):not([class*="hover\\:bg-"]),
-    .card {
-        background-color: #ffffff !important;
-    }
-    
-    .bg-gray-50:not([class*="bg-gradient"]):not(.btn):not(button) {
-        background-color: #f9fafb !important;
-    }
-    
-    .bg-gray-100:not([class*="bg-gradient"]):not(.btn):not(button) {
-        background-color: #f3f4f6 !important;
-    }
-    
-    .bg-gray-200:not([class*="bg-gradient"]):not(.btn):not(button) {
-        background-color: #e5e7eb !important;
-    }
-    
-    .bg-gray-300:not([class*="bg-gradient"]):not(.btn):not(button) {
-        background-color: #d1d5db !important;
-    }
-    
-    /* テキスト色（グラデーション背景・ボタン内は除外） */
-    .text-gray-900:not([class*="bg-gradient"] *):not(.btn *):not(button *),
-    .text-gray-800:not([class*="bg-gradient"] *):not(.btn *):not(button *),
-    .text-gray-700:not([class*="bg-gradient"] *):not(.btn *):not(button *),
-    .text-gray-600:not([class*="bg-gradient"] *):not(.btn *):not(button *),
-    .text-gray-500:not([class*="bg-gradient"] *):not(.btn *):not(button *),
-    .text-gray-400:not([class*="bg-gradient"] *):not(.btn *):not(button *),
-    .text-gray-300:not([class*="bg-gradient"] *):not(.btn *):not(button *) {
-        color: #111827 !important;
-    }
-    
-    .text-gray-800:not([class*="bg-gradient"] *):not(.btn *):not(button *) {
-        color: #1f2937 !important;
-    }
-    
-    .text-gray-700:not([class*="bg-gradient"] *):not(.btn *):not(button *) {
-        color: #374151 !important;
-    }
-    
-    .text-gray-600:not([class*="bg-gradient"] *):not(.btn *):not(button *) {
-        color: #4b5563 !important;
-    }
-    
-    .text-gray-500:not([class*="bg-gradient"] *):not(.btn *):not(button *) {
-        color: #6b7280 !important;
-    }
-    
-    .text-gray-400:not([class*="bg-gradient"] *):not(.btn *):not(button *) {
-        color: #9ca3af !important;
-    }
-    
-    .text-gray-300:not([class*="bg-gradient"] *):not(.btn *):not(button *) {
-        color: #d1d5db !important;
-    }
-    
-    /* 白背景上の白文字のみを黒に（ボタン・カラー背景の子孫要素は完全除外） */
-    .bg-white:not([class*="bg-gradient"]) > .text-white:not(.btn):not(button):not([class*="bg-primary"]):not([class*="bg-secondary"]):not([class*="bg-blue-"]):not([class*="bg-purple-"]):not([class*="bg-red-"]):not([class*="bg-green-"]),
-    .bg-gray-50:not([class*="bg-gradient"]) > .text-white:not(.btn):not(button):not([class*="bg-primary"]):not([class*="bg-secondary"]):not([class*="bg-blue-"]):not([class*="bg-purple-"]):not([class*="bg-red-"]):not([class*="bg-green-"]),
-    .bg-gray-100:not([class*="bg-gradient"]) > .text-white:not(.btn):not(button):not([class*="bg-primary"]):not([class*="bg-secondary"]):not([class*="bg-blue-"]):not([class*="bg-purple-"]):not([class*="bg-red-"]):not([class*="bg-green-"]) {
-        color: #111827 !important;
-    }
-    
-    /* ボタンとカラー背景内の白文字は常に保護 */
-    .btn .text-white,
-    button .text-white,
-    a[class*="bg-primary"] .text-white,
-    a[class*="bg-secondary"] .text-white,
-    a[class*="bg-blue-"] .text-white,
-    a[class*="bg-purple-"] .text-white,
-    a[class*="bg-red-"] .text-white,
-    a[class*="bg-green-"] .text-white,
-    a[class*="bg-yellow-"] .text-white,
-    a[class*="bg-orange-"] .text-white,
-    a[class*="bg-indigo-"] .text-white,
-    [class*="bg-primary"] .text-white,
-    [class*="bg-secondary"] .text-white,
-    [class*="bg-blue-"] .text-white,
-    [class*="bg-purple-"] .text-white,
-    [class*="bg-red-"] .text-white,
-    [class*="bg-green-"] .text-white,
-    [class*="bg-yellow-"] .text-white,
-    [class*="bg-orange-"] .text-white,
-    [class*="bg-indigo-"] .text-white,
-    [class*="bg-gradient"] .text-white {
-        color: #ffffff !important;
-    }
-    
-    /* リンク色（ボタン・グラデーション背景上は除外） */
-    a:not([class*="text-white"]):not(.btn):not(button):not([class*="bg-gradient"] a):not([class*="bg-primary"] a):not([class*="bg-blue-"] a):not([class*="bg-purple-"] a) {
-        color: #2563eb !important;
-    }
-    
-    a:hover:not([class*="text-white"]):not(.btn):not(button):not([class*="bg-gradient"] a):not([class*="bg-primary"] a):not([class*="bg-blue-"] a):not([class*="bg-purple-"] a) {
-        color: #1d4ed8 !important;
-    }
-    
-    .text-blue-600:not([class*="bg-gradient"] *):not(.btn *):not(button *),
-    a.text-blue-600:not([class*="bg-gradient"] a):not(.btn):not(button) {
-        color: #2563eb !important;
-    }
-    
-    .text-blue-600:hover:not([class*="bg-gradient"] *):not(.btn *):not(button *),
-    a.text-blue-600:hover:not([class*="bg-gradient"] a):not(.btn):not(button) {
-        color: #1d4ed8 !important;
-    }
-    
-    /* ボーダー色（ボタンは除外） */
-    .border-gray-200:not(.btn):not(button),
-    .border-gray-300:not(.btn):not(button) {
-        border-color: #e5e7eb !important;
-    }
-    
-    /* 入力要素（グラデーション背景内は除外） */
-    input:not([class*="bg-gradient"] input),
-    select:not([class*="bg-gradient"] select),
-    textarea:not([class*="bg-gradient"] textarea) {
-        background-color: #ffffff !important;
-        color: #111827 !important;
-        border-color: #e5e7eb !important;
-    }
-    
-    /* カード要素をライトモードに強制 */
-    .card {
-        background-color: #ffffff !important;
-        border-color: #e5e7eb !important;
-    }
-    
-    /* バッジをライトモードに強制 */
-    .badge-primary {
-        background-color: #dbeafe !important;
-        color: #1e40af !important;
-    }
-    
-    .badge-secondary {
-        background-color: #f3e8ff !important;
-        color: #6b21a8 !important;
-    }
-    
-    /* ボタンのアウトラインをライトモードに強制 */
-    .btn-outline {
-        border-color: #e5e7eb !important;
-        color: #111827 !important;
-        background-color: #ffffff !important;
-    }
-    
-    .btn-outline:hover {
-        background-color: #f3f4f6 !important;
-        color: #111827 !important;
-    }
-    
-    /* ドロップダウンメニューをライトモードに強制 */
-    .bg-white.rounded-lg,
-    .bg-white.shadow-lg,
-    #user-menu-dropdown {
-        background-color: #ffffff !important;
-        border-color: #e5e7eb !important;
-    }
-    
-    /* モバイルメニューをライトモードに強制 */
-    #mobile-menu-panel {
-        background-color: #ffffff !important;
-    }
-    
-    /* 検索サジェストをライトモードに強制 */
-    .search-suggestions {
-        background-color: #ffffff !important;
-        border-color: #e5e7eb !important;
-    }
-    
-    /* AI Dockをライトモードに強制 */
-    .ai-dock {
-        background-color: #ffffff !important;
-        border-color: #e5e7eb !important;
-    }
-    
-    .ai-dock-body {
-        background-color: #fafafa !important;
-    }
-    
-    .ai-result-section {
-        background-color: #ffffff !important;
-        border-color: #e5e7eb !important;
-    }
-    
-    .ai-result-header {
-        background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%) !important;
-        border-color: #e5e7eb !important;
-    }
-    
-    /* オンボーディングツールチップをライトモードに強制 */
-    .onboarding-tooltip-content {
-        background-color: #ffffff !important;
-        border-color: #e5e7eb !important;
-    }
-    
-    .onboarding-tooltip-title {
-        color: #111827 !important;
-    }
-    
-    .onboarding-tooltip-text {
-        color: #4b5563 !important;
-    }
-    
-    .onboarding-tooltip-header,
-    .onboarding-tooltip-footer {
-        border-color: #e5e7eb !important;
-    }
-    
-    .onboarding-btn-secondary {
-        background-color: #f3f4f6 !important;
-        color: #374151 !important;
-        border-color: #d1d5db !important;
-    }
-    
-    .onboarding-btn-secondary:hover {
-        background-color: #e5e7eb !important;
-        color: #1f2937 !important;
-        border-color: #9ca3af !important;
-    }
-    
-    .onboarding-arrow.arrow-top {
-        border-top-color: #ffffff !important;
-    }
-    
-    .onboarding-arrow.arrow-bottom {
-        border-bottom-color: #ffffff !important;
-    }
-    
-    .onboarding-arrow.arrow-left {
-        border-left-color: #ffffff !important;
-    }
-    
-    .onboarding-arrow.arrow-right {
-        border-right-color: #ffffff !important;
-    }
-    
-    /* モーダルをライトモードに強制 */
-    [id*="modal"],
-    [id*="Modal"],
-    .modal {
-        background-color: rgba(0, 0, 0, 0.5) !important;
-    }
-    
-    [id*="modal"] .bg-white,
-    [id*="Modal"] .bg-white,
-    .modal .bg-white {
-        background-color: #ffffff !important;
-        border-color: #e5e7eb !important;
-    }
-    
-    [id*="modal"] input,
-    [id*="modal"] textarea,
-    [id*="modal"] select,
-    [id*="Modal"] input,
-    [id*="Modal"] textarea,
-    [id*="Modal"] select,
-    .modal input,
-    .modal textarea,
-    .modal select {
-        background-color: #ffffff !important;
-        color: #111827 !important;
-        border-color: #e5e7eb !important;
-    }
-    
-    /* すべてのフォーム要素をライトモードに強制 */
-    form input,
-    form textarea,
-    form select {
-        background-color: #ffffff !important;
-        color: #111827 !important;
-        border-color: #e5e7eb !important;
-    }
-    
-    /* バッジとステータス表示をライトモードに強制 */
-    .bg-green-50,
-    .bg-yellow-50,
-    .bg-blue-50,
-    .bg-purple-50,
-    .bg-indigo-50,
-    .bg-red-50,
-    .bg-orange-50 {
-        background-color: inherit !important;
-    }
-    
-    .bg-green-50 {
-        background-color: #f0fdf4 !important;
-    }
-    
-    .bg-yellow-50 {
-        background-color: #fefce8 !important;
-    }
-    
-    .bg-blue-50 {
-        background-color: #eff6ff !important;
-    }
-    
-    .bg-purple-50 {
-        background-color: #faf5ff !important;
-    }
-    
-    .bg-indigo-50 {
-        background-color: #eef2ff !important;
-    }
-    
-    .bg-red-50 {
-        background-color: #fef2f2 !important;
-    }
-    
-    .bg-orange-50 {
-        background-color: #fff7ed !important;
-    }
-    
-    /* プロセ（prose）クラス内のテキストをライトモードに強制 */
-    .prose,
-    .prose * {
-        color: #111827 !important;
-    }
-    
-    .prose a {
-        color: #2563eb !important;
-    }
-    
-    .prose a:hover {
-        color: #1d4ed8 !important;
-    }
 }
 
 /* ==========================================================================
@@ -2094,10 +1804,10 @@ textarea:focus {
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(45deg, 
-        rgba(59, 130, 246, 0.1) 0%, 
-        rgba(168, 85, 247, 0.1) 50%, 
-        rgba(16, 185, 129, 0.1) 100%);
+    background: linear-gradient(45deg,
+            rgba(59, 130, 246, 0.1) 0%,
+            rgba(168, 85, 247, 0.1) 50%,
+            rgba(16, 185, 129, 0.1) 100%);
     opacity: 0;
     transition: opacity 0.3s ease;
     border-radius: inherit;
@@ -2154,7 +1864,7 @@ textarea:focus {
     .hero-search-container {
         position: relative;
     }
-    
+
     .hero-search-container::before {
         content: '';
         position: absolute;
@@ -2162,30 +1872,30 @@ textarea:focus {
         left: -20px;
         right: -20px;
         bottom: -20px;
-        background: linear-gradient(135deg, 
-            rgba(59, 130, 246, 0.1) 0%, 
-            rgba(168, 85, 247, 0.1) 50%, 
-            rgba(16, 185, 129, 0.1) 100%);
+        background: linear-gradient(135deg,
+                rgba(59, 130, 246, 0.1) 0%,
+                rgba(168, 85, 247, 0.1) 50%,
+                rgba(16, 185, 129, 0.1) 100%);
         border-radius: 2rem;
         opacity: 0;
         transition: opacity 0.5s ease;
         z-index: -1;
     }
-    
+
     .hero-search-container:focus-within::before {
         opacity: 1;
     }
-    
+
     /* Animated placeholder text */
     .hero-search-input {
         position: relative;
     }
-    
+
     .hero-search-input:focus::placeholder {
         opacity: 0;
         transform: translateY(-10px);
     }
-    
+
     /* Shorter placeholder for mobile */
     .hero-search-input::placeholder {
         font-size: 15px;
@@ -2200,7 +1910,7 @@ textarea:focus {
     .hero-search-input {
         font-size: 14px;
     }
-    
+
     .hero-search-input::placeholder {
         font-size: 14px;
     }
@@ -2234,7 +1944,7 @@ textarea:focus {
    ONBOARDING TOUR STYLES
    ========================================================================== */
 
-/* オーバーレイ */
+/* 繧ｪ繝ｼ繝舌・繝ｬ繧､ */
 .onboarding-overlay {
     position: fixed;
     top: 0;
@@ -2254,13 +1964,13 @@ textarea:focus {
     visibility: visible;
 }
 
-/* スポットライト */
+/* 繧ｹ繝昴ャ繝医Λ繧､繝・*/
 .onboarding-spotlight {
     position: absolute;
     background: transparent;
     border: 3px solid var(--color-primary-500);
     border-radius: var(--radius-lg);
-    box-shadow: 
+    box-shadow:
         0 0 0 9999px rgba(0, 0, 0, 0.3),
         0 0 20px rgba(59, 130, 246, 0.5),
         inset 0 0 20px rgba(59, 130, 246, 0.2);
@@ -2269,7 +1979,7 @@ textarea:focus {
     z-index: 1;
 }
 
-/* ツールチップ */
+/* 繝・・繝ｫ繝√ャ繝・*/
 .onboarding-tooltip {
     position: fixed;
     z-index: 9999;
@@ -2290,7 +2000,7 @@ textarea:focus {
 .onboarding-tooltip-content {
     background: white;
     border-radius: var(--radius-xl);
-    box-shadow: 
+    box-shadow:
         0 20px 25px -5px rgba(0, 0, 0, 0.1),
         0 10px 10px -5px rgba(0, 0, 0, 0.04);
     border: 1px solid var(--color-gray-200);
@@ -2419,7 +2129,7 @@ textarea:focus {
     border-color: var(--color-gray-400);
 }
 
-/* 矢印 */
+/* 遏｢蜊ｰ */
 .onboarding-arrow {
     position: absolute;
     width: 0;
@@ -2459,21 +2169,24 @@ textarea:focus {
     border-left: none;
 }
 
-/* ボディのスクロール制御 */
+/* 繝懊ョ繧｣縺ｮ繧ｹ繧ｯ繝ｭ繝ｼ繝ｫ蛻ｶ蠕｡ */
 body.onboarding-active {
     overflow: hidden;
 }
 
-/* アニメーション */
+/* 繧｢繝九Γ繝ｼ繧ｷ繝ｧ繝ｳ */
 @keyframes onboardingPulse {
-    0%, 100% {
-        box-shadow: 
+
+    0%,
+    100% {
+        box-shadow:
             0 0 0 9999px rgba(0, 0, 0, 0.3),
             0 0 20px rgba(59, 130, 246, 0.5),
             inset 0 0 20px rgba(59, 130, 246, 0.2);
     }
+
     50% {
-        box-shadow: 
+        box-shadow:
             0 0 0 9999px rgba(0, 0, 0, 0.3),
             0 0 30px rgba(59, 130, 246, 0.7),
             inset 0 0 30px rgba(59, 130, 246, 0.4);
@@ -2484,7 +2197,7 @@ body.onboarding-active {
     animation: onboardingPulse 2s ease-in-out infinite;
 }
 
-/* レスポンシブ対応 */
+/* 繝ｬ繧ｹ繝昴Φ繧ｷ繝門ｯｾ蠢・*/
 @media (max-width: 640px) {
     .onboarding-tooltip {
         max-width: calc(100vw - 2rem);
@@ -2493,87 +2206,41 @@ body.onboarding-active {
         right: 1rem !important;
         transform: translateY(10px) !important;
     }
-    
+
     .onboarding-tooltip.active {
         transform: translateY(0) !important;
     }
-    
+
     .onboarding-tooltip-content {
         border-radius: var(--radius-lg);
     }
-    
+
     .onboarding-tooltip-header,
     .onboarding-tooltip-body,
     .onboarding-tooltip-footer {
         padding: 1rem;
     }
-    
+
     .onboarding-tooltip-actions {
         flex-direction: column;
         gap: 0.5rem;
     }
-    
+
     .onboarding-btn {
         width: 100%;
         justify-content: center;
     }
-    
+
     .onboarding-arrow {
         display: none;
     }
 }
 
-/* ダークモード対応 */
-@media (prefers-color-scheme: dark) {
-    .onboarding-tooltip-content {
-        background: var(--color-gray-800);
-        border-color: var(--color-gray-600);
-    }
-    
-    .onboarding-tooltip-title {
-        color: var(--color-gray-100);
-    }
-    
-    .onboarding-tooltip-text {
-        color: var(--color-gray-300);
-    }
-    
-    .onboarding-tooltip-header,
-    .onboarding-tooltip-footer {
-        border-color: var(--color-gray-600);
-    }
-    
-    .onboarding-btn-secondary {
-        background: var(--color-gray-700);
-        color: var(--color-gray-200);
-        border-color: var(--color-gray-500);
-    }
-    
-    .onboarding-btn-secondary:hover {
-        background: var(--color-gray-600);
-        color: var(--color-gray-100);
-        border-color: var(--color-gray-400);
-    }
-    
-    .onboarding-arrow.arrow-top {
-        border-top-color: var(--color-gray-800);
-    }
-    
-    .onboarding-arrow.arrow-bottom {
-        border-bottom-color: var(--color-gray-800);
-    }
-    
-    .onboarding-arrow.arrow-left {
-        border-left-color: var(--color-gray-800);
-    }
-    
-    .onboarding-arrow.arrow-right {
-        border-right-color: var(--color-gray-800);
-    }
-}
 
-/* アクセシビリティ対応 */
+
+/* 繧｢繧ｯ繧ｻ繧ｷ繝薙Μ繝・ぅ蟇ｾ蠢・*/
 @media (prefers-reduced-motion: reduce) {
+
     .onboarding-overlay,
     .onboarding-tooltip,
     .onboarding-spotlight {
@@ -2582,22 +2249,22 @@ body.onboarding-active {
     }
 }
 
-/* フォーカス管理 */
+/* 繝輔か繝ｼ繧ｫ繧ｹ邂｡逅・*/
 .onboarding-tooltip-close:focus,
 .onboarding-btn:focus {
     outline: 2px solid var(--color-primary-500);
     outline-offset: 2px;
 }
 
-/* 高コントラストモード対応 */
+/* 鬮倥さ繝ｳ繝医Λ繧ｹ繝医Δ繝ｼ繝牙ｯｾ蠢・*/
 @media (prefers-contrast: high) {
     .onboarding-spotlight {
         border-color: #ffffff;
-        box-shadow: 
+        box-shadow:
             0 0 0 9999px rgba(0, 0, 0, 0.5),
             0 0 0 2px #ffffff;
     }
-    
+
     .onboarding-tooltip-content {
         border: 2px solid #000000;
     }
@@ -2607,7 +2274,7 @@ body.onboarding-active {
    UTILITY CLASSES
    ========================================================================== */
 
-/* URL折り返し対応（案件詳細など） */
+/* URL謚倥ｊ霑斐＠蟇ｾ蠢懶ｼ域｡井ｻｶ隧ｳ邏ｰ縺ｪ縺ｩ・・*/
 .prose a {
     word-break: break-all;
     overflow-wrap: break-word;
@@ -2636,9 +2303,17 @@ body.onboarding-active {
 }
 
 /* Aspect Ratios */
-.aspect-square { aspect-ratio: 1 / 1; }
-.aspect-video { aspect-ratio: 16 / 9; }
-.aspect-photo { aspect-ratio: 4 / 3; }
+.aspect-square {
+    aspect-ratio: 1 / 1;
+}
+
+.aspect-video {
+    aspect-ratio: 16 / 9;
+}
+
+.aspect-photo {
+    aspect-ratio: 4 / 3;
+}
 
 /* Content Visibility for Performance */
 .content-visibility-auto {
@@ -2651,70 +2326,17 @@ body.onboarding-active {
     .safe-area-inset-top {
         padding-top: max(var(--spacing-4), env(safe-area-inset-top));
     }
-    
+
     .safe-area-inset-bottom {
         padding-bottom: max(var(--spacing-4), env(safe-area-inset-bottom));
     }
-    
+
     .safe-area-inset-left {
         padding-left: max(var(--spacing-4), env(safe-area-inset-left));
     }
-    
+
     .safe-area-inset-right {
         padding-right: max(var(--spacing-4), env(safe-area-inset-right));
-    }
-}
-
-/* ==========================================================================
-   FORCE LIGHT MODE OVERRIDES (グラデーションとボタンは保護)
-   ========================================================================== */
-@media (prefers-color-scheme: dark) {
-    /* Tailwindのdarkモードクラスを無効化 */
-    [class*="dark:"],
-    .dark,
-    :root.dark {
-        color-scheme: light !important;
-    }
-    
-    /* 白・灰色背景のみをライトモードに（グラデーション・ボタン・カラー背景は除外） */
-    .bg-white:not([class*="bg-gradient"]):not(.btn):not(button),
-    section.bg-white:not([class*="bg-gradient"]) {
-        background-color: #ffffff !important;
-    }
-    
-    .bg-gray-50:not([class*="bg-gradient"]):not(.btn):not(button),
-    section.bg-gray-50:not([class*="bg-gradient"]) {
-        background-color: #f9fafb !important;
-    }
-    
-    .bg-gray-100:not([class*="bg-gradient"]):not(.btn):not(button) {
-        background-color: #f3f4f6 !important;
-    }
-    
-    .bg-gray-200:not([class*="bg-gradient"]):not(.btn):not(button) {
-        background-color: #e5e7eb !important;
-    }
-    
-    /* テキスト色（グラデーション背景・ボタン内は除外） */
-    p:not([class*="bg-gradient"] *):not(.btn *):not(button *),
-    span:not([class*="bg-gradient"] *):not(.btn *):not(button *),
-    div:not([class*="bg-gradient"]):not(.btn):not(button) {
-        color: inherit;
-    }
-    
-    .text-gray-900:not([class*="bg-gradient"] *):not(.btn *):not(button *),
-    .text-gray-700:not([class*="bg-gradient"] *):not(.btn *):not(button *),
-    .text-gray-600:not([class*="bg-gradient"] *):not(.btn *):not(button *) {
-        color: #111827 !important;
-    }
-    
-    /* リンク色（ボタン・グラデーション背景上は除外） */
-    a:not(.btn):not(button):not([class*="bg-gradient"] a):not([class*="bg-primary"] a):not([class*="bg-blue-"] a):not([class*="text-white"]) {
-        color: #2563eb !important;
-    }
-    
-    a:hover:not(.btn):not(button):not([class*="bg-gradient"] a):not([class*="bg-primary"] a):not([class*="bg-blue-"] a):not([class*="text-white"]) {
-        color: #1d4ed8 !important;
     }
 }
 

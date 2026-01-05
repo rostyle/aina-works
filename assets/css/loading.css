@@ -19,6 +19,7 @@ button.loading-active svg.animate-spin {
     from {
         transform: rotate(0deg);
     }
+
     to {
         transform: rotate(360deg);
     }
@@ -121,12 +122,10 @@ button.loading-active svg.animate-spin {
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(
-        90deg,
-        transparent,
-        rgba(255, 255, 255, 0.6),
-        transparent
-    );
+    background: linear-gradient(90deg,
+            transparent,
+            rgba(255, 255, 255, 0.6),
+            transparent);
     animation: skeleton-shimmer 1.5s infinite;
 }
 
@@ -134,6 +133,7 @@ button.loading-active svg.animate-spin {
     0% {
         transform: translateX(-100%);
     }
+
     100% {
         transform: translateX(100%);
     }
@@ -223,12 +223,10 @@ button.loading-active svg.animate-spin {
 }
 
 .progress-bar-fill.animated {
-    background: linear-gradient(
-        90deg,
-        #3b82f6,
-        #2563eb,
-        #3b82f6
-    );
+    background: linear-gradient(90deg,
+            #3b82f6,
+            #2563eb,
+            #3b82f6);
     background-size: 200% 100%;
     animation: progress-shimmer 1.5s infinite;
 }
@@ -237,6 +235,7 @@ button.loading-active svg.animate-spin {
     0% {
         background-position: 200% 0;
     }
+
     100% {
         background-position: -200% 0;
     }
@@ -366,6 +365,7 @@ button.btn-sm .inline-spinner {
 
 /* プリファー・リデュース・モーション対応 */
 @media (prefers-reduced-motion: reduce) {
+
     .form-loading-spinner,
     .global-loading-spinner,
     .page-loading-spinner,
@@ -383,3 +383,5 @@ button.btn-sm .inline-spinner {
         animation: none;
     }
 }
+
+/* Dark Mode for Loading Components */
