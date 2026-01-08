@@ -73,8 +73,8 @@ try {
             SELECT ja.*, j.title as job_title, j.budget_min, j.budget_max, j.client_id,
                    u.full_name as client_name, u.profile_image as client_image, c.name as category_name
             FROM job_applications ja
-            JOIN jobs j ON ja.job_id = j.id
-            JOIN users u ON j.client_id = u.id
+            LEFT JOIN jobs j ON ja.job_id = j.id
+            LEFT JOIN users u ON j.client_id = u.id
             LEFT JOIN categories c ON j.category_id = c.id
             WHERE ja.creator_id = ?
             ORDER BY ja.created_at DESC
@@ -152,7 +152,7 @@ try {
                 SELECT ja.*, u.full_name as creator_name, u.profile_image as creator_image,
                        u.bio as creator_bio, u.experience_years
                 FROM job_applications ja
-                JOIN users u ON ja.creator_id = u.id
+                LEFT JOIN users u ON ja.creator_id = u.id
                 $whereSql
                 ORDER BY $orderBy
             ", $params);
@@ -192,8 +192,8 @@ try {
                 SELECT ja.*, j.title as job_title, u.full_name as creator_name,
                        u.profile_image as creator_image
                 FROM job_applications ja
-                JOIN jobs j ON ja.job_id = j.id
-                JOIN users u ON ja.creator_id = u.id
+                LEFT JOIN jobs j ON ja.job_id = j.id
+                LEFT JOIN users u ON ja.creator_id = u.id
                 $whereSql
                 ORDER BY $orderBy
             ", $params);
