@@ -83,6 +83,7 @@ try {
     $totalSql = "
         SELECT COUNT(*) as total
         FROM jobs j
+        LEFT JOIN users u ON j.client_id = u.id
         WHERE 1=1
         {$whereClause}
     ";
@@ -100,7 +101,7 @@ try {
                c.name as category_name,
                c.color as category_color
         FROM jobs j
-        JOIN users u ON j.client_id = u.id
+        LEFT JOIN users u ON j.client_id = u.id
         LEFT JOIN categories c ON j.category_id = c.id
         WHERE 1=1
         {$whereClause}
