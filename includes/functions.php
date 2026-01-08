@@ -65,7 +65,7 @@ function asset($path) {
 }
 
 /**
- * アップロードされたアセットのURL生成
+ * アップロードされたアセットのURL生成 (絶対URLを返す)
  */
 function uploaded_asset($path) {
     if (empty($path)) {
@@ -77,19 +77,18 @@ function uploaded_asset($path) {
         return $path;
     }
     
-    // デフォルトアセットの場合はassets配下のパスを返す
+    // デフォルトアセットの場合はBASE_URL + assets配下のパス
     if (strpos($path, 'assets/') === 0) {
-        return './' . $path;
+        return rtrim(BASE_URL, '/') . '/' . $path;
     }
     
-    // アップロードされたファイルは直接アクセス
-    // storage/app/uploads/で始まる場合はそのまま使用
-    if (strpos($path, 'storage/app/uploads/') === 0) {
-        return './' . $path;
+    // 相対パスの場合はstorage/app/uploads/を正規化して結合
+    $cleanPath = ltrim($path, '/');
+    if (strpos($cleanPath, 'storage/app/uploads/') === 0) {
+        return rtrim(BASE_URL, '/') . '/' . $cleanPath;
     }
     
-    // 相対パスの場合はstorage/app/uploads/を追加
-    return './storage/app/uploads/' . $path;
+    return rtrim(BASE_URL, '/') . '/storage/app/uploads/' . $cleanPath;
 }
 
 /**

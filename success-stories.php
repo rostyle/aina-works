@@ -7,7 +7,7 @@ require_once 'includes/functions.php';
 $interviews = [];
 try {
     $db = Database::getInstance();
-    $interviews = $db->select("SELECT * FROM success_stories ORDER BY interview_date DESC");
+    $interviews = $db->select("SELECT * FROM success_stories WHERE status = 'published' ORDER BY interview_date DESC");
 } catch (Exception $e) {
     error_log("Database Error: " . $e->getMessage());
 }
@@ -81,7 +81,7 @@ include 'includes/header.php';
 
                             <!-- Image Area -->
                             <div class="relative h-48 overflow-hidden">
-                                <img src="<?= h($story['main_image']) ?>" alt="" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500">
+                                <img src="<?= h(uploaded_asset($story['main_image'])) ?>" alt="" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500">
                                 <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
                                 
                                 <!-- Badges -->

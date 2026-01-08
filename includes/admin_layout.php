@@ -9,6 +9,7 @@ function renderAdminHeader(string $title = 'Admin', string $active = ''): void {
         ['file' => 'applications.php',  'key' => 'applications','label' => '応募',           'icon' => '<path d="M4 3a2 2 0 00-2 2v10l4-2 4 2 4-2 4 2V5a2 2 0 00-2-2H4z"/>' ],
         ['file' => 'reviews.php',       'key' => 'reviews',     'label' => 'レビュー',       'icon' => '<path d="M2 5a2 2 0 012-2h12a2 2 0 012 2v8l-4-3-4 3-4-3-4 3V5z"/>' ],
         ['file' => 'categories.php',    'key' => 'categories',  'label' => 'カテゴリー',     'icon' => '<path d="M4 3h12v4H4V3zm0 6h12v8H4V9z"/>' ],
+        ['file' => 'success_stories.php','key' => 'success_stories','label' => 'インタビュー', 'icon' => '<path d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/>' ],
         ['file' => 'chats.php',         'key' => 'chats',       'label' => 'チャット',       'icon' => '<path d="M18 13a3 3 0 01-3 3H7l-4 3V6a3 3 0 013-3h9a3 3 0 013 3v7z"/>' ],
     ];
 

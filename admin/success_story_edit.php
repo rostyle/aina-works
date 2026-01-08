@@ -26,18 +26,41 @@ if ($id > 0) {
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     if (!verifyCsrfToken($_POST['csrf_token'] ?? '')) {
         setFlash('error', '不正なリクエストです');
-        redirect(adminUrl('success_story_edit.php?id=' . $id));
+        redirect($_SERVER['REQUEST_URI']);
     }
     
     $title = trim($_POST['title'] ?? '');
     $memberName = trim($_POST['member_name'] ?? '');
     $interviewDate = trim($_POST['interview_date'] ?? date('Y-m-d'));
+    $status = ($_POST['status'] ?? 'draft') === 'published' ? 'published' : 'draft';
     
-    // Basic validation
     if ($title === '' || $memberName === '') {
         $error = 'タイトルとメンバー名は必須です';
     } else {
         try {
+            $mainImage = $_POST['main_image'] ?? '';
+            $memberImage = $_POST['member_image'] ?? '';
+
+            // Handle main image upload
+            if (isset($_FILES['main_image_file']) && $_FILES['main_image_file']['error'] === UPLOAD_ERR_OK) {
+                try {
+                    $filename = uploadImage($_FILES['main_image_file'], ['max_width' => 1200, 'max_height' => 1200]);
+                    $mainImage = 'storage/app/uploads/' . $filename;
+                } catch (Exception $e) {
+                    setFlash('warning', 'メイン画像のアップロードに失敗しました: ' . $e->getMessage());
+                }
+            }
+
+            // Handle member image upload
+            if (isset($_FILES['member_image_file']) && $_FILES['member_image_file']['error'] === UPLOAD_ERR_OK) {
+                try {
+                    $filename = uploadImage($_FILES['member_image_file'], ['max_width' => 400, 'max_height' => 400]);
+                    $memberImage = 'storage/app/uploads/' . $filename;
+                } catch (Exception $e) {
+                    setFlash('warning', 'メンバー画像のアップロードに失敗しました: ' . $e->getMessage());
+                }
+            }
+
             $data = [
                 $title,
                 $memberName,
@@ -46,16 +69,17 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                 $_POST['tag_type'] ?? '',
                 $_POST['result_badge'] ?? '',
                 $_POST['intro_text'] ?? '',
-                $_POST['main_image'] ?? '',
-                $_POST['member_image'] ?? '',
-                $interviewDate
+                $mainImage,
+                $memberImage,
+                $interviewDate,
+                $status
             ];
             
             if ($id > 0) {
                 // Update
                 $sql = "UPDATE success_stories SET 
                         title=?, member_name=?, member_role=?, category_name=?, tag_type=?, 
-                        result_badge=?, intro_text=?, main_image=?, member_image=?, interview_date=? 
+                        result_badge=?, intro_text=?, main_image=?, member_image=?, interview_date=?, status=? 
                         WHERE id = ?";
                 $data[] = $id;
                 $db->update($sql, $data);
@@ -63,8 +87,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             } else {
                 // Create
                 $sql = "INSERT INTO success_stories 
-                        (title, member_name, member_role, category_name, tag_type, result_badge, intro_text, main_image, member_image, interview_date) 
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                        (title, member_name, member_role, category_name, tag_type, result_badge, intro_text, main_image, member_image, interview_date, status, created_at) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
                 $newId = $db->insert($sql, $data);
                 setFlash('success', '記事を作成しました');
                 redirect(adminUrl('success_story_edit.php?id=' . $newId));
@@ -85,20 +109,20 @@ renderAdminHeader($id > 0 ? '記事編集' : '新規記事作成', 'success_stor
 $flashes = getFlash();
 ?>
 
-<div class="flex items-center justify-between mb-6">
+<div class="flex items-center justify-between mb-8">
     <div class="flex items-center gap-4">
-        <a href="<?= h(adminUrl('success_stories.php')) ?>" class="text-gray-500 hover:text-gray-700">
+        <a href="<?= h(adminUrl('success_stories.php')) ?>" class="w-10 h-10 flex items-center justify-center bg-white border rounded-xl text-gray-400 hover:text-gray-900 shadow-sm transition">
             <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
         </a>
-        <h1 class="text-2xl font-bold text-gray-900"><?= $id > 0 ? '記事編集: ' . h($story['title']) : '新規記事作成' ?></h1>
+        <h1 class="text-2xl font-bold text-gray-900"><?= $id > 0 ? '記事編集' : '成功実績を投稿' ?></h1>
     </div>
     
     <?php if ($id > 0): ?>
-        <a href="<?= h(url('success-story-detail.php?id=' . $id)) ?>" target="_blank" class="text-blue-600 hover:underline flex items-center text-sm">
-            プレビュー
-            <svg class="w-4 h-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <a href="<?= h(url('success-story-detail.php?id=' . $id)) ?>" target="_blank" class="px-4 py-2 bg-white border border-blue-100 text-blue-600 rounded-xl hover:bg-blue-50 transition shadow-sm font-bold flex items-center text-sm">
+            <span>プレビュー表示</span>
+            <svg class="w-4 h-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
             </svg>
         </a>
@@ -107,131 +131,173 @@ $flashes = getFlash();
 
 <?php if (!empty($flashes)): ?>
   <?php foreach ($flashes as $type => $msg): if (!$msg) continue; ?>
-    <div class="mb-4 rounded-lg px-4 py-3 <?= $type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200' ?>"><?= h($msg) ?></div>
+    <div class="mb-6 rounded-xl px-4 py-3 flex items-center gap-3 <?= $type === 'success' ? 'bg-green-50 text-green-800 border border-green-100' : 'bg-red-50 text-red-800 border border-red-100' ?>">
+        <span class="font-medium"><?= h($msg) ?></span>
+    </div>
   <?php endforeach; ?>
 <?php endif; ?>
 
-<!-- Main Form -->
-<form method="POST" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<form method="POST" enctype="multipart/form-data" class="grid grid-cols-1 lg:grid-cols-3 gap-8 pb-20">
     <input type="hidden" name="csrf_token" value="<?= h(generateCsrfToken()) ?>">
     
-    <!-- Left Column (Main Info) -->
-    <div class="lg:col-span-2 space-y-6">
-        <div class="bg-white border rounded-xl p-6 shadow-sm">
-            <h2 class="text-lg font-bold text-gray-900 mb-4 pb-2 border-b">基本情報</h2>
+    <div class="lg:col-span-2 space-y-8">
+        <!-- Basic Section -->
+        <div class="bg-white border rounded-2xl p-6 md:p-8 shadow-sm">
+            <h2 class="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
+                <span class="w-1 h-6 bg-blue-600 rounded-full"></span>
+                基本情報
+            </h2>
             
-            <div class="space-y-4">
+            <div class="space-y-6">
                 <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-1">タイトル <span class="text-red-500">*</span></label>
-                    <input type="text" name="title" value="<?= h($story['title'] ?? '') ?>" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 bg-gray-50" required>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">タイトル <span class="text-red-500">*</span></label>
+                    <input type="text" name="title" value="<?= h($story['title'] ?? '') ?>" class="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 font-bold text-lg" placeholder="例: 未経験から3ヶ月で月収20万達成！" required>
                 </div>
                 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-1">メンバー名 <span class="text-red-500">*</span></label>
-                        <input type="text" name="member_name" value="<?= h($story['member_name'] ?? '') ?>" class="w-full px-3 py-2 border rounded-lg" required>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">メンバー名 <span class="text-red-500">*</span></label>
+                        <input type="text" name="member_name" value="<?= h($story['member_name'] ?? '') ?>" class="w-full px-4 py-3 border rounded-xl" placeholder="例: 田中 太郎" required>
                     </div>
                     <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-1">役職・肩書き</label>
-                        <input type="text" name="member_role" value="<?= h($story['member_role'] ?? '') ?>" class="w-full px-3 py-2 border rounded-lg">
+                        <label class="block text-sm font-bold text-gray-700 mb-2">役職・属性</label>
+                        <input type="text" name="member_role" value="<?= h($story['member_role'] ?? '') ?>" class="w-full px-4 py-3 border rounded-xl" placeholder="例: 会社員 / 副業からスタート">
                     </div>
                 </div>
 
                 <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-1">導入文 (Intro)</label>
-                    <textarea name="intro_text" rows="4" class="w-full px-3 py-2 border rounded-lg bg-gray-50"><?= h($story['intro_text'] ?? '') ?></textarea>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">キャッチコピー / 導入文</label>
+                    <textarea name="intro_text" rows="4" class="w-full px-4 py-3 border rounded-xl bg-gray-50 focus:bg-white transition-colors" placeholder="記事の冒頭に表示される文章です..."><?= h($story['intro_text'] ?? '') ?></textarea>
                 </div>
             </div>
         </div>
 
-        <?php if ($id > 0): ?>
-        <!-- Sections Management -->
-        <div class="bg-white border rounded-xl p-6 shadow-sm">
-            <div class="flex items-center justify-between mb-4 pb-2 border-b">
-                <h2 class="text-lg font-bold text-gray-900">記事セクション (Q&A)</h2>
-                <a href="<?= h(adminUrl('success_story_section_edit.php?story_id=' . $id)) ?>" class="text-sm px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition">
-                    + セクション追加
-                </a>
+        <!-- Content Section (Visible only after initial save) -->
+        <div class="bg-white border rounded-2xl p-6 md:p-8 shadow-sm">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+                    <span class="w-1 h-6 bg-indigo-600 rounded-full"></span>
+                    インタビュー内容 (Q&A)
+                </h2>
+                <?php if ($id > 0): ?>
+                    <a href="<?= h(adminUrl('success_story_section_edit.php?story_id=' . $id)) ?>" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition shadow-md font-bold text-sm">
+                        + 項目を追加
+                    </a>
+                <?php endif; ?>
             </div>
 
-            <?php if (empty($sections)): ?>
-                <div class="text-center py-8 text-gray-500 bg-gray-50 rounded-lg border border-dashed">
-                    セクションがまだありません
+            <?php if ($id === 0): ?>
+                <div class="text-center py-12 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+                    <div class="text-gray-400 mb-2">
+                        <svg class="w-12 h-12 mx-auto mb-2 opacity-20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                    </div>
+                    <p class="text-gray-500 font-medium tracking-tight">先に「基本情報」を保存すると、<br>詳細なインタビュー内容を追加できるようになります。</p>
+                </div>
+            <?php elseif (empty($sections)): ?>
+                <div class="text-center py-12 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+                    <p class="text-gray-400">インタビュー内容がまだありません</p>
                 </div>
             <?php else: ?>
-                <div class="space-y-3">
+                <div class="space-y-4">
                     <?php foreach ($sections as $sec): ?>
-                        <div class="flex items-start bg-gray-50 p-4 rounded-lg border hover:border-blue-300 transition group">
-                            <div class="mr-4 mt-1 bg-white border rounded px-2 py-0.5 text-xs font-mono text-gray-500">
-                                Order: <?= $sec['display_order'] ?>
+                        <div class="flex items-start bg-white border rounded-xl p-5 hover:border-indigo-300 hover:shadow-md transition group">
+                            <div class="mr-4 flex flex-col items-center">
+                                <span class="bg-gray-100 text-gray-400 text-[10px] px-2 py-0.5 rounded font-mono mb-2">#<?= $sec['display_order'] ?></span>
                             </div>
-                            <div class="flex-1">
-                                <h3 class="font-bold text-gray-800 text-sm mb-1"><?= h($sec['heading']) ?></h3>
-                                <p class="text-xs text-gray-600 line-clamp-2"><?= h($sec['body_text']) ?></p>
+                            <div class="flex-1 min-w-0">
+                                <h3 class="font-bold text-gray-900 text-base mb-1 truncate"><?= h($sec['heading']) ?></h3>
+                                <p class="text-sm text-gray-500 line-clamp-2"><?= h($sec['body_text']) ?></p>
                             </div>
-                            <div class="ml-4 flex gap-2 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
-                                <a href="<?= h(adminUrl('success_story_section_edit.php?id=' . $sec['id'])) ?>" class="p-1.5 bg-white border rounded hover:bg-blue-50 text-blue-600">
-                                    編集
-                                </a>
-                            </div>
+                            <a href="<?= h(adminUrl('success_story_section_edit.php?id=' . $sec['id'])) ?>" class="ml-4 p-2 text-gray-400 hover:text-indigo-600 transition">
+                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                </svg>
+                            </a>
                         </div>
                     <?php endforeach; ?>
                 </div>
             <?php endif; ?>
         </div>
-        <?php endif; ?>
     </div>
 
-    <!-- Right Column (Meta & Images) -->
-    <div class="space-y-6">
-        <div class="bg-white border rounded-xl p-6 shadow-sm">
-            <h2 class="text-sm font-bold text-gray-900 mb-4 uppercase tracking-wider text-gray-500">メタ情報</h2>
-            
+    <!-- Right Sidebar -->
+    <div class="space-y-8">
+        <!-- Status Card -->
+        <div class="bg-white border rounded-2xl p-6 shadow-sm">
+            <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">公開設定</h3>
             <div class="space-y-4">
                 <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-1">取材日</label>
-                    <input type="date" name="interview_date" value="<?= h($story['interview_date'] ?? date('Y-m-d')) ?>" class="w-full px-3 py-2 border rounded-lg">
+                    <label class="block text-sm font-bold text-gray-700 mb-2">記事の状態</label>
+                    <select name="status" class="w-full px-4 py-3 border rounded-xl bg-gray-50 focus:ring-2 focus:ring-blue-500 font-bold">
+                        <option value="draft" <?= (!isset($story['status']) || $story['status'] === 'draft') ? 'selected' : '' ?>>下書き</option>
+                        <option value="published" <?= (isset($story['status']) && $story['status'] === 'published') ? 'selected' : '' ?>>公開</option>
+                    </select>
                 </div>
                 <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-1">カテゴリ名</label>
-                    <input type="text" name="category_name" value="<?= h($story['category_name'] ?? '') ?>" placeholder="例: 動画編集" class="w-full px-3 py-2 border rounded-lg">
+                    <label class="block text-sm font-bold text-gray-700 mb-2">取材日</label>
+                    <input type="date" name="interview_date" value="<?= h($story['interview_date'] ?? date('Y-m-d')) ?>" class="w-full px-4 py-3 border rounded-xl">
+                </div>
+            </div>
+            
+            <div class="mt-8">
+                <button type="submit" class="w-full py-4 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 shadow-xl hover:shadow-blue-200 transition transform hover:-translate-y-0.5">
+                    <?= $id > 0 ? '記事を更新する' : '新しく投稿する' ?>
+                </button>
+            </div>
+        </div>
+
+        <!-- Meta Data -->
+        <div class="bg-white border rounded-2xl p-6 shadow-sm">
+            <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">属性・表示</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">成果バッジ (Golden)</label>
+                    <input type="text" name="result_badge" value="<?= h($story['result_badge'] ?? '') ?>" placeholder="例: 月収 35万円 達成" class="w-full px-4 py-2 border rounded-xl font-bold bg-yellow-50 text-yellow-700 text-sm">
                 </div>
                 <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-1">タグタイプ</label>
-                    <input type="text" name="tag_type" value="<?= h($story['tag_type'] ?? '') ?>" placeholder="例: 副業スタート" class="w-full px-3 py-2 border rounded-lg">
+                    <label class="block text-sm font-bold text-gray-700 mb-2">カテゴリー</label>
+                    <input type="text" name="category_name" value="<?= h($story['category_name'] ?? '') ?>" placeholder="例: 動画編集" class="w-full px-4 py-3 border rounded-xl text-sm">
                 </div>
                 <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-1">実績バッジ</label>
-                    <input type="text" name="result_badge" value="<?= h($story['result_badge'] ?? '') ?>" placeholder="例: 月収 35万円 達成" class="w-full px-3 py-2 border rounded-lg text-yellow-600 font-bold bg-yellow-50">
+                    <label class="block text-sm font-bold text-gray-700 mb-2">タグ</label>
+                    <input type="text" name="tag_type" value="<?= h($story['tag_type'] ?? '') ?>" placeholder="例: 主婦から転身" class="w-full px-4 py-3 border rounded-xl text-sm">
                 </div>
             </div>
         </div>
 
-        <div class="bg-white border rounded-xl p-6 shadow-sm">
-            <h2 class="text-sm font-bold text-gray-900 mb-4 uppercase tracking-wider text-gray-500">画像設定</h2>
-            
-            <div class="space-y-4">
+        <!-- Images -->
+        <div class="bg-white border rounded-2xl p-6 shadow-sm">
+            <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">メディア素材</h3>
+            <div class="space-y-6">
                 <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-1">メイン画像URL</label>
-                    <input type="text" name="main_image" value="<?= h($story['main_image'] ?? '') ?>" class="w-full px-3 py-2 border rounded-lg text-xs font-mono">
+                    <label class="block text-sm font-bold text-gray-700 mb-2">メイン画像</label>
+                    <div class="space-y-3">
+                        <input type="file" name="main_image_file" accept="image/*" class="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition">
+                        <div class="relative">
+                            <input type="text" name="main_image" value="<?= h($story['main_image'] ?? '') ?>" class="w-full px-4 py-2 border rounded-xl text-xs font-mono pl-10" placeholder="https://...">
+                            <span class="absolute left-3 top-2 text-gray-400 text-[10px] font-bold">URL</span>
+                        </div>
+                    </div>
                     <?php if (!empty($story['main_image'])): ?>
-                        <div class="mt-2 aspect-video rounded overflow-hidden bg-gray-100">
-                            <img src="<?= h($story['main_image']) ?>" class="w-full h-full object-cover">
+                        <div class="mt-3 aspect-video rounded-xl overflow-hidden bg-gray-100 border shadow-inner">
+                            <img src="<?= h(uploaded_asset($story['main_image'])) ?>" class="w-full h-full object-cover">
                         </div>
                     <?php endif; ?>
                 </div>
 
                 <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-1">メンバーアイコンURL</label>
-                    <input type="text" name="member_image" value="<?= h($story['member_image'] ?? '') ?>" class="w-full px-3 py-2 border rounded-lg text-xs font-mono">
+                    <label class="block text-sm font-bold text-gray-700 mb-2">メンバー画像</label>
+                    <div class="space-y-3">
+                        <input type="file" name="member_image_file" accept="image/*" class="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition">
+                        <div class="relative">
+                            <input type="text" name="member_image" value="<?= h($story['member_image'] ?? '') ?>" class="w-full px-4 py-2 border rounded-xl text-xs font-mono pl-10" placeholder="https://...">
+                            <span class="absolute left-3 top-2 text-gray-400 text-[10px] font-bold">URL</span>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
-
-        <div class="sticky top-6">
-            <button type="submit" class="w-full py-3 bg-blue-600 text-white font-bold rounded-xl hover:shadow-lg hover:bg-blue-700 transition transform hover:-translate-y-0.5">
-                <?= $id > 0 ? '保存する' : '作成する' ?>
-            </button>
         </div>
     </div>
 </form>

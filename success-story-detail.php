@@ -22,12 +22,16 @@ if ($id > 0) {
                 [$id]
             );
 
-            // 関連記事取得（ランダム3件）
-            // selectメソッドはfetchAll相当
+            // 関連記事取得（ランダム3件、公開済みのみ）
             $related_stories = $db->select(
-                "SELECT * FROM success_stories WHERE id != ? ORDER BY RAND() LIMIT 3", 
+                "SELECT * FROM success_stories WHERE id != ? AND status = 'published' ORDER BY RAND() LIMIT 3", 
                 [$id]
             );
+
+            // 非公開かつ管理者でない場合は見せない
+            if ($story['status'] !== 'published' && !isAdminUser()) {
+                $story = null;
+            }
         }
     } catch (Exception $e) {
         error_log("DB Error: " . $e->getMessage());
@@ -48,7 +52,7 @@ include 'includes/header.php';
 <div class="relative bg-gray-900 text-white pb-32">
     <div class="absolute inset-0 z-0">
         <!-- Thumbnail Layout: Standardize image usage to 'main_image' key -->
-        <img src="<?= h($story['main_image']) ?>" alt="" class="w-full h-full object-cover opacity-30">
+        <img src="<?= h(uploaded_asset($story['main_image'])) ?>" alt="" class="w-full h-full object-cover opacity-30">
         <div class="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/60 to-transparent"></div>
     </div>
     
@@ -86,7 +90,11 @@ include 'includes/header.php';
                 <div class="flex-shrink-0">
                     <span class="sr-only"><?= h($story['member_name']) ?></span>
                     <div class="h-16 w-16 rounded-full bg-gray-300 flex items-center justify-center text-xl font-bold text-white overflow-hidden shadow-md">
-                        <?= mb_substr($story['member_name'], 0, 1) ?>
+                        <?php if (!empty($story['member_image'])): ?>
+                            <img src="<?= h(uploaded_asset($story['member_image'])) ?>" class="w-full h-full object-cover">
+                        <?php else: ?>
+                            <?= mb_substr($story['member_name'], 0, 1) ?>
+                        <?php endif; ?>
                     </div>
                 </div>
                 <div>
@@ -141,7 +149,7 @@ include 'includes/header.php';
             <?php foreach ($related_stories as $related): ?>
                 <a href="success-story-detail.php?id=<?= $related['id'] ?>" class="group block bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all">
                     <div class="h-40 overflow-hidden relative">
-                        <img src="<?= h($related['main_image']) ?>" alt="" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                        <img src="<?= h(uploaded_asset($related['main_image'])) ?>" alt="" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
                         <div class="absolute bottom-2 left-2">
                              <span class="inline-flex items-center gap-1 px-2 py-1 bg-yellow-500 text-white text-xs font-bold rounded shadow">
                                 <?= h($related['result_badge']) ?>

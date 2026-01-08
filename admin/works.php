@@ -22,13 +22,9 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                     $db->update("UPDATE works SET status = ? WHERE id = ?", [$new, $id]);
                     setFlash('success', '公開状態を変更しました');
                 }
-            } elseif ($action === 'toggle_feature') {
-                $w = $db->selectOne("SELECT IFNULL(is_featured,0) AS f FROM works WHERE id = ?", [$id]);
-                if ($w) {
-                    $new = ((int)$w['f'] === 1) ? 0 : 1;
-                    $db->update("UPDATE works SET is_featured = ? WHERE id = ?", [$new, $id]);
-                    setFlash('success', 'おすすめ設定を変更しました');
-                }
+            } elseif ($action === 'delete') {
+                $db->execute("DELETE FROM works WHERE id = ?", [$id]);
+                setFlash('success', '作品を削除しました');
             }
         }
     } catch (Exception $e) {
@@ -77,7 +73,12 @@ $flashes = getFlash();
 ?>
 
 <div class="flex items-center justify-between mb-4">
-  <h1 class="text-2xl font-bold text-gray-900">作品管理</h1>
+  <div class="flex items-center gap-4">
+    <h1 class="text-2xl font-bold text-gray-900">作品管理</h1>
+    <a href="<?= h(adminUrl('works_edit.php')) ?>" class="px-4 py-2 bg-green-600 text-white text-sm font-bold rounded-lg hover:bg-green-700 transition shadow-sm">
+      + 作品を追加
+    </a>
+  </div>
   <form method="GET" class="flex gap-2">
     <input type="text" name="q" value="<?= h($q) ?>" placeholder="作品名/ユーザー/ID" class="px-3 py-2 border rounded-lg">
     <select name="status" class="px-3 py-2 border rounded-lg">
@@ -128,20 +129,19 @@ $flashes = getFlash();
           <?php endif; ?>
         </td>
         <td class="px-4 py-3 text-right">
-          <form method="POST" class="inline">
-            <input type="hidden" name="csrf_token" value="<?= h(generateCsrfToken()) ?>">
-            <input type="hidden" name="id" value="<?= (int)$r['id'] ?>">
-            <button name="action" value="toggle_publish" class="px-3 py-1.5 rounded-md border text-xs bg-white hover:bg-gray-50">
-              <?= $r['status'] === 'published' ? '非公開にする' : '公開する' ?>
-            </button>
-          </form>
-          <form method="POST" class="inline">
-            <input type="hidden" name="csrf_token" value="<?= h(generateCsrfToken()) ?>">
-            <input type="hidden" name="id" value="<?= (int)$r['id'] ?>">
-            <button name="action" value="toggle_feature" class="px-3 py-1.5 rounded-md border text-xs <?= ((int)$r['is_featured']===1?'bg-yellow-600 text-white border-yellow-600 hover:bg-yellow-700':'bg-white hover:bg-gray-50') ?>">
-              <?= (int)$r['is_featured']===1 ? 'おすすめ解除' : 'おすすめにする' ?>
-            </button>
-          </form>
+          <div class="flex justify-end gap-2">
+            <a href="<?= h(adminUrl('works_edit.php?id=' . $r['id'])) ?>" class="px-3 py-1.5 rounded-md border text-xs bg-white hover:bg-gray-50 text-blue-600">
+              編集
+            </a>
+            <form method="POST" class="inline" onsubmit="return confirm('本当に削除しますか？');">
+              <input type="hidden" name="csrf_token" value="<?= h(generateCsrfToken()) ?>">
+              <input type="hidden" name="id" value="<?= (int)$r['id'] ?>">
+              <input type="hidden" name="action" value="delete">
+              <button type="submit" class="px-3 py-1.5 rounded-md border text-xs bg-white hover:bg-red-50 text-red-600">
+                削除
+              </button>
+            </form>
+          </div>
         </td>
       </tr>
     <?php endforeach; ?>
