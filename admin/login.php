@@ -35,11 +35,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if (empty($errors)) {
             try {
-                // ローカルDB認証のみ
-                $loginResult = performLocalLogin($email, $password);
+                // ローカルDB認証を優先し、必要に応じてAPI認証を試行
+                $loginResult = performApiLogin($email, $password);
                 if ($loginResult['success']) {
-                    // 成功したら admin/index.php などへ
-                    redirect('./' . $redirectParam);
+                    // ログイン成功後、管理者権限があるか確認
+                    if (isAdminUser()) {
+                        redirect('./' . $redirectParam);
+                    } else {
+                        // 管理者権限がない場合はログアウトしてエラー
+                        $_SESSION = [];
+                        if (isset($_COOKIE[session_name()])) {
+                            setcookie(session_name(), '', time() - 42000, '/');
+                        }
+                        session_destroy();
+                        $errors['general'] = '管理者権限がありません。';
+                    }
                 } else {
                     $errors['general'] = $loginResult['message'] ?? 'ログインに失敗しました。';
                 }
@@ -70,7 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <div class="w-full max-w-md">
     <div class="bg-white border rounded-xl shadow-sm p-6">
       <h1 class="text-xl font-semibold text-gray-900 mb-1">管理画面ログイン</h1>
-      <p class="text-sm text-gray-600 mb-6">ローカルDBのアカウントで認証します。</p>
+      <p class="text-sm text-gray-600 mb-6">ローカルDBのアカウント、またはAPI認証でログインします。</p>
 
       <?php if (!empty($errors['general'])): ?>
         <div class="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">

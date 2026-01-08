@@ -19,6 +19,7 @@ try {
         'categories'       => (int)($db->selectOne("SELECT COUNT(*) AS c FROM categories")['c'] ?? 0),
         'chat_rooms'       => (int)($db->selectOne("SELECT COUNT(*) AS c FROM chat_rooms")['c'] ?? 0),
         'chat_messages'    => (int)($db->selectOne("SELECT COUNT(*) AS c FROM chat_messages")['c'] ?? 0),
+        'success_stories'  => (int)($db->selectOne("SELECT COUNT(*) AS c FROM success_stories")['c'] ?? 0),
     ];
 } catch (Exception $e) {
     $metrics = [];
@@ -65,6 +66,10 @@ renderAdminHeader('ダッシュボード', 'dashboard');
         <p class="text-3xl font-semibold text-gray-900"><?= number_format($metrics['chat_messages'] ?? 0) ?></p>
         <p class="text-xs text-gray-600 mt-1">ルーム: <?= number_format($metrics['chat_rooms'] ?? 0) ?></p>
     </div>
+    <div class="bg-white border rounded-xl p-5">
+        <p class="text-gray-500 text-sm">会員インタビュー</p>
+        <p class="text-3xl font-semibold text-gray-900"><?= number_format($metrics['success_stories'] ?? 0) ?></p>
+    </div>
 </div>
 
 <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -91,6 +96,10 @@ renderAdminHeader('ダッシュボード', 'dashboard');
     <a href="<?= h(adminUrl('categories.php')) ?>" class="block bg-white border rounded-xl p-5 hover:border-blue-400 transition">
         <h2 class="font-semibold text-gray-900 mb-2">カテゴリ管理</h2>
         <p class="text-gray-600 text-sm">カテゴリの有効化や表示順を管理</p>
+    </a>
+    <a href="<?= h(adminUrl('success_stories.php')) ?>" class="block bg-white border rounded-xl p-5 hover:border-blue-400 transition">
+        <h2 class="font-semibold text-gray-900 mb-2">インタビュー管理</h2>
+        <p class="text-gray-600 text-sm">会員インタビュー記事の作成・編集</p>
     </a>
 </div>
 
