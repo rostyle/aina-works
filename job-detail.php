@@ -655,6 +655,13 @@ $showSuccess = isset($_GET['applied']) && $_GET['applied'] == '1';
                         <p class="text-gray-700"><?= h($job['location']) ?></p>
                     </div>
                 <?php endif; ?>
+
+                <?php if ($job['location']): ?>
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                        <h2 class="text-xl font-bold text-gray-900 mb-4">勤務地・作業場所</h2>
+                        <p class="text-gray-700"><?= h($job['location']) ?></p>
+                    </div>
+                <?php endif; ?>
             </div>
 
             <!-- Sidebar -->
@@ -762,65 +769,6 @@ $showSuccess = isset($_GET['applied']) && $_GET['applied'] == '1';
             </div>
         </div>
     </div>
-<script>
-// 依頼者向け 募集管理操作
-document.addEventListener('DOMContentLoaded', function() {
-    const btnSave = document.getElementById('btn-save-settings');
-    const statusSelect = document.getElementById('status_select');
-    const inputLimit = document.getElementById('hiring_limit');
-    const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-
-    async function saveSettings() {
-        try {
-            console.log('保存開始');
-            const fd = new FormData();
-            fd.append('job_id', <?= $jobId ?>);
-            fd.append('csrf_token', csrf);
-            if (statusSelect && statusSelect.value) {
-                fd.append('status', statusSelect.value);
-                console.log('ステータス:', statusSelect.value);
-            }
-            const valRaw = inputLimit ? inputLimit.value : '';
-            const valNum = parseInt(valRaw || '1', 10);
-            const finalLimit = isNaN(valNum) ? 1 : Math.max(1, valNum);
-            fd.append('hiring_limit', finalLimit);
-            console.log('募集人数:', finalLimit);
-
-            const res = await fetch('api/update-job-settings.php', { method: 'POST', body: fd });
-            console.log('レスポンス:', res.status);
-            
-            if (!res.ok) {
-                const text = await res.text();
-                throw new Error('HTTP ' + res.status + ' ' + text);
-            }
-            
-            const rawText = await res.text();
-            let json;
-            try {
-                let jsonText = rawText;
-                const idx = rawText.indexOf('{');
-                if (idx > 0) jsonText = rawText.substring(idx);
-                json = JSON.parse(jsonText);
-            } catch(parseErr) {
-                console.error('JSON parse error:', parseErr, rawText);
-                throw new Error('サーバー応答の解析に失敗しました');
-            }
-            console.log('JSON:', json);
-            
-            if (json.success) {
-                alert('更新しました: ' + (json.message || ''));
-                setTimeout(() => location.reload(), 600);
-            } else {
-                alert('エラー: ' + (json.error || '更新に失敗しました'));
-            }
-        } catch (error) {
-            console.error('保存エラー:', error);
-            alert('通信エラー: ' + error.message);
-        }
-    }
-
-    if (btnSave) btnSave.addEventListener('click', saveSettings);
-});
 </script>
 </section>
 
@@ -925,42 +873,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // モーダルを開く
     if (openBtn) {
         openBtn.addEventListener('click', function() {
-            console.log('モーダルを開く');
             modal.classList.remove('hidden');
             document.body.style.overflow = 'hidden';
             // フォーカスを最初の必須項目へ
             const firstInput = document.getElementById('modal_cover_letter');
             if (firstInput) firstInput.focus();
-        });
-    }
-    
-    // フォーム送信のデバッグ & 二重送信防止
-    if (form) {
-        form.addEventListener('submit', function(e) {
-            console.log('フォーム送信開始');
-            
-            // ローディング状態を適用
-            if (window.loadingManager) {
-                window.loadingManager.setFormLoading(form, { 
-                    message: '応募を送信中...',
-                    disableAllFields: false 
-                });
-            } else if (submitBtn) {
-                submitBtn.disabled = true;
-                submitBtn.textContent = '送信中...';
-            }
-            
-            // タイムアウト時のフォールバック（10秒後に自動解除）
-            setTimeout(() => {
-                if (form.dataset.loading === 'true') {
-                    if (window.loadingManager) {
-                        window.loadingManager.removeFormLoading(form);
-                    } else if (submitBtn) {
-                        submitBtn.disabled = false;
-                    }
-                    console.warn('Form loading timeout - auto removed');
-                }
-            }, 10000);
         });
     }
     
@@ -970,32 +887,119 @@ document.addEventListener('DOMContentLoaded', function() {
         document.body.style.overflow = 'auto';
     }
     
-    if (closeBtn) {
-        closeBtn.addEventListener('click', closeModal);
-    }
+    if (closeBtn) closeBtn.addEventListener('click', closeModal);
+    if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
     
-    if (cancelBtn) {
-        cancelBtn.addEventListener('click', closeModal);
-    }
-    
-    // 背景クリックで閉じる
     if (modal) {
         modal.addEventListener('click', function(e) {
-            if (e.target === modal) {
-                closeModal();
-            }
+            if (e.target === modal) closeModal();
         });
     }
     
-    // ESCキーで閉じる
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape' && modal && !modal.classList.contains('hidden')) {
             closeModal();
         }
     });
+
+    // フォーム送信
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            if (window.loadingManager) {
+                window.loadingManager.setFormLoading(form, { 
+                    message: '応募を送信中...',
+                    disableAllFields: false 
+                });
+            }
+        });
+    }
+
+    // 募集管理操作
+    const btnSave = document.getElementById('btn-save-settings');
+    const statusSelect = document.getElementById('status_select');
+    const inputLimit = document.getElementById('hiring_limit');
+    const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+    if (btnSave) {
+        btnSave.addEventListener('click', async function() {
+            if (!confirm('募集設定を更新しますか？')) return;
+            const btn = this;
+            const originalText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = '保存中...';
+
+            try {
+                const fd = new FormData();
+                fd.append('job_id', <?= $jobId ?>);
+                fd.append('csrf_token', csrf);
+                if (statusSelect) fd.append('status', statusSelect.value);
+                if (inputLimit) fd.append('hiring_limit', inputLimit.value);
+
+                const res = await fetch('api/update-job-settings.php', { method: 'POST', body: fd });
+                const json = await res.json();
+                if (json.success) {
+                    alert('更新しました');
+                    location.reload();
+                } else {
+                    alert('エラー: ' + (json.error || '更新に失敗しました'));
+                    btn.disabled = false;
+                    btn.textContent = originalText;
+                }
+            } catch (error) {
+                alert('通信エラーが発生しました');
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        });
+    }
 });
 </script>
 <?php endif; ?>
+
+<script>
+// 依頼者向け（モーダル外のJSが必要な場合用）
+document.addEventListener('DOMContentLoaded', function() {
+    // 応募ボタンがない（依頼者本人など）の場合の管理機能
+    const btnSave = document.getElementById('btn-save-settings');
+    if (btnSave && !document.getElementById('application-modal')) {
+        const statusSelect = document.getElementById('status_select');
+        const inputLimit = document.getElementById('hiring_limit');
+        const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+        btnSave.addEventListener('click', async function() {
+            if (!confirm('募集設定を更新しますか？')) return;
+            const btn = this;
+            const originalText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = '保存中...';
+
+            try {
+                const fd = new FormData();
+                fd.append('job_id', <?= $jobId ?>);
+                fd.append('csrf_token', csrf);
+                if (statusSelect) fd.append('status', statusSelect.value);
+                if (inputLimit) fd.append('hiring_limit', inputLimit.value);
+
+                const res = await fetch('api/update-job-settings.php', { method: 'POST', body: fd });
+                const json = await res.json();
+                if (json.success) {
+                    alert('更新しました');
+                    location.reload();
+                } else {
+                    alert('エラー: ' + (json.error || '更新に失敗しました'));
+                    btn.disabled = false;
+                    btn.textContent = originalText;
+                }
+            } catch (error) {
+                alert('通信エラーが発生しました');
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        });
+    }
+});
+</script>
+</section>
 
 <?php include 'includes/footer.php'; ?>
 

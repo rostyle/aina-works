@@ -521,11 +521,11 @@ function handleJobSearchSubmit(event) {
                                 </div>
                             </div>
 
-                            <button onclick="openJobModal(<?= $job['id'] ?>)" 
+                            <a href="<?= url('job-detail?id=' . $job['id']) ?>" 
                                class="inline-flex items-center px-4 py-2 bg-slate-900 text-white text-sm font-medium rounded-lg hover:bg-blue-600 transition-colors shadow-lg shadow-slate-200 group-hover:shadow-blue-500/20">
                                 詳細を見る
                                 <svg class="ml-2 w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
-                            </button>
+                            </a>
                         </div>
                     </div>
                 <?php endforeach; ?>
@@ -595,194 +595,8 @@ function handleJobSearchSubmit(event) {
     </div>
 </section>
 
-<!-- Job Detail Modal -->
-<div id="job-modal" class="fixed inset-0 z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-    <!-- Backdrop -->
-    <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity opacity-0" id="modal-backdrop"></div>
-
-    <!-- Modal Panel -->
-    <div class="fixed inset-0 z-10 overflow-y-auto">
-        <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
-            <div class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-3xl opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" id="modal-panel">
-                
-                <!-- Close Button -->
-                <button type="button" class="absolute top-4 right-4 z-10 rounded-full bg-white/80 p-2 text-slate-400 hover:text-slate-500 focus:outline-none transition-colors" onclick="closeJobModal()">
-                    <span class="sr-only">Close</span>
-                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-
-                <!-- Loading State -->
-                <div id="modal-loading" class="flex flex-col items-center justify-center py-20">
-                    <div class="w-12 h-12 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin mb-4"></div>
-                    <p class="text-slate-500 font-medium">読み込み中...</p>
-                </div>
-
-                <!-- Content State -->
-                <div id="modal-content" class="hidden">
-                    <!-- Dynamic Content populated via JS -->
-                </div>
-
-            </div>
-        </div>
-    </div>
-</div>
-
 <script>
-// Modal Logic
-const modal = document.getElementById('job-modal');
-const backdrop = document.getElementById('modal-backdrop');
-const panel = document.getElementById('modal-panel');
-const loading = document.getElementById('modal-loading');
-const content = document.getElementById('modal-content');
-
-function openJobModal(jobId) {
-    if (!modal) return;
-    
-    // Show Modal
-    modal.classList.remove('hidden');
-    
-    // Animation In
-    setTimeout(() => {
-        backdrop.classList.remove('opacity-0');
-        panel.classList.remove('opacity-0', 'translate-y-4', 'sm:translate-y-0', 'sm:scale-95');
-        panel.classList.add('opacity-100', 'translate-y-0', 'sm:scale-100');
-    }, 10);
-
-    // Reset Content
-    loading.classList.remove('hidden');
-    content.classList.add('hidden');
-    
-    // Fetch Data
-    fetch(`api/get_job.php?id=${jobId}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                renderJobDetails(data.job);
-                loading.classList.add('hidden');
-                content.classList.remove('hidden');
-            } else {
-                alert('案件詳細の取得に失敗しました: ' + (data.error || '不明なエラー'));
-                closeJobModal();
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('通信エラーが発生しました。');
-            closeJobModal();
-        });
-}
-
-function closeJobModal() {
-    if (!modal) return;
-
-    // Animation Out
-    backdrop.classList.add('opacity-0');
-    panel.classList.remove('opacity-100', 'translate-y-0', 'sm:scale-100');
-    panel.classList.add('opacity-0', 'translate-y-4', 'sm:translate-y-0', 'sm:scale-95');
-    
-    // Hide after animation (300ms match transition)
-    setTimeout(() => {
-        modal.classList.add('hidden');
-    }, 300);
-}
-
-function renderJobDetails(job) {
-    const detailUrl = `<?= url('job-detail?id=') ?>${job.id}`;
-    
-    content.innerHTML = `
-        <!-- Hero Header -->
-        <div class="relative bg-slate-900 text-white p-8 overflow-hidden">
-            <div class="absolute inset-0 bg-gradient-to-br from-blue-600/20 to-purple-600/20"></div>
-            <div class="relative z-10">
-                <div class="flex flex-wrap items-center gap-2 mb-4">
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-500/20 text-blue-100 border border-blue-400/30">
-                        ${job.category_name || '未分類'}
-                    </span>
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-white/10 text-white border border-white/20">
-                        ${job.created_at_formatted}
-                    </span>
-                </div>
-                <h2 class="text-2xl md:text-3xl font-bold leading-tight mb-4">${escapeHtml(job.title)}</h2>
-                
-                <div class="flex items-center justify-between mt-6 pt-6 border-t border-white/10">
-                    <div class="flex items-center">
-                         <img src="${job.client_image ? job.client_image : '<?= asset('images/default-avatar.png') ?>'}" 
-                              alt="${escapeHtml(job.client_name)}" 
-                              class="w-10 h-10 rounded-full border-2 border-slate-700 bg-slate-800">
-                        <div class="ml-3">
-                            <p class="text-sm font-medium text-white">${escapeHtml(job.client_name)}</p>
-                            <p class="text-xs text-slate-400">${job.client_location || '場所未設定'}</p>
-                        </div>
-                    </div>
-                    <div class="text-right">
-                         <p class="text-xs text-slate-400 mb-0.5">予算</p>
-                         <p class="text-xl font-bold text-blue-300">¥${job.budget_min_formatted}~</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Body Content -->
-        <div class="p-8 bg-white">
-            <div class="prose prose-slate max-w-none mb-8">
-                <h3 class="text-lg font-bold text-slate-900 mb-4 border-l-4 border-blue-500 pl-3">案件概要</h3>
-                <div class="text-slate-600 leading-relaxed space-y-4">
-                   ${job.description_html}
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                    <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">応募締切</h4>
-                    <p class="font-bold text-slate-900 flex items-center">
-                        <svg class="w-5 h-5 mr-2 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                        ${job.deadline_formatted}
-                    </p>
-                </div>
-                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                    <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">募集人数</h4>
-                    <p class="font-bold text-slate-900 flex items-center">
-                        <svg class="w-5 h-5 mr-2 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
-                         1名（予定）
-                    </p>
-                </div>
-            </div>
-
-            <!-- Footer Actions -->
-            <div class="flex flex-col sm:flex-row gap-4 pt-6 border-t border-slate-100">
-                <a href="${detailUrl}" class="flex-1 inline-flex justify-center items-center px-6 py-3 border border-slate-200 shadow-sm text-base font-medium rounded-xl text-slate-700 bg-white hover:bg-slate-50 hover:text-blue-600 transition-colors">
-                     詳細ページへ
-                </a>
-                <a href="${detailUrl}#apply" class="flex-1 inline-flex justify-center items-center px-6 py-3 border border-transparent text-base font-bold rounded-xl shadow-lg text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transition-all transform hover:-translate-y-0.5">
-                    この案件に応募する
-                </a>
-            </div>
-        </div>
-    `;
-}
-
-// Utility to escape HTML
-function escapeHtml(text) {
-    if (!text) return '';
-    return text
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-}
-
-// Close on backdrop click
-backdrop && backdrop.addEventListener('click', closeJobModal);
-
-// Close on Esc key
-document.addEventListener('keydown', function(event) {
-    if (event.key === "Escape" && !modal.classList.contains('hidden')) {
-        closeJobModal();
-    }
-});
+// No-op for removed modal logic
 </script>
 
 <?php include 'includes/footer.php'; ?>
