@@ -70,13 +70,13 @@ class LoadingManager {
 
         try {
             const originalState = JSON.parse(button.dataset.originalState || '{}');
-            
+
             button.innerHTML = originalState.innerHTML || originalState.text || '';
             button.disabled = originalState.disabled || false;
             button.dataset.loading = 'false';
             delete button.dataset.originalState;
             button.classList.remove('loading-active');
-            
+
             if (button.style.minWidth) {
                 button.style.minWidth = '';
             }
@@ -105,7 +105,7 @@ class LoadingManager {
         if (disableAllFields) {
             const fields = form.querySelectorAll('input, textarea, select, button');
             fields.forEach(field => {
-                if (!field.disabled && field.type !== 'submit') {
+                if (!field.disabled && field.type !== 'submit' && field.type !== 'hidden') {
                     field.dataset.originalDisabled = field.disabled;
                     field.disabled = true;
                 }
@@ -272,7 +272,7 @@ class LoadingManager {
 
         const targetContainer = container || document.body;
         targetContainer.appendChild(progressBar);
-        
+
         return {
             element: progressBar,
             update: (newValue) => {
@@ -307,7 +307,7 @@ function initFormLoadingHandlers() {
 
         form.dataset.loadingHandler = 'true';
 
-        form.addEventListener('submit', function(e) {
+        form.addEventListener('submit', function (e) {
             // バリデーションエラーがある場合はローディングを表示しない
             if (!form.checkValidity()) {
                 return;
@@ -397,7 +397,7 @@ async function fetchWithLoading(url, options = {}, loadingOptions = {}) {
 }
 
 // DOMContentLoaded時に初期化
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     initFormLoadingHandlers();
 });
 

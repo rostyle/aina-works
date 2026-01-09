@@ -941,7 +941,10 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // ローディング状態を適用
             if (window.loadingManager) {
-                window.loadingManager.setFormLoading(form, { message: '応募を送信中...' });
+                window.loadingManager.setFormLoading(form, { 
+                    message: '応募を送信中...',
+                    disableAllFields: false 
+                });
             } else if (submitBtn) {
                 submitBtn.disabled = true;
                 submitBtn.textContent = '送信中...';
