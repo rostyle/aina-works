@@ -463,14 +463,41 @@ function handleJobSearchSubmit(event) {
                                         'high' => 'bg-rose-50 text-rose-700 border border-rose-100 animate-pulse'
                                     ];
                                     $urgencyLabels = ['low' => '低', 'medium' => '中', 'high' => '急募 🔥'];
+                                    
+                                    // ステータスの表示設定
+                                    $statusLabels = [
+                                        'open' => '募集中',
+                                        'in_progress' => '進行中',
+                                        'completed' => '完了',
+                                        'closed' => '募集終了',
+                                        'contracted' => '契約済み',
+                                        'delivered' => '納品済み',
+                                        'approved' => '検収済み',
+                                        'cancelled' => 'キャンセル'
+                                    ];
+                                    $statusColors = [
+                                        'open' => 'bg-emerald-50 text-emerald-700 border-emerald-100',
+                                        'in_progress' => 'bg-sky-50 text-sky-700 border-sky-100',
+                                        'completed' => 'bg-slate-50 text-slate-700 border-slate-100',
+                                        'closed' => 'bg-amber-50 text-amber-700 border-amber-100',
+                                        'contracted' => 'bg-indigo-50 text-indigo-700 border-indigo-100',
+                                        'delivered' => 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-100',
+                                        'approved' => 'bg-cyan-50 text-cyan-700 border-cyan-100',
+                                        'cancelled' => 'bg-rose-50 text-rose-700 border-rose-100'
+                                    ];
                                     ?>
+                                    
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border <?= $statusColors[$job['status']] ?? 'bg-slate-50 text-slate-600 border-slate-100' ?>">
+                                        <?= $statusLabels[$job['status']] ?? h($job['status']) ?>
+                                    </span>
+
                                     <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium <?= $urgencyColors[$job['urgency']] ?? 'bg-slate-100 text-slate-600' ?>">
                                         緊急度: <?= $urgencyLabels[$job['urgency']] ?? '普通' ?>
                                     </span>
                                 </div>
                                 
                                 <h3 class="text-xl font-bold text-slate-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
-                                    <a href="<?= url('job-detail?id=' . $job['id']) ?>" class="block">
+                                    <a href="<?= url('job-detail?id=' . $job['id']) ?>" target="_blank" rel="noopener noreferrer" class="block">
                                         <?= h($job['title']) ?>
                                     </a>
                                 </h3>
@@ -522,6 +549,7 @@ function handleJobSearchSubmit(event) {
                             </div>
 
                             <a href="<?= url('job-detail?id=' . $job['id']) ?>" 
+                               target="_blank" rel="noopener noreferrer"
                                class="inline-flex items-center px-4 py-2 bg-slate-900 text-white text-sm font-medium rounded-lg hover:bg-blue-600 transition-colors shadow-lg shadow-slate-200 group-hover:shadow-blue-500/20">
                                 詳細を見る
                                 <svg class="ml-2 w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
