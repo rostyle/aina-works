@@ -28,7 +28,6 @@ composer.lock
 .env.local
 .env.production
 .env.staging
-sample.env
 
 # Database files
 *.sqlite

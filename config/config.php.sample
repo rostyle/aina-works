@@ -1,0 +1,121 @@
+<?php
+// 出力バッファリング開始（BOMや予期せぬ空白を吸収）
+if (!headers_sent()) {
+	if (ob_get_level() === 0) {
+		ob_start();
+	}
+}
+/**
+ * AiNA Works 設定ファイル
+ */
+
+// セッション開始
+if (session_status() === PHP_SESSION_NONE) {
+	session_start();
+}
+
+// .envファイル読み込み
+function loadEnv($path) {
+	if (!file_exists($path)) {
+		throw new Exception('.envファイルが見つかりません: ' . $path);
+	}
+	
+	$lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+	foreach ($lines as $line) {
+		if (strpos(trim($line), '#') === 0) {
+			continue; // コメント行をスキップ
+		}
+		
+		if (strpos($line, '=') === false) {
+			continue; // = が含まれていない行をスキップ
+		}
+		
+		$parts = explode('=', $line, 2);
+		if (count($parts) < 2) {
+			continue; // 値がない場合はスキップ
+		}
+		
+		$name = trim($parts[0]);
+		$value = trim($parts[1] ?? '');
+		
+		if (!empty($name) && !array_key_exists($name, $_ENV)) {
+			$_ENV[$name] = $value;
+		}
+	}
+}
+
+// .env読み込み（ファイルが存在する場合のみ）
+$envPath = __DIR__ . '/../.env';
+if (file_exists($envPath)) {
+	loadEnv($envPath);
+}
+
+// デバッグモード（本番デフォルトはfalse）
+define('DEBUG', filter_var($_ENV['DEBUG'] ?? false, FILTER_VALIDATE_BOOLEAN));
+
+// エラー報告設定（DEBUGに連動）
+if (DEBUG) {
+	error_reporting(E_ALL);
+	ini_set('display_errors', '1');
+} else {
+	error_reporting(E_ALL & ~E_NOTICE & ~E_DEPRECATED & ~E_STRICT & ~E_WARNING);
+	ini_set('display_errors', '0');
+}
+
+// 定数定義
+define('BASE_PATH', dirname(__DIR__));
+define('BASE_URL', $_ENV['SITE_URL'] ?? 'http://localhost');
+define('SITE_NAME', $_ENV['SITE_NAME'] ?? 'AiNA Works');
+define('SITE_DESCRIPTION', $_ENV['SITE_DESCRIPTION'] ?? '');
+
+// データベース設定（MySQL専用）
+define('DB_HOST', $_ENV['DB_HOST'] ?? 'localhost');
+define('DB_NAME', $_ENV['DB_NAME'] ?? 'aina_works');
+define('DB_USER', $_ENV['DB_USER'] ?? 'root');
+define('DB_PASS', $_ENV['DB_PASS'] ?? '');
+
+// セキュリティ設定
+define('SECRET_KEY', $_ENV['SECRET_KEY'] ?? 'your_secret_key_here');
+define('UPLOAD_PATH', BASE_PATH . '/storage/app/uploads');
+define('UPLOAD_MAX_SIZE', (int)($_ENV['UPLOAD_MAX_SIZE'] ?? 5242880)); // 5MB
+define('ALLOWED_EXTENSIONS', explode(',', $_ENV['ALLOWED_EXTENSIONS'] ?? 'jpg,jpeg,png,gif,pdf'));
+define('ALLOWED_MIME_TYPES', explode(',', $_ENV['ALLOWED_MIME_TYPES'] ?? 'image/jpeg,image/png,image/gif,application/pdf'));
+
+// AiNA API設定
+define('AINA_API_BASE_URL', $_ENV['AINA_API_BASE_URL'] ?? 'https://backend.ai-na.co.jp/api');
+define('AINA_API_KEY', $_ENV['AINA_API_KEY'] ?? 'your_api_key_here');
+
+// 認証設定
+// ステータスID: 3=アクティブ会員のみを許可
+define('ALLOWED_STATUSES', [3]);
+
+// プランID: メンバープラン以上を許可（フリープランを除外する場合は1を削除）
+// 1=free, 2=member, 3=expert, 4=premium, 5=junior, 6=講師（l2e_agent）, 7=l2e_partnership, 
+// 8=jousou, 9=常総未来AIスクール, 11=agent, 12=partnership_agent, 13=common, 14=ex_legend, 15=アドジュニア
+define('ALLOWED_PLAN_IDS', [2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]);
+
+// プラン名（表示用・後方互換性のため残す）
+define('ALLOWED_RANKS', [
+	'メンバープラン',
+	'エキスパートプラン', 
+	'プレミアムプラン',
+	'常総未来ＡＩスクール'
+]);
+
+// タイムゾーン設定
+date_default_timezone_set('Asia/Tokyo');
+
+// 自動読み込み
+spl_autoload_register(function ($class) {
+	$file = BASE_PATH . '/includes/' . $class . '.php';
+	if (file_exists($file)) {
+		require_once $file;
+	}
+});
+
+// 共通関数読み込み
+require_once BASE_PATH . '/includes/functions.php';
+require_once BASE_PATH . '/includes/database.php';
+require_once BASE_PATH . '/includes/validation.php';
+require_once BASE_PATH . '/includes/error-handler.php';
+require_once BASE_PATH . '/includes/messages.php';
