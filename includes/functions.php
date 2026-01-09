@@ -1528,7 +1528,25 @@ function requireAdmin(): void {
         echo '<a class="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200" href="' . h(url('')) . '">トップへ</a>';
         echo '<a class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700" href="' . h(url('logout')) . '">ログアウト</a>';
         echo '</div></div></body></html>';
-        exit;
     }
 }
+
+/**
+ * 期限切れの案件を自動的に募集終了にする
+ */
+function updateExpiredJobs() {
+    try {
+        $db = Database::getInstance();
+        $currentDate = date('Y-m-d');
+        
+        // ステータスが 'open' で、締切日が過ぎている案件を 'closed' に更新
+        $db->update(
+            "UPDATE jobs SET status = 'closed' WHERE status = 'open' AND deadline < ?",
+            [$currentDate]
+        );
+    } catch (Exception $e) {
+        error_log("updateExpiredJobs error: " . $e->getMessage());
+    }
+}
+
 

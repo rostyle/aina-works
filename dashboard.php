@@ -20,6 +20,9 @@ $currentRole = getCurrentRole();
 $availableRoles = getUserRoles();
 $db = Database::getInstance();
 
+// 期限切れ案件の自動終了
+updateExpiredJobs();
+
 // 統計情報取得 - 両方の情報を取得
 $creatorStats = [
     'works' => $db->selectOne("SELECT COUNT(*) as count FROM works WHERE user_id = ?", [$user['id']])['count'] ?? 0,

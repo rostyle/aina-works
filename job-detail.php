@@ -10,6 +10,9 @@ if (!$jobId) {
 // データベース接続
 $db = Database::getInstance();
 
+// 期限切れ案件の自動終了
+updateExpiredJobs();
+
 // 案件詳細取得
 $job = $db->selectOne("
     SELECT j.*, u.full_name as client_name, u.profile_image as client_image, 

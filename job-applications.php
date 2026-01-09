@@ -13,6 +13,9 @@ $pageDescription = '案件への応募を管理します';
 // データベース接続
 $db = Database::getInstance();
 
+// 期限切れ案件の自動終了
+updateExpiredJobs();
+
 // 案件ID取得（クライアント用）
 $jobId = (int)($_GET['id'] ?? 0);
 // クライアント向け 検索/フィルター/並び替え

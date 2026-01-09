@@ -7,6 +7,9 @@ $pageDescription = '豊富な案件から自分にピッタリの仕事を見つ
 // データベース接続
 $db = Database::getInstance();
 
+// 期限切れ案件の自動終了
+updateExpiredJobs();
+
 // 検索・フィルター条件
 $keyword = trim($_GET['keyword'] ?? '');
 $categoryId = trim($_GET['category_id'] ?? '');

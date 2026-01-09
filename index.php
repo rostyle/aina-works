@@ -7,6 +7,9 @@ $pageDescription = 'AIスクール生と企業をつなぐ、新しいクリエ�
 // データベース接続
 $db = Database::getInstance();
 
+// 期限切れ案件の自動終了
+updateExpiredJobs();
+
 // 統計情報取得
 $stats = [
     'creators' => $db->selectOne("SELECT COUNT(*) as count FROM users WHERE is_creator = 1 AND is_active = 1")['count'] ?? 0,
