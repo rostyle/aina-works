@@ -399,11 +399,9 @@ function scrollToBottom() {
 // Initial scroll
 window.onload = scrollToBottom;
 
-// API Base URL (Resilient to protocol mismatches and local/server differences)
-const API_BASE_URL = (() => {
-    const baseUrlPath = '<?= rtrim(parse_url(BASE_URL, PHP_URL_PATH) ?? "", "/") ?>';
-    return window.location.origin + (baseUrlPath ? '/' + baseUrlPath.replace(/^\//,'') : '');
-})();
+// API Endpoints
+const SEND_MESSAGE_API = '<?= url("api/send-chat-message.php") ?>';
+const UPLOAD_FILE_API = '<?= url("api/upload-chat-file.php") ?>';
 
 // Message handling
 async function sendMessage(event) {
@@ -436,7 +434,7 @@ async function sendMessage(event) {
             submitBtn.innerHTML = '<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>';
         }
         
-        const response = await fetch(`${API_BASE_URL}/api/send-chat-message.php`, {
+        const response = await fetch(SEND_MESSAGE_API, {
             method: 'POST',
             body: formData
         });
@@ -458,7 +456,7 @@ async function sendMessage(event) {
         } catch (e) {
             console.error('JSON Parse Error:', e);
             console.error('Raw response:', responseText);
-            const debugInfo = responseText.substring(0, 200).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            const debugInfo = responseText.substring(0, 2000).replace(/</g, '&lt;').replace(/>/g, '&gt;');
             alert('サーバーからの応答を解析できませんでした。\n\n【応答内容の冒頭】\n' + debugInfo + '\n\n※このエラーはサーバー側で予期せぬ出力（警告やエラーメッセージ）が発生している場合に起こります。');
             throw new Error('サーバー応答解析エラー');
         }
@@ -506,7 +504,7 @@ async function sendFileMessage(formData, form) {
             submitBtn.innerHTML = '<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>';
         }
 
-        const response = await fetch(`${API_BASE_URL}/api/upload-chat-file.php`, {
+        const response = await fetch(UPLOAD_FILE_API, {
             method: 'POST',
             body: formData
         });
@@ -527,7 +525,7 @@ async function sendFileMessage(formData, form) {
         } catch (e) {
             console.error('File Upload JSON Parse Error:', e);
             console.error('Raw response:', responseText);
-            const debugInfo = responseText.substring(0, 200).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            const debugInfo = responseText.substring(0, 2000).replace(/</g, '&lt;').replace(/>/g, '&gt;');
             alert('アップロード応答を解析できませんでした。\n\n【応答内容の冒頭】\n' + debugInfo + '\n\n※このエラーはサーバー側で予期せぬ出力（警告やエラーメッセージ）が発生している場合に起こります。');
             throw new Error('サーバー応答解析エラー');
         }
@@ -623,7 +621,8 @@ function addMessageToChat(data) {
 // Helper for JS asset path (simplified)
 function uploadedAsset(path) {
     if (path.startsWith('http')) return path;
-    return `${API_BASE_URL}/assets/uploads/${path}`;
+    const baseUrl = '<?= rtrim(BASE_URL, "/") ?>';
+    return baseUrl + '/storage/app/uploads/' + path;
 }
 
 function escapeHtml(text) {

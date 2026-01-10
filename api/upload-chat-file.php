@@ -14,6 +14,23 @@ while (ob_get_level()) {
 }
 ob_start();
 
+// シャットダウンハンドラーで致命的なエラーをキャッチ
+register_shutdown_function(function() {
+    $error = error_get_last();
+    if ($error && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
+        if (ob_get_level()) ob_clean();
+        if (!headers_sent()) header('Content-Type: application/json');
+        echo json_encode([
+            'success' => false,
+            'message' => 'PHP Fatal Error: ' . $error['message'],
+            'file' => $error['file'],
+            'line' => $error['line'],
+            'error_code' => 'FATAL_ERROR'
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+});
+
 // ヘッダーが送信済みでない場合のみ設定
 if (!headers_sent()) {
     header('Content-Type: application/json');
@@ -25,7 +42,7 @@ if (!isLoggedIn()) {
 }
 
 // CSRFトークン検証
-if (!verifyCsrfToken($_POST['csrf_token'] ?? '')) {
+if (!verifyCsrfToken(isset($_POST['csrf_token']) ? $_POST['csrf_token'] : '')) {
     jsonResponse(['error' => '不正なリクエストです'], 403);
 }
 
@@ -33,7 +50,7 @@ try {
     $db = Database::getInstance();
     $currentUser = getCurrentUser();
     
-    $roomId = (int)($_POST['room_id'] ?? 0);
+    $roomId = (int)(isset($_POST['room_id']) ? $_POST['room_id'] : 0);
     
     // バリデーション
     if (!$roomId) {
@@ -62,8 +79,8 @@ try {
             UPLOAD_ERR_EXTENSION => 'ファイルアップロードが拡張機能によって停止されました'
         ];
         
-        $errorCode = $_FILES['file']['error'] ?? UPLOAD_ERR_NO_FILE;
-        $errorMessage = $errorMessages[$errorCode] ?? 'ファイルアップロードエラーが発生しました';
+        $errorCode = isset($_FILES['file']['error']) ? $_FILES['file']['error'] : UPLOAD_ERR_NO_FILE;
+        $errorMessage = isset($errorMessages[$errorCode]) ? $errorMessages[$errorCode] : 'ファイルアップロードエラーが発生しました';
         jsonResponse(['error' => $errorMessage], 400);
     }
     
@@ -212,7 +229,7 @@ try {
         jsonResponse(['error' => 'メッセージの送信に失敗しました'], 500);
     }
     
-} catch (Throwable $e) {
+} catch (Exception $e) {
     error_log("Chat file upload error: " . $e->getMessage());
     jsonResponse(['error' => 'システムエラーが発生しました'], 500);
 }

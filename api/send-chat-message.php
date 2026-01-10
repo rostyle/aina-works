@@ -5,6 +5,27 @@ ob_start();
 // エラー表示を無効にしてHTMLエラーを防ぐ
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+ini_set('error_log', dirname(__DIR__) . '/logs/chat_debug.log');
+
+// シャットダウンハンドラーで致命的なエラーをキャッチ
+register_shutdown_function(function() {
+    $error = error_get_last();
+    if ($error && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
+        if (ob_get_level()) ob_clean();
+        if (!headers_sent()) header('Content-Type: application/json');
+        echo json_encode([
+            'success' => false,
+            'message' => 'PHP Fatal Error: ' . $error['message'],
+            'file' => $error['file'],
+            'line' => $error['line'],
+            'error_code' => 'FATAL_ERROR'
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+});
+ini_set('log_errors', 1);
+ini_set('error_log', dirname(__DIR__) . '/logs/chat_debug.log');
 
 require_once '../config/config.php';
 
@@ -13,6 +34,7 @@ while (ob_get_level()) {
     ob_end_clean();
 }
 ob_start();
+
 
 // ヘッダーが送信済みでない場合のみ設定
 if (!headers_sent()) {
@@ -25,7 +47,7 @@ if (!isLoggedIn()) {
 }
 
 // CSRFトークン検証
-if (!verifyCsrfToken($_POST['csrf_token'] ?? '')) {
+if (!verifyCsrfToken(isset($_POST['csrf_token']) ? $_POST['csrf_token'] : '')) {
     ErrorHandler::jsonCsrfError();
 }
 
@@ -33,8 +55,8 @@ try {
     $db = Database::getInstance();
     $currentUser = getCurrentUser();
     
-    $roomId = (int)($_POST['room_id'] ?? 0);
-    $message = trim($_POST['message'] ?? '');
+    $roomId = (int)(isset($_POST['room_id']) ? $_POST['room_id'] : 0);
+    $message = trim(isset($_POST['message']) ? $_POST['message'] : '');
     
     // バリデーション
     $validation = new ValidationResult();
@@ -126,6 +148,6 @@ try {
         ErrorHandler::jsonError('メッセージの送信に失敗しました', 500, null, 'SEND_FAILED');
     }
     
-} catch (Throwable $e) {
+} catch (Exception $e) {
     ErrorHandler::handleException($e, 'Chat message send error: ' . $e->getMessage());
 }

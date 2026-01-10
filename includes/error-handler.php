@@ -124,7 +124,7 @@ class ErrorHandler {
      * 例外をキャッチしてエラーレスポンスを返す
      */
     public static function handleException($exception, $logMessage = null) {
-        $message = $logMessage ?? $exception->getMessage();
+        $message = isset($logMessage) ? $logMessage : $exception->getMessage();
         error_log('Exception: ' . $message);
         error_log('Stack trace: ' . $exception->getTraceAsString());
         
