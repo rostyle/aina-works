@@ -399,8 +399,11 @@ function scrollToBottom() {
 // Initial scroll
 window.onload = scrollToBottom;
 
-// API Base URL
-const API_BASE_URL = '<?= rtrim(BASE_URL, '/') ?>';
+// API Base URL (Resilient to protocol mismatches and local/server differences)
+const API_BASE_URL = (() => {
+    const baseUrlPath = '<?= rtrim(parse_url(BASE_URL, PHP_URL_PATH) ?? "", "/") ?>';
+    return window.location.origin + (baseUrlPath ? '/' + baseUrlPath.replace(/^\//,'') : '');
+})();
 
 // Message handling
 async function sendMessage(event) {
@@ -438,19 +441,24 @@ async function sendMessage(event) {
             body: formData
         });
         
-        // ... (rest of the function)
-        
-        // Response handling
         const responseText = await response.text();
         let result;
         try {
             // Extract JSON if mixed with HTML
             let jsonText = responseText;
             const jsonStartIndex = responseText.indexOf('{');
-            if (jsonStartIndex > 0) jsonText = responseText.substring(jsonStartIndex);
+            if (jsonStartIndex > -1) {
+                jsonText = responseText.substring(jsonStartIndex);
+                // Find matching closing brace if there's trailing junk
+                const jsonEndIndex = jsonText.lastIndexOf('}');
+                if (jsonEndIndex > -1) {
+                    jsonText = jsonText.substring(0, jsonEndIndex + 1);
+                }
+            }
             result = JSON.parse(jsonText);
         } catch (e) {
-            throw new Error('Invalid JSON response');
+            console.error('JSON Parse Error. Raw response:', responseText);
+            throw new Error('サーバーからの応答が正しくない形式です。');
         }
         
         if (response.ok && result.success) {
@@ -459,12 +467,13 @@ async function sendMessage(event) {
             messageInput.style.height = 'auto';
             scrollToBottom();
         } else {
-            throw new Error(result.message || result.error || '送信失敗');
+            console.error('API Error:', result);
+            throw new Error(result.message || result.error || '送信に失敗しました');
         }
         
     } catch (error) {
-        console.error('Send error:', error);
-        alert('エラーが発生しました: ' + error.message);
+        console.error('Full Send Error:', error);
+        alert('エラーが発生しました\n詳細: ' + error.message + '\n(サーバー設定やURLの設定を確認してください)');
     } finally {
         if (window.loadingManager) {
             window.loadingManager.removeButtonLoading(submitBtn);
@@ -500,23 +509,31 @@ async function sendFileMessage(formData, form) {
         try {
             let jsonText = responseText;
             const jsonStartIndex = responseText.indexOf('{');
-            if (jsonStartIndex > 0) jsonText = responseText.substring(jsonStartIndex);
+            if (jsonStartIndex > -1) {
+                jsonText = responseText.substring(jsonStartIndex);
+                const jsonEndIndex = jsonText.lastIndexOf('}');
+                if (jsonEndIndex > -1) {
+                    jsonText = jsonText.substring(0, jsonEndIndex + 1);
+                }
+            }
             result = JSON.parse(jsonText);
         } catch (e) {
-            throw new Error('Invalid JSON response');
+            console.error('File Upload JSON Parse Error. Raw response:', responseText);
+            throw new Error('サーバーからの応答が正しくない形式です。');
         }
 
         if (response.ok && result.success) {
-            addMessageToChat(result.data); // data contains the message object
+            addMessageToChat(result.data);
             document.getElementById('message-input').value = '';
             removeFilePreview();
             scrollToBottom();
         } else {
-            throw new Error(result.message || result.error || 'Upload failed');
+            console.error('File Upload API Error:', result);
+            throw new Error(result.message || result.error || 'アップロードに失敗しました');
         }
     } catch (error) {
-        console.error('Upload error:', error);
-        alert('アップロードエラー: ' + error.message);
+        console.error('Full Upload Error:', error);
+        alert('アップロードエラーが発生しました\n詳細: ' + error.message + '\n(ファイルのサイズや形式、サーバー設定を確認してください)');
     } finally {
         if (window.loadingManager) {
             window.loadingManager.removeButtonLoading(submitBtn);
