@@ -460,7 +460,7 @@ async function sendMessage(event) {
         
         if (result.success) {
             // メッセージを即座に表示
-            addMessageToChat(result.message);
+            addMessageToChat(result.data);
             messageInput.value = '';
             messageInput.style.height = 'auto';
             scrollToBottom();
@@ -534,7 +534,7 @@ async function sendFileMessage(formData) {
         }
         
         if (result.success) {
-            addMessageToChat(result.message);
+            addMessageToChat(result.data);
             document.getElementById('message-input').value = '';
             document.getElementById('file-input').value = '';
             removeFilePreview();
