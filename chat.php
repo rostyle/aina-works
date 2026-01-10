@@ -399,6 +399,9 @@ function scrollToBottom() {
 // Initial scroll
 window.onload = scrollToBottom;
 
+// API Base URL
+const API_BASE_URL = '<?= rtrim(BASE_URL, '/') ?>';
+
 // Message handling
 async function sendMessage(event) {
     event.preventDefault();
@@ -423,17 +426,19 @@ async function sendMessage(event) {
     
     try {
         if (window.loadingManager) {
-            window.loadingManager.setButtonLoading(submitBtn, { showSpinner: true, text: '' }); // Icon only loading or minimal text
+            window.loadingManager.setButtonLoading(submitBtn, { showSpinner: true, text: '' });
         } else {
             submitBtn.disabled = true;
             submitBtn.dataset.originalHtml = submitBtn.innerHTML;
             submitBtn.innerHTML = '<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>';
         }
         
-        const response = await fetch('api/send-chat-message.php', {
+        const response = await fetch(`${API_BASE_URL}/api/send-chat-message.php`, {
             method: 'POST',
             body: formData
         });
+        
+        // ... (rest of the function)
         
         // Response handling
         const responseText = await response.text();
@@ -485,7 +490,7 @@ async function sendFileMessage(formData, form) {
             submitBtn.innerHTML = '<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>';
         }
 
-        const response = await fetch('api/upload-chat-file.php', {
+        const response = await fetch(`${API_BASE_URL}/api/upload-chat-file.php`, {
             method: 'POST',
             body: formData
         });
@@ -587,7 +592,7 @@ function addMessageToChat(data) {
 // Helper for JS asset path (simplified)
 function uploadedAsset(path) {
     if (path.startsWith('http')) return path;
-    return 'assets/uploads/' + path; // Adjust based on your setup
+    return `${API_BASE_URL}/assets/uploads/${path}`;
 }
 
 function escapeHtml(text) {
