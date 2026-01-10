@@ -400,8 +400,8 @@ function scrollToBottom() {
 window.onload = scrollToBottom;
 
 // API Endpoints
-const SEND_MESSAGE_API = '<?= url("api/send-chat-message.php") ?>';
-const UPLOAD_FILE_API = '<?= url("api/upload-chat-file.php") ?>';
+const SEND_MESSAGE_API = '<?= url("api/send-chat-message-v2.php") ?>';
+const UPLOAD_FILE_API = '<?= url("api/upload-chat-file-v2.php") ?>';
 
 // Message handling
 async function sendMessage(event) {
