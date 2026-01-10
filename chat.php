@@ -468,10 +468,7 @@ async function sendMessage(event) {
             scrollToBottom();
         } else {
             console.error('API Error:', result);
-            let errorMsg = result.message || result.error || '原因不明のエラー';
-            if (result.debug) {
-                errorMsg += '\n\n【デバッグ情報】\nファイル: ' + result.debug.file + '\n行: ' + result.debug.line;
-            }
+            const errorMsg = result.message || result.error || '原因不明のエラー';
             alert('送信に失敗しました: ' + errorMsg);
             throw new Error(errorMsg);
         }
@@ -540,10 +537,7 @@ async function sendFileMessage(formData, form) {
             scrollToBottom();
         } else {
             console.error('File Upload API Error:', result);
-            let errorMsg = result.message || result.error || 'アップロードに失敗しました';
-            if (result.debug) {
-                errorMsg += '\n\n【デバッグ情報】\nファイル: ' + result.debug.file + '\n行: ' + result.debug.line;
-            }
+            const errorMsg = result.message || result.error || 'アップロードに失敗しました';
             alert('アップロードに失敗しました: ' + errorMsg);
             throw new Error(errorMsg);
         }
@@ -638,6 +632,19 @@ function escapeHtml(text) {
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+function removeFilePreview() {
+    const fileInput = document.getElementById('file-input');
+    if (fileInput) fileInput.value = '';
+    
+    const previewContainer = document.getElementById('file-preview-container');
+    if (previewContainer) {
+        previewContainer.innerHTML = '';
+        previewContainer.classList.add('hidden');
+    }
+}
         .replace(/'/g, "&#039;");
 }
 </script>
