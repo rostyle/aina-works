@@ -402,6 +402,7 @@ window.onload = scrollToBottom;
 // Message handling
 async function sendMessage(event) {
     event.preventDefault();
+    event.stopImmediatePropagation(); // Prevent global loading handler
     
     const form = event.target;
     const formData = new FormData(form);
@@ -414,16 +415,20 @@ async function sendMessage(event) {
     
     // Check if it's a file upload
     if (file) {
-        await sendFileMessage(formData);
+        await sendFileMessage(formData, form);
         return;
     }
     
     const submitBtn = form.querySelector('button[type="submit"]');
-    const originalBtnContent = submitBtn.innerHTML;
     
     try {
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>';
+        if (window.loadingManager) {
+            window.loadingManager.setButtonLoading(submitBtn, { showSpinner: true, text: '' }); // Icon only loading or minimal text
+        } else {
+            submitBtn.disabled = true;
+            submitBtn.dataset.originalHtml = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>';
+        }
         
         const response = await fetch('api/send-chat-message.php', {
             method: 'POST',
@@ -456,19 +461,29 @@ async function sendMessage(event) {
         console.error('Send error:', error);
         alert('エラーが発生しました: ' + error.message);
     } finally {
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = originalBtnContent;
+        if (window.loadingManager) {
+            window.loadingManager.removeButtonLoading(submitBtn);
+        } else {
+            submitBtn.disabled = false;
+            if (submitBtn.dataset.originalHtml) {
+                submitBtn.innerHTML = submitBtn.dataset.originalHtml;
+            }
+        }
         messageInput.focus();
     }
 }
 
-async function sendFileMessage(formData) {
-    const submitBtn = document.querySelector('button[type="submit"]');
-    const originalBtnContent = submitBtn.innerHTML;
+async function sendFileMessage(formData, form) {
+    const submitBtn = form ? form.querySelector('button[type="submit"]') : document.querySelector('button[type="submit"]');
     
     try {
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>';
+        if (window.loadingManager) {
+            window.loadingManager.setButtonLoading(submitBtn, { showSpinner: true, text: '' });
+        } else {
+            submitBtn.disabled = true;
+            submitBtn.dataset.originalHtml = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>';
+        }
 
         const response = await fetch('api/upload-chat-file.php', {
             method: 'POST',
@@ -498,8 +513,14 @@ async function sendFileMessage(formData) {
         console.error('Upload error:', error);
         alert('アップロードエラー: ' + error.message);
     } finally {
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = originalBtnContent;
+        if (window.loadingManager) {
+            window.loadingManager.removeButtonLoading(submitBtn);
+        } else {
+            submitBtn.disabled = false;
+            if (submitBtn.dataset.originalHtml) {
+                submitBtn.innerHTML = submitBtn.dataset.originalHtml;
+            }
+        }
     }
 }
 
