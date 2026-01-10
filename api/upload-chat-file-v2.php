@@ -46,6 +46,8 @@ register_shutdown_function(function() {
 
 // 依存関係を読み込む
 require_once '../config/config.php';
+// ErrorHandlerを明示的に読み込む（オートローダーに頼らない）
+require_once '../includes/error-handler.php';
 
 // ログイン確認
 if (!isLoggedIn()) {
@@ -172,6 +174,10 @@ try {
     ]);
 
 } catch (Throwable $e) {
-    if (ob_get_level()) ob_clean();
-    ErrorHandler::handleException($e, 'API Upload Chat File Error');
+    // ErrorHandlerが使えない場合でも確実にJSONを返す
+    sendJsonError('API Upload Error: ' . $e->getMessage(), 500, [
+        'file' => basename($e->getFile()),
+        'line' => $e->getLine(),
+        'type' => get_class($e)
+    ]);
 }
