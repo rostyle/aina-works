@@ -449,7 +449,6 @@ async function sendMessage(event) {
             const jsonStartIndex = responseText.indexOf('{');
             if (jsonStartIndex > -1) {
                 jsonText = responseText.substring(jsonStartIndex);
-                // Find matching closing brace if there's trailing junk
                 const jsonEndIndex = jsonText.lastIndexOf('}');
                 if (jsonEndIndex > -1) {
                     jsonText = jsonText.substring(0, jsonEndIndex + 1);
@@ -457,8 +456,11 @@ async function sendMessage(event) {
             }
             result = JSON.parse(jsonText);
         } catch (e) {
-            console.error('JSON Parse Error. Raw response:', responseText);
-            throw new Error('サーバーからの応答が正しくない形式です。');
+            console.error('JSON Parse Error:', e);
+            console.error('Raw response:', responseText);
+            const debugInfo = responseText.substring(0, 200).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            alert('サーバーからの応答を解析できませんでした。\n\n【応答内容の冒頭】\n' + debugInfo + '\n\n※このエラーはサーバー側で予期せぬ出力（警告やエラーメッセージ）が発生している場合に起こります。');
+            throw new Error('サーバー応答解析エラー');
         }
         
         if (response.ok && result.success) {
@@ -468,12 +470,17 @@ async function sendMessage(event) {
             scrollToBottom();
         } else {
             console.error('API Error:', result);
-            throw new Error(result.message || result.error || '送信に失敗しました');
+            const errorMsg = result.message || result.error || '原因不明のエラー';
+            alert('送信に失敗しました: ' + errorMsg);
+            throw new Error(errorMsg);
         }
         
     } catch (error) {
-        console.error('Full Send Error:', error);
-        alert('エラーが発生しました\n詳細: ' + error.message + '\n(サーバー設定やURLの設定を確認してください)');
+        console.error('Send error:', error);
+        // Alert is already handled inside or will be shown here if not "解析エラー"
+        if (error.message !== 'サーバー応答解析エラー' && !error.message.includes('送信に失敗しました')) {
+            alert('チャット送信中にエラーが発生しました: ' + error.message);
+        }
     } finally {
         if (window.loadingManager) {
             window.loadingManager.removeButtonLoading(submitBtn);
@@ -518,8 +525,11 @@ async function sendFileMessage(formData, form) {
             }
             result = JSON.parse(jsonText);
         } catch (e) {
-            console.error('File Upload JSON Parse Error. Raw response:', responseText);
-            throw new Error('サーバーからの応答が正しくない形式です。');
+            console.error('File Upload JSON Parse Error:', e);
+            console.error('Raw response:', responseText);
+            const debugInfo = responseText.substring(0, 200).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            alert('アップロード応答を解析できませんでした。\n\n【応答内容の冒頭】\n' + debugInfo + '\n\n※このエラーはサーバー側で予期せぬ出力（警告やエラーメッセージ）が発生している場合に起こります。');
+            throw new Error('サーバー応答解析エラー');
         }
 
         if (response.ok && result.success) {
@@ -529,11 +539,15 @@ async function sendFileMessage(formData, form) {
             scrollToBottom();
         } else {
             console.error('File Upload API Error:', result);
-            throw new Error(result.message || result.error || 'アップロードに失敗しました');
+            const errorMsg = result.message || result.error || 'アップロードに失敗しました';
+            alert('アップロードに失敗しました: ' + errorMsg);
+            throw new Error(errorMsg);
         }
     } catch (error) {
         console.error('Full Upload Error:', error);
-        alert('アップロードエラーが発生しました\n詳細: ' + error.message + '\n(ファイルのサイズや形式、サーバー設定を確認してください)');
+        if (error.message !== 'サーバー応答解析エラー' && !error.message.includes('失敗しました')) {
+            alert('アップロード中にエラーが発生しました\n詳細: ' + error.message);
+        }
     } finally {
         if (window.loadingManager) {
             window.loadingManager.removeButtonLoading(submitBtn);
