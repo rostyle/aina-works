@@ -106,7 +106,7 @@ try {
     $uploadDir = '../storage/app/uploads/chat/';
     if (!is_dir($uploadDir)) {
         if (!mkdir($uploadDir, 0755, true)) {
-            ErrorHandler::jsonServerError('アップロードディレクトリの作成に失敗しました');
+            ErrorHandler::jsonError('アップロードディレクトリの作成に失敗しました', 500);
         }
     }
     
@@ -115,7 +115,7 @@ try {
     $filePath = $uploadDir . $uniqueFileName;
     
     if (!move_uploaded_file($file['tmp_name'], $filePath)) {
-        ErrorHandler::jsonServerError('ファイルの保存に失敗しました');
+        ErrorHandler::jsonError('ファイルの保存に失敗しました', 500);
     }
     
     // 相対パスを保存
