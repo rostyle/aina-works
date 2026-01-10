@@ -1,12 +1,19 @@
 <?php
-// PHP 7.0+ Required (Uses Throwable and ?? operator)
+// 出力バッファリング開始
+ob_start();
+
+// エラー表示設定
+error_reporting(E_ALL);
+ini_set('display_errors', 0);
+
+// 依存関係を先に読み込む（ErrorHandlerなどのクラスを使えるようにする）
+require_once '../config/config.php';
 
 /**
- * 送信処理中の予期せぬエラー（構文エラーや致命的エラー）をキャッチしてJSONで返す
+ * 致命的エラーをキャッチしてJSONで返す
  */
 register_shutdown_function(function() {
     $error = error_get_last();
-    // 致命的なエラーのみ処理
     if ($error && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
         if (ob_get_level()) ob_clean();
         header('Content-Type: application/json; charset=utf-8');
@@ -23,15 +30,6 @@ register_shutdown_function(function() {
         exit;
     }
 });
-
-// 出力バッファリング開始（途中の警告などがJSONを破壊するのを防ぐ）
-ob_start();
-
-// エラー表示設定（画面には出さず、JSONとして制御する）
-error_reporting(E_ALL);
-ini_set('display_errors', 0);
-
-require_once '../config/config.php';
 
 // ログイン確認
 if (!isLoggedIn()) {
@@ -96,7 +94,7 @@ try {
         WHERE cm.id = ?
     ", [$messageId]);
     
-    // 相手にメール通知を送信（ここは失敗してもチャット送信自体は成功させる）
+    // 相手にメール通知を送信（失敗してもチャット送信自体は成功させる）
     try {
         $recipientId = ($chatRoom['user1_id'] == $currentUser['id']) ? $chatRoom['user2_id'] : $chatRoom['user1_id'];
         $recipient = $db->selectOne("SELECT email, full_name FROM users WHERE id = ?", [$recipientId]);
@@ -113,11 +111,10 @@ try {
             sendNotificationMail($recipient['email'], $subject, $emailMessage, $actionUrl, 'チャットを確認する');
         }
     } catch (Throwable $e) {
-        // メール送信エラーはログに記録するのみ
         error_log('Chat notification mail error: ' . $e->getMessage());
     }
     
-    // 成功レスポンス（バッファをクリアしてから出力）
+    // 成功レスポンス
     if (ob_get_level()) ob_clean();
     ErrorHandler::jsonSuccess('メッセージを送信しました', [
         'id' => $sentMessage['id'],
@@ -130,7 +127,6 @@ try {
     ]);
 
 } catch (Throwable $e) {
-    // すべての例外・エラーをキャッチ
     if (ob_get_level()) ob_clean();
     ErrorHandler::handleException($e, 'API Send Message Error');
 }

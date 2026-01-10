@@ -1,12 +1,19 @@
 <?php
-// PHP 7.0+ Required (Uses Throwable and ?? operator)
+// 出力バッファリング開始
+ob_start();
+
+// エラー表示設定
+error_reporting(E_ALL);
+ini_set('display_errors', 0);
+
+// 依存関係を先に読み込む
+require_once '../config/config.php';
 
 /**
- * 送信処理中の予期せぬエラー（構文エラーや致命的エラー）をキャッチしてJSONで返す
+ * 致命的エラーをキャッチしてJSONで返す
  */
 register_shutdown_function(function() {
     $error = error_get_last();
-    // 致命的なエラーのみ処理
     if ($error && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
         if (ob_get_level()) ob_clean();
         header('Content-Type: application/json; charset=utf-8');
@@ -23,15 +30,6 @@ register_shutdown_function(function() {
         exit;
     }
 });
-
-// 出力バッファリング開始（途中の警告などがJSONを破壊するのを防ぐ）
-ob_start();
-
-// エラー表示設定（画面には出さず、JSONとして制御する）
-error_reporting(E_ALL);
-ini_set('display_errors', 0);
-
-require_once '../config/config.php';
 
 // ログイン確認
 if (!isLoggedIn()) {
@@ -111,7 +109,7 @@ try {
     }
     
     // 相対パスを保存
-    $relativePath = 'chat/' . $uniqueFileName;
+    $relativePath = 'storage/app/uploads/chat/' . $uniqueFileName;
     
     // メッセージをデータベースに保存
     $messageId = $db->insert("

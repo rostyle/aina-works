@@ -468,7 +468,10 @@ async function sendMessage(event) {
             scrollToBottom();
         } else {
             console.error('API Error:', result);
-            const errorMsg = result.message || result.error || '原因不明のエラー';
+            let errorMsg = result.message || result.error || '原因不明のエラー';
+            if (result.debug) {
+                errorMsg += '\n\n【デバッグ情報】\nファイル: ' + result.debug.file + '\n行: ' + result.debug.line;
+            }
             alert('送信に失敗しました: ' + errorMsg);
             throw new Error(errorMsg);
         }
@@ -537,7 +540,10 @@ async function sendFileMessage(formData, form) {
             scrollToBottom();
         } else {
             console.error('File Upload API Error:', result);
-            const errorMsg = result.message || result.error || 'アップロードに失敗しました';
+            let errorMsg = result.message || result.error || 'アップロードに失敗しました';
+            if (result.debug) {
+                errorMsg += '\n\n【デバッグ情報】\nファイル: ' + result.debug.file + '\n行: ' + result.debug.line;
+            }
             alert('アップロードに失敗しました: ' + errorMsg);
             throw new Error(errorMsg);
         }
