@@ -61,7 +61,15 @@ function url($path = '', $absolute = false) {
  * アセットURL生成
  */
 function asset($path) {
-    return './assets/' . ltrim($path, '/');
+    $cleanPath = ltrim($path, '/');
+    $localFile = BASE_PATH . '/assets/' . $cleanPath;
+    $url = './assets/' . $cleanPath;
+    
+    if (file_exists($localFile)) {
+        $url .= '?v=' . filemtime($localFile);
+    }
+    
+    return $url;
 }
 
 /**
