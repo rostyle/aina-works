@@ -1,5 +1,23 @@
 <?php
+// 出力バッファリングを開始してクリーンなJSONレスポンスを確保
+ob_start();
+
+// エラー表示を無効にしてHTMLエラーを防ぐ
+error_reporting(E_ALL);
+ini_set('display_errors', 0);
+
 require_once '../config/config.php';
+
+// 出力バッファを完全にクリアしてヘッダー問題を回避
+while (ob_get_level()) {
+    ob_end_clean();
+}
+ob_start();
+
+// ヘッダーが送信済みでない場合のみ設定
+if (!headers_sent()) {
+    header('Content-Type: application/json');
+}
 
 // ログイン確認
 if (!isLoggedIn()) {
