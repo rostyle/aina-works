@@ -1,4 +1,26 @@
 <?php
+/**
+ * チャットメッセージ送信API
+ * 依存関係なしで動作するシンプルなエラーハンドリング
+ */
+
+// JSONエラーレスポンスを返すヘルパー関数（クラスに依存しない）
+function sendJsonError($message, $statusCode = 500, $debug = null) {
+    if (ob_get_level()) ob_clean();
+    http_response_code($statusCode);
+    header('Content-Type: application/json; charset=utf-8');
+    $response = [
+        'success' => false,
+        'message' => $message,
+        'error_code' => 'API_ERROR'
+    ];
+    if ($debug) {
+        $response['debug'] = $debug;
+    }
+    echo json_encode($response, JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
 // 出力バッファリング開始
 ob_start();
 
@@ -6,40 +28,32 @@ ob_start();
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
 
-// 依存関係を先に読み込む（ErrorHandlerなどのクラスを使えるようにする）
-require_once '../config/config.php';
-
-/**
- * 致命的エラーをキャッチしてJSONで返す
- */
+// 致命的エラーをキャッチ
 register_shutdown_function(function() {
     $error = error_get_last();
     if ($error && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
-        if (ob_get_level()) ob_clean();
-        header('Content-Type: application/json; charset=utf-8');
-        echo json_encode([
-            'success' => false,
-            'message' => '致命的なエラーが発生しました: ' . $error['message'],
-            'debug' => [
+        sendJsonError(
+            '致命的なエラーが発生しました: ' . $error['message'],
+            500,
+            [
                 'file' => basename($error['file']),
                 'line' => $error['line'],
                 'type' => $error['type']
-            ],
-            'error_code' => 'FATAL_ERROR'
-        ], JSON_UNESCAPED_UNICODE);
-        exit;
+            ]
+        );
     }
 });
 
+// 依存関係を読み込む
+require_once '../config/config.php';
+
 // ログイン確認
 if (!isLoggedIn()) {
-    if (ob_get_level()) ob_clean();
     ErrorHandler::jsonAuthError();
 }
 
 // CSRFトークン検証
 if (!verifyCsrfToken($_POST['csrf_token'] ?? '')) {
-    if (ob_get_level()) ob_clean();
     ErrorHandler::jsonCsrfError();
 }
 
@@ -52,12 +66,10 @@ try {
     
     // バリデーション
     if ($roomId <= 0 || empty($message)) {
-        if (ob_get_level()) ob_clean();
         ErrorHandler::jsonError('チャットルームまたはメッセージが正しくありません', 400);
     }
     
     if (mb_strlen($message) > 1000) {
-        if (ob_get_level()) ob_clean();
         ErrorHandler::jsonError('メッセージは1000文字以内で入力してください', 400);
     }
     
@@ -68,7 +80,6 @@ try {
     ", [$roomId, $currentUser['id'], $currentUser['id']]);
     
     if (!$chatRoom) {
-        if (ob_get_level()) ob_clean();
         ErrorHandler::jsonNotFoundError('チャットルーム');
     }
     
@@ -79,7 +90,6 @@ try {
     ", [$roomId, $currentUser['id'], $message]);
     
     if (!$messageId) {
-        if (ob_get_level()) ob_clean();
         ErrorHandler::jsonError('データベースへの保存に失敗しました', 500);
     }
 

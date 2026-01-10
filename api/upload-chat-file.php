@@ -1,4 +1,26 @@
 <?php
+/**
+ * チャットファイルアップロードAPI
+ * 依存関係なしで動作するシンプルなエラーハンドリング
+ */
+
+// JSONエラーレスポンスを返すヘルパー関数（クラスに依存しない）
+function sendJsonError($message, $statusCode = 500, $debug = null) {
+    if (ob_get_level()) ob_clean();
+    http_response_code($statusCode);
+    header('Content-Type: application/json; charset=utf-8');
+    $response = [
+        'success' => false,
+        'message' => $message,
+        'error_code' => 'API_ERROR'
+    ];
+    if ($debug) {
+        $response['debug'] = $debug;
+    }
+    echo json_encode($response, JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
 // 出力バッファリング開始
 ob_start();
 
@@ -6,40 +28,32 @@ ob_start();
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
 
-// 依存関係を先に読み込む
-require_once '../config/config.php';
-
-/**
- * 致命的エラーをキャッチしてJSONで返す
- */
+// 致命的エラーをキャッチ
 register_shutdown_function(function() {
     $error = error_get_last();
     if ($error && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
-        if (ob_get_level()) ob_clean();
-        header('Content-Type: application/json; charset=utf-8');
-        echo json_encode([
-            'success' => false,
-            'message' => 'アップロード中に致命的なエラーが発生しました: ' . $error['message'],
-            'debug' => [
+        sendJsonError(
+            'アップロード中に致命的なエラーが発生しました: ' . $error['message'],
+            500,
+            [
                 'file' => basename($error['file']),
                 'line' => $error['line'],
                 'type' => $error['type']
-            ],
-            'error_code' => 'FATAL_ERROR'
-        ], JSON_UNESCAPED_UNICODE);
-        exit;
+            ]
+        );
     }
 });
 
+// 依存関係を読み込む
+require_once '../config/config.php';
+
 // ログイン確認
 if (!isLoggedIn()) {
-    if (ob_get_level()) ob_clean();
     ErrorHandler::jsonAuthError();
 }
 
 // CSRFトークン検証
 if (!verifyCsrfToken($_POST['csrf_token'] ?? '')) {
-    if (ob_get_level()) ob_clean();
     ErrorHandler::jsonCsrfError();
 }
 
@@ -51,7 +65,6 @@ try {
     
     // バリデーション
     if ($roomId <= 0) {
-        if (ob_get_level()) ob_clean();
         ErrorHandler::jsonError('チャットルームが指定されていません', 400);
     }
     
@@ -62,14 +75,12 @@ try {
     ", [$roomId, $currentUser['id'], $currentUser['id']]);
     
     if (!$chatRoom) {
-        if (ob_get_level()) ob_clean();
         ErrorHandler::jsonNotFoundError('チャットルーム');
     }
     
     // ファイルアップロードの確認
     if (!isset($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
         $errorCode = $_FILES['file']['error'] ?? UPLOAD_ERR_NO_FILE;
-        if (ob_get_level()) ob_clean();
         ErrorHandler::jsonError('ファイルのアップロードに失敗しました (Error Code: ' . $errorCode . ')', 400);
     }
     
@@ -86,7 +97,6 @@ try {
     } elseif (in_array($fileExtension, $allowedDocumentTypes)) {
         $messageType = 'document';
     } else {
-        if (ob_get_level()) ob_clean();
         ErrorHandler::jsonError('画像またはPDFファイルのみアップロードできます', 400);
     }
     
@@ -94,7 +104,6 @@ try {
     $uploadDir = '../storage/app/uploads/chat/';
     if (!is_dir($uploadDir)) {
         if (!mkdir($uploadDir, 0755, true)) {
-            if (ob_get_level()) ob_clean();
             ErrorHandler::jsonServerError('アップロードディレクトリの作成に失敗しました');
         }
     }
@@ -104,7 +113,6 @@ try {
     $filePath = $uploadDir . $uniqueFileName;
     
     if (!move_uploaded_file($file['tmp_name'], $filePath)) {
-        if (ob_get_level()) ob_clean();
         ErrorHandler::jsonServerError('ファイルの保存に失敗しました');
     }
     
@@ -119,7 +127,6 @@ try {
     
     if (!$messageId) {
         if (file_exists($filePath)) unlink($filePath);
-        if (ob_get_level()) ob_clean();
         ErrorHandler::jsonError('データベースへの保存に失敗しました', 500);
     }
 
