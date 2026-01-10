@@ -634,17 +634,6 @@ function escapeHtml(text) {
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
 }
-
-function removeFilePreview() {
-    const fileInput = document.getElementById('file-input');
-    if (fileInput) fileInput.value = '';
-    
-    const previewContainer = document.getElementById('file-preview-container');
-    if (previewContainer) {
-        previewContainer.innerHTML = '';
-        previewContainer.classList.add('hidden');
-    }
-}
         .replace(/'/g, "&#039;");
 }
 </script>
