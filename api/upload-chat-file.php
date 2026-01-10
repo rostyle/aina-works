@@ -212,7 +212,7 @@ try {
         jsonResponse(['error' => 'メッセージの送信に失敗しました'], 500);
     }
     
-} catch (Exception $e) {
+} catch (Throwable $e) {
     error_log("Chat file upload error: " . $e->getMessage());
     jsonResponse(['error' => 'システムエラーが発生しました'], 500);
 }

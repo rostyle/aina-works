@@ -126,6 +126,6 @@ try {
         ErrorHandler::jsonError('メッセージの送信に失敗しました', 500, null, 'SEND_FAILED');
     }
     
-} catch (Exception $e) {
+} catch (Throwable $e) {
     ErrorHandler::handleException($e, 'Chat message send error: ' . $e->getMessage());
 }
