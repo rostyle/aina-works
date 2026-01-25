@@ -9,26 +9,32 @@ DirectoryIndex index.php
     RewriteEngine On
     
     # 必要に応じてベースパスを指定
-    RewriteBase /aina-works/
+    # ローカル環境のサブディレクトリで使用する場合は RewriteBase /aina-works/ を有効にするか、
+    # 以下の環境不可存なルールを使用します。
+    # RewriteBase /
 
     # 2. 直接アクセス禁止（セキュリティ）
     RewriteRule ^(includes|config|sql|vendor)/ - [F,L]
 
-    # 3. /works を /work に正規化
+    # 3. /works を /work にリダイレクト (正規化)
+    # REQUEST_URI をベースにすることで環境（サブディレクトリの有無）に依存しないリダイレクトを実現
     RewriteCond %{REQUEST_METHOD} GET
-    RewriteCond %{THE_REQUEST} \s/+(works)(/|\s|\?) [NC]
-    RewriteRule ^works/?$ work/ [R=301,L]
+    RewriteCond %{REQUEST_URI} ^(.+)/works/?$ [NC]
+    RewriteRule ^ %1/work/ [R=301,L]
 
     # 4. xxx/index.php を xxx/ にリダイレクト（SEO）
     RewriteCond %{REQUEST_METHOD} GET
-    RewriteCond %{THE_REQUEST} \s/+(.*?/)?index\.php[\s?] [NC]
-    RewriteRule ^((?!(api/|assets/|uploads/|storage/)).*?)index\.php$ $1 [R=301,L]
+    RewriteCond %{THE_REQUEST} \s/+[^\s?]*index\.php [NC]
+    RewriteCond %{REQUEST_URI} ^(.*/)index\.php$ [NC]
+    RewriteRule ^ %1 [R=301,L]
 
     # 5. .php 拡張子を URL から取り除く (外部リダイレクト)
-    # ユーザーが .php 付きでアクセスした場合、拡張子なしにリダイレクト
+    # 除外ディレクトリ以外で .php 付きアクセスを拡張子なしに 301 リダイレクト
     RewriteCond %{REQUEST_METHOD} GET
+    RewriteCond %{REQUEST_URI} !^/(api|assets|uploads|storage)/
     RewriteCond %{THE_REQUEST} \s[^\s]*\.php [NC]
-    RewriteRule ^((?!(api/|assets/|uploads/|storage/)).+)\.php$ $1 [R=301,L,QSA]
+    RewriteCond %{REQUEST_URI} ^(.+)\.php$ [NC]
+    RewriteRule ^ %1 [R=301,L,QSA]
 
     # 6. すでに存在するファイルやディレクトリはそのまま配信
     RewriteCond %{REQUEST_FILENAME} -f [OR]
@@ -39,7 +45,7 @@ DirectoryIndex index.php
     RewriteRule ^work/?$ works.php [L,QSA]
 
     # 8. 拡張子なしのアクセスを .php に解決する (内部リライト)
-    # 既存のディレクトリでなく、.php をつければファイルが存在する場合に適用
+    # 相対パスで指定することで RewriteBase なしでも動作
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME}.php -f
     RewriteRule ^(.+?)/?$ $1.php [L,QSA]
@@ -47,7 +53,9 @@ DirectoryIndex index.php
 </IfModule>
 
 # 9. エラーページ設定
-# サブディレクトリ名に合わせて修正
-ErrorDocument 404 /aina-works/404.php
-ErrorDocument 403 /aina-works/404.php
-ErrorDocument 500 /aina-works/404.php
+# Lolipop等の共有サーバーでは、ドメイン直下の設定になる場合があるため、
+# 404が発生する場合はここのパスを調整してください。
+# (例: サイトがドメイン直下なら /404.php、サブディレクトリなら /subdirectory/404.php)
+ErrorDocument 404 404.php
+ErrorDocument 403 404.php
+ErrorDocument 500 404.php
