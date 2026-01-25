@@ -441,7 +441,7 @@ function clearFilters() {
 // いいね機能
 async function toggleLike(targetType, targetId, button) {
     try {
-        const response = await fetch('api/like.php', {
+        const response = await fetch('<?= url("api/like.php") ?>', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

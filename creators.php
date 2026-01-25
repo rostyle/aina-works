@@ -559,7 +559,7 @@ function clearFilters() {
 async function toggleFavorite(targetType, targetId, button) {
     try {
         const isFavorited = button.getAttribute('data-liked') === 'true';
-        const response = await fetch('api/favorite.php', {
+        const response = await fetch('<?= url("api/favorite.php") ?>', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

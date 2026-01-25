@@ -18,43 +18,32 @@ function h($str) {
  */
 function url($path = '', $absolute = false) {
     // 既に絶対URLの場合はそのまま返す
-    if (!empty($path) && (strpos($path, 'http://') === 0 || strpos($path, 'https://') === 0)) {
+    if (!empty($path) && (preg_match('/^https?:\/\//', $path))) {
         return $path;
     }
 
     // クエリを分離
-    $basePath = $path;
+    $basePathPart = $path;
     $query = '';
     if (!empty($path) && strpos($path, '?') !== false) {
-        [$basePath, $query] = explode('?', $path, 2);
+        [$basePathPart, $query] = explode('?', $path, 2);
     }
 
-    // 拡張子なしのとき、対応する .php が存在すれば付与
-    if (!empty($basePath) && strpos($basePath, '.') === false) {
-        $candidate = BASE_PATH . '/' . ltrim($basePath, '/');
-        if (file_exists($candidate . '.php')) {
-            $basePath .= '.php';
-        }
-    }
-
-    // 再結合
-    $finalPath = ltrim($basePath, '/');
+    // 末尾のスラッシュをトリミング（ルート以外）
+    $finalPath = ltrim($basePathPart, '/');
     if ($query !== '') {
         $finalPath .= '?' . $query;
     }
 
+    // ベースURLのパス部分を取得 (/aina-works など)
+    $sitePath = rtrim(parse_url(BASE_URL, PHP_URL_PATH) ?? '', '/');
+
     if ($absolute) {
-        $baseUrl = rtrim(BASE_URL, '/');
-        if ($finalPath === '') {
-            return $baseUrl . '/';
-        }
-        return $baseUrl . '/' . $finalPath;
+        return rtrim(BASE_URL, '/') . '/' . $finalPath;
     }
 
-    if ($finalPath === '') {
-        return './';
-    }
-    return './' . $finalPath;
+    // ホストルートからの絶対パスを返す
+    return $sitePath . '/' . $finalPath;
 }
 
 /**
@@ -63,7 +52,10 @@ function url($path = '', $absolute = false) {
 function asset($path) {
     $cleanPath = ltrim($path, '/');
     $localFile = BASE_PATH . '/assets/' . $cleanPath;
-    $url = './assets/' . $cleanPath;
+    
+    // ベースURLのパス部分を取得
+    $sitePath = rtrim(parse_url(BASE_URL, PHP_URL_PATH) ?? '', '/');
+    $url = $sitePath . '/assets/' . $cleanPath;
     
     if (file_exists($localFile)) {
         $url .= '?v=' . filemtime($localFile);
@@ -81,22 +73,26 @@ function uploaded_asset($path) {
     }
     
     // 外部URLの場合はそのまま返す
-    if (strpos($path, 'http') === 0) {
+    if (preg_match('/^https?:\/\//', $path)) {
         return $path;
     }
     
-    // デフォルトアセットの場合はBASE_URL + assets配下のパス
-    if (strpos($path, 'assets/') === 0) {
-        return rtrim(BASE_URL, '/') . '/' . $path;
+    // ベースURLのパス部分を取得
+    $sitePath = rtrim(parse_url(BASE_URL, PHP_URL_PATH) ?? '', '/');
+    
+    // すでに $sitePath から始まっている場合はそのまま
+    if (!empty($sitePath) && strpos($path, $sitePath) === 0) {
+        return $path;
     }
     
-    // 相対パスの場合はstorage/app/uploads/を正規化して結合
     $cleanPath = ltrim($path, '/');
+    
+    // パスに storage/app/uploads/ が含まれているかチェック
     if (strpos($cleanPath, 'storage/app/uploads/') === 0) {
-        return rtrim(BASE_URL, '/') . '/' . $cleanPath;
+        return $sitePath . '/' . $cleanPath;
     }
     
-    return rtrim(BASE_URL, '/') . '/storage/app/uploads/' . $cleanPath;
+    return $sitePath . '/storage/app/uploads/' . $cleanPath;
 }
 
 /**

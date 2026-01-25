@@ -1,68 +1,53 @@
-Options -MultiViews
+# AiNA Works .htaccess Configuration
 
-RewriteEngine On
-
-# 既存のファイル/ディレクトリはそのまま
-RewriteCond %{REQUEST_FILENAME} -f [OR]
-RewriteCond %{REQUEST_FILENAME} -d
-RewriteRule ^ - [L]
-
-# 拡張子なしのルートを .php に解決
-RewriteRule ^([^./]+)$ $1.php [QSA,L]
-
+# 1. 基本設定
 Options -Indexes
 Options -MultiViews
 DirectoryIndex index.php
 
-# エラーページ設定
-ErrorDocument 404 /aina_works/404.php
-ErrorDocument 403 /aina_works/404.php
-ErrorDocument 500 /aina_works/404.php
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    
+    # 必要に応じてベースパスを指定
+    RewriteBase /aina-works/
 
-RewriteEngine On
+    # 2. 直接アクセス禁止（セキュリティ）
+    RewriteRule ^(includes|config|sql|vendor)/ - [F,L]
 
-# 直接見られたくないディレクトリをブロック
-RewriteRule ^(includes|config|sql)/ - [F,L]
+    # 3. /works を /work に正規化
+    RewriteCond %{REQUEST_METHOD} GET
+    RewriteCond %{THE_REQUEST} \s/+(works)(/|\s|\?) [NC]
+    RewriteRule ^works/?$ work/ [R=301,L]
 
-# /works → work/ へ正規化（GET のみ）
-RewriteCond %{REQUEST_METHOD} GET
-RewriteCond %{THE_REQUEST} \s/+(works)(/|\s|\?) [NC]
-RewriteRule ^works/?$ work/ [R=301,L]
+    # 4. xxx/index.php を xxx/ にリダイレクト（SEO）
+    RewriteCond %{REQUEST_METHOD} GET
+    RewriteCond %{THE_REQUEST} \s/+(.*?/)?index\.php[\s?] [NC]
+    RewriteRule ^((?!(api/|assets/|uploads/|storage/)).*?)index\.php$ $1 [R=301,L]
 
-# GETリクエスト時のみ、.php を拡張子なしURLへ301リダイレクト（api等は除外）
-RewriteCond %{REQUEST_METHOD} GET
-RewriteCond %{THE_REQUEST} \s[^\s]*\.php [NC]
-RewriteRule ^((?!(api/|assets/|uploads/|storage/|includes/|config/|sql/)).+)\.php$ $1 [R=301,L]
+    # 5. .php 拡張子を URL から取り除く (外部リダイレクト)
+    # ユーザーが .php 付きでアクセスした場合、拡張子なしにリダイレクト
+    RewriteCond %{REQUEST_METHOD} GET
+    RewriteCond %{THE_REQUEST} \s[^\s]*\.php [NC]
+    RewriteRule ^((?!(api/|assets/|uploads/|storage/)).+)\.php$ $1 [R=301,L,QSA]
 
-# 既存のファイル/ディレクトリはそのまま配信
-RewriteCond %{REQUEST_FILENAME} -f [OR]
-RewriteCond %{REQUEST_FILENAME} -d
-RewriteRule ^ - [L]
+    # 6. すでに存在するファイルやディレクトリはそのまま配信
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
 
-# /xxx/index.php → xxx/ に正規化（GET のみ、除外対象外）
-RewriteCond %{REQUEST_METHOD} GET
-RewriteCond %{THE_REQUEST} \s/+(.*?/)?index\.php[\s?] [NC]
-RewriteRule ^(?!api/|assets/|uploads/|storage/|includes/|config/|sql/)(.+/)?index\.php$ $1 [R=301,L]
+    # 7. /work を /works.php に内部リライト
+    RewriteRule ^work/?$ works.php [L,QSA]
 
-# /work を works.php へ内部リライト
-RewriteRule ^work/?$ works.php [L,QSA]
+    # 8. 拡張子なしのアクセスを .php に解決する (内部リライト)
+    # 既存のディレクトリでなく、.php をつければファイルが存在する場合に適用
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME}.php -f
+    RewriteRule ^(.+?)/?$ $1.php [L,QSA]
 
-# 拡張子あり（.が含まれる）パスは内部リライトしない
-RewriteCond %{REQUEST_URI} !\.[^/]+$
-# 拡張子なしアクセスを .php へ内部リライト（除外ディレクトリ以外）
-# ファイルが存在しない場合は404エラーを返す
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteRule ^(?!api/|assets/|uploads/|storage/|includes/|config/|sql/)(.+?)/?$ $1.php [L,QSA]
+</IfModule>
 
-# 存在しないPHPファイルへのアクセスを404エラーに
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_URI} \.php$
-RewriteRule ^(?!api/|assets/|uploads/|storage/|includes/|config/|sql/)(.+)$ - [R=404,L]
-
-# 存在しないディレクトリへのアクセスを404エラーに
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteCond %{REQUEST_URI} !^/(api/|assets/|uploads/|storage/|includes/|config/|sql/)
-RewriteRule ^(.*)$ - [R=404,L]
-
-
+# 9. エラーページ設定
+# サブディレクトリ名に合わせて修正
+ErrorDocument 404 /aina-works/404.php
+ErrorDocument 403 /aina-works/404.php
+ErrorDocument 500 /aina-works/404.php

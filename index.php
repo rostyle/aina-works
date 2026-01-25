@@ -470,7 +470,7 @@ include 'includes/header.php';
 // いいね機能（トップページ用）
 async function toggleLike(targetType, targetId, button) {
     try {
-        const response = await fetch('api/like.php', {
+        const response = await fetch('<?= url("api/like.php") ?>', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
