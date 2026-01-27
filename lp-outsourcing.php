@@ -115,7 +115,7 @@ include 'includes/header.php';
             <div class="bg-white rounded-3xl p-8 hover:shadow-xl transition-all border border-slate-100">
                 <div class="text-blue-600 font-bold text-sm mb-4">WEB</div>
                 <h3 class="text-2xl font-bold text-slate-900 mb-2">HP・LP作成</h3>
-                <div class="flex items-baseline"><span class="text-3xl font-extrabold text-slate-900">¥25,000</span><span class="text-slate-500 ml-2">〜</span></div>
+                <div class="flex items-baseline"><span class="text-3xl font-extrabold text-slate-900">¥35,000</span><span class="text-slate-500 ml-2">〜</span></div>
             </div>
             <div class="bg-white rounded-3xl p-8 hover:shadow-xl transition-all border border-slate-100">
                 <div class="text-blue-600 font-bold text-sm mb-4">COMIC / PRINT</div>
