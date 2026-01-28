@@ -60,9 +60,24 @@ try {
     $db->beginTransaction();
 
     // カラム存在チェック + ソフトマイグレーション
-    $hasRecruiting = $db->selectOne("SHOW COLUMNS FROM jobs LIKE 'is_recruiting'");
-    $hasHiringLimit = $db->selectOne("SHOW COLUMNS FROM jobs LIKE 'hiring_limit'");
-    $hasAcceptedCount = $db->selectOne("SHOW COLUMNS FROM jobs LIKE 'accepted_count'");
+    $hasRecruiting = false;
+    $hasHiringLimit = false;
+    $hasAcceptedCount = false;
+
+    try {
+        $db->selectOne("SELECT is_recruiting FROM jobs LIMIT 1");
+        $hasRecruiting = true;
+    } catch (Exception $e) {}
+
+    try {
+        $db->selectOne("SELECT hiring_limit FROM jobs LIMIT 1");
+        $hasHiringLimit = true;
+    } catch (Exception $e) {}
+
+    try {
+        $db->selectOne("SELECT accepted_count FROM jobs LIMIT 1");
+        $hasAcceptedCount = true;
+    } catch (Exception $e) {}
 
     try {
         if (!$hasHiringLimit) {
