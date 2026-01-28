@@ -94,6 +94,9 @@ try {
                 $db->update("UPDATE jobs SET accepted_count = IFNULL(accepted_count,0) + 1 WHERE id = ?", [$application['job_id']]);
             }
 
+            $hasHiringLimit = $db->selectOne("SHOW COLUMNS FROM jobs LIKE 'hiring_limit'");
+            $hasRecruiting = $db->selectOne("SHOW COLUMNS FROM jobs LIKE 'is_recruiting'");
+
             // If is_recruiting becomes 0 (limit reached), change status to 'contracted'
             if ($hasHiringLimit && $hasRecruiting) {
                 $row = $db->selectOne("SELECT IFNULL(hiring_limit,1) AS hiring_limit, IFNULL(accepted_count,0) AS accepted_count FROM jobs WHERE id = ?", [$application['job_id']]);
