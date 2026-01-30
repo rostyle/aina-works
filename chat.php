@@ -110,7 +110,7 @@ $pageTitle = 'チャット';
 include 'includes/header.php';
 ?>
 
-<div class="h-[calc(100vh-64px)] bg-gray-50 flex relative overflow-hidden">
+<div class="min-h-[100dvh] md:h-[calc(100vh-64px)] bg-gray-50 flex relative overflow-hidden">
     <!-- Sidebar (Chat List) -->
     <aside class="w-full md:w-80 lg:w-96 bg-white/80 backdrop-blur-xl border-r border-white/20 flex flex-col absolute inset-0 z-20 md:relative transform transition-transform duration-300 <?= $targetUserId ? '-translate-x-full md:translate-x-0' : 'translate-x-0' ?>">
         
@@ -388,16 +388,23 @@ function removeFilePreview() {
     document.getElementById('file-name').textContent = '';
 }
 
-// Scroll to bottom
+// Scroll to bottom with better reliability
 function scrollToBottom() {
     const container = document.getElementById('messages-container');
     if (container) {
-        container.scrollTop = container.scrollHeight;
+        // Use requestAnimationFrame for smoother scroll
+        requestAnimationFrame(() => {
+            container.scrollTop = container.scrollHeight;
+        });
     }
 }
 
-// Initial scroll
-window.onload = scrollToBottom;
+// Initial scroll - ensure it runs after images load
+window.addEventListener('load', () => {
+    scrollToBottom();
+    // Double-check after a slight delay for any late-loading content
+    setTimeout(scrollToBottom, 100);
+});
 
 // API Endpoints
 const SEND_MESSAGE_API = '<?= url("api/send-chat-message-v2.php") ?>';
@@ -622,6 +629,12 @@ function addMessageToChat(data) {
 function uploadedAsset(path) {
     if (path.startsWith('http')) return path;
     const baseUrl = '<?= rtrim(BASE_URL, "/") ?>';
+    
+    // If path already starts with storage/, don't add it again
+    if (path.startsWith('storage/')) {
+        return baseUrl + '/' + path;
+    }
+    
     return baseUrl + '/storage/app/uploads/' + path;
 }
 
