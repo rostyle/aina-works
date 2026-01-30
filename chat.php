@@ -634,8 +634,7 @@ function escapeHtml(text) {
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
 }
-        .replace(/'/g, "&#039;");
-}
+
 </script>
 
 <?php include 'includes/footer.php'; ?>
