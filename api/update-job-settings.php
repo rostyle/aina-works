@@ -1,18 +1,18 @@
 <?php
-// エラー出力を抑制（JSONレスポンスを汚染しないように）
-ini_set('display_errors', '0');
-error_reporting(E_ALL & ~E_NOTICE & ~E_DEPRECATED & ~E_STRICT & ~E_WARNING);
-
-// 出力バッファをクリアしてクリーンなJSONレスポンスを確保
-while (ob_get_level() > 0) {
-    ob_end_clean();
-}
+// すべての出力をバッファリング（予期せぬ出力を抑制）
+ob_start();
 
 require_once '../config/config.php';
 
-// 再度バッファをクリア（config.phpでバッファが開始される可能性があるため）
-while (ob_get_level() > 0) {
-    ob_end_clean();
+// config.php の DEBUG 設定による上書きを防ぐため、ここで再度エラー報告を抑制
+if (!defined('DEBUG') || !DEBUG) {
+    ini_set('display_errors', '0');
+    error_reporting(E_ALL & ~E_NOTICE & ~E_DEPRECATED & ~E_STRICT & ~E_WARNING);
+} else {
+    // デバッグモードでもJSONレスポンスを壊さないよう、画面への直接表示はオフにする
+    // （エラーは php-errors.log 等に記録されます）
+    ini_set('display_errors', '0');
+    error_reporting(E_ALL);
 }
 
 header('Content-Type: application/json');

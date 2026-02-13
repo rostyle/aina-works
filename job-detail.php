@@ -919,23 +919,33 @@ document.addEventListener('DOMContentLoaded', function() {
 
             try {
                 const fd = new FormData();
-                fd.append('job_id', <?= $jobId ?>);
+                fd.append('job_id', <?= (int)$jobId ?>);
                 fd.append('csrf_token', csrfToken);
                 if (statusSelect) fd.append('status', statusSelect.value);
                 if (inputLimit) fd.append('hiring_limit', inputLimit.value);
 
-                const response = await fetch('<?= url("api/update-job-settings.php") ?>', {
+                // 相対パスを使用
+                const apiUrl = 'api/update-job-settings.php';
+                
+                const response = await fetch(apiUrl, {
                     method: 'POST',
-                    body: fd
+                    body: fd,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
                 });
 
-                if (!response.ok) {
-                    throw new Error('HTTP status ' + response.status);
+                const responseText = await response.text();
+                let json;
+                try {
+                    json = JSON.parse(responseText);
+                } catch (e) {
+                    console.error('JSON Parse Error. Response was:', responseText);
+                    throw new Error('サーバーからの応答が正しくありません。');
                 }
 
-                const json = await response.json();
                 if (json.success) {
-                    alert('更新しました');
+                    alert(json.message || '更新しました');
                     location.reload();
                 } else {
                     alert('エラー: ' + (json.error || '更新に失敗しました'));
@@ -944,7 +954,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             } catch (error) {
                 console.error('Update Error:', error);
-                alert('通信エラーが発生しました。時間を置いて再度お試しください。');
+                alert('エラーが発生しました: ' + error.message);
                 btn.disabled = false;
                 btn.textContent = originalText;
             }
