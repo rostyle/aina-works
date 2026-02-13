@@ -652,14 +652,7 @@ $showSuccess = isset($_GET['applied']) && $_GET['applied'] == '1';
                     </div>
                 <?php endif; ?>
 
-                <?php if ($job['location']): ?>
-                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                        <h2 class="text-xl font-bold text-gray-900 mb-4">勤務地・作業場所</h2>
-                        <p class="text-gray-700"><?= h($job['location']) ?></p>
-                    </div>
-                <?php endif; ?>
-
-                <?php if ($job['location']): ?>
+                <?php if (!empty($job['location'])): ?>
                     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                         <h2 class="text-xl font-bold text-gray-900 mb-4">勤務地・作業場所</h2>
                         <p class="text-gray-700"><?= h($job['location']) ?></p>
@@ -772,7 +765,6 @@ $showSuccess = isset($_GET['applied']) && $_GET['applied'] == '1';
             </div>
         </div>
     </div>
-</script>
 </section>
 
 <!-- Application Modal -->
@@ -863,114 +855,63 @@ $showSuccess = isset($_GET['applied']) && $_GET['applied'] == '1';
         </div>
     </div>
 </div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const modal = document.getElementById('application-modal');
-    const openBtn = document.getElementById('open-application-modal');
-    const closeBtn = document.getElementById('close-modal');
-    const cancelBtn = document.getElementById('cancel-application');
-    const form = document.getElementById('application-form');
-    const submitBtn = document.getElementById('submit-application-btn');
-    
-    // モーダルを開く
-    if (openBtn) {
-        openBtn.addEventListener('click', function() {
-            modal.classList.remove('hidden');
-            document.body.style.overflow = 'hidden';
-            // フォーカスを最初の必須項目へ
-            const firstInput = document.getElementById('modal_cover_letter');
-            if (firstInput) firstInput.focus();
-        });
-    }
-    
-    // モーダルを閉じる
-    function closeModal() {
-        modal.classList.add('hidden');
-        document.body.style.overflow = 'auto';
-    }
-    
-    if (closeBtn) closeBtn.addEventListener('click', closeModal);
-    if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
-    
-    if (modal) {
-        modal.addEventListener('click', function(e) {
-            if (e.target === modal) closeModal();
-        });
-    }
-    
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && modal && !modal.classList.contains('hidden')) {
-            closeModal();
-        }
-    });
-
-    // フォーム送信
-    if (form) {
-        form.addEventListener('submit', function(e) {
-            if (window.loadingManager) {
-                window.loadingManager.setFormLoading(form, { 
-                    message: '応募を送信中...',
-                    disableAllFields: false 
-                });
-            }
-        });
-    }
-
-    // 募集管理操作
-    const btnSave = document.getElementById('btn-save-settings');
-    const statusSelect = document.getElementById('status_select');
-    const inputLimit = document.getElementById('hiring_limit');
-    const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-
-    if (btnSave) {
-        btnSave.addEventListener('click', async function() {
-            if (!confirm('募集設定を更新しますか？')) return;
-            const btn = this;
-            const originalText = btn.textContent;
-            btn.disabled = true;
-            btn.textContent = '保存中...';
-
-            try {
-                const fd = new FormData();
-                fd.append('job_id', <?= $jobId ?>);
-                fd.append('csrf_token', csrf);
-                if (statusSelect) fd.append('status', statusSelect.value);
-                if (inputLimit) fd.append('hiring_limit', inputLimit.value);
-
-                const res = await fetch('api/update-job-settings.php', { method: 'POST', body: fd });
-                const json = await res.json();
-                if (json.success) {
-                    alert('更新しました');
-                    location.reload();
-                } else {
-                    alert('エラー: ' + (json.error || '更新に失敗しました'));
-                    btn.disabled = false;
-                    btn.textContent = originalText;
-                }
-            } catch (error) {
-                alert('通信エラーが発生しました');
-                btn.disabled = false;
-                btn.textContent = originalText;
-            }
-        });
-    }
-});
-</script>
 <?php endif; ?>
 
 <script>
-// 依頼者向け（モーダル外のJSが必要な場合用）
 document.addEventListener('DOMContentLoaded', function() {
-    // 応募ボタンがない（依頼者本人など）の場合の管理機能
+    // 応募モーダル関連
+    const modal = document.getElementById('application-modal');
+    if (modal) {
+        const openBtn = document.getElementById('open-application-modal');
+        const closeBtn = document.getElementById('close-modal');
+        const cancelBtn = document.getElementById('cancel-application');
+        const form = document.getElementById('application-form');
+        
+        function closeModal() {
+            modal.classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+
+        if (openBtn) {
+            openBtn.addEventListener('click', function() {
+                modal.classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+                const firstInput = document.getElementById('modal_cover_letter');
+                if (firstInput) firstInput.focus();
+            });
+        }
+        
+        if (closeBtn) closeBtn.addEventListener('click', closeModal);
+        if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+        modal.addEventListener('click', function(e) { if (e.target === modal) closeModal(); });
+        
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && !modal.classList.contains('hidden')) closeModal();
+        });
+
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                if (window.loadingManager) {
+                    window.loadingManager.setFormLoading(form, { 
+                        message: '応募を送信中...',
+                        disableAllFields: false 
+                    });
+                }
+            });
+        }
+    }
+
+    // 募集管理（依頼者向け）
     const btnSave = document.getElementById('btn-save-settings');
-    if (btnSave && !document.getElementById('application-modal')) {
+    if (btnSave) {
         const statusSelect = document.getElementById('status_select');
         const inputLimit = document.getElementById('hiring_limit');
-        const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        const csrfEl = document.querySelector('meta[name="csrf-token"]');
+        const csrfToken = csrfEl ? csrfEl.getAttribute('content') : '';
 
         btnSave.addEventListener('click', async function() {
             if (!confirm('募集設定を更新しますか？')) return;
+            
             const btn = this;
             const originalText = btn.textContent;
             btn.disabled = true;
@@ -979,12 +920,20 @@ document.addEventListener('DOMContentLoaded', function() {
             try {
                 const fd = new FormData();
                 fd.append('job_id', <?= $jobId ?>);
-                fd.append('csrf_token', csrf);
+                fd.append('csrf_token', csrfToken);
                 if (statusSelect) fd.append('status', statusSelect.value);
                 if (inputLimit) fd.append('hiring_limit', inputLimit.value);
 
-                const res = await fetch('api/update-job-settings.php', { method: 'POST', body: fd });
-                const json = await res.json();
+                const response = await fetch('<?= url("api/update-job-settings.php") ?>', {
+                    method: 'POST',
+                    body: fd
+                });
+
+                if (!response.ok) {
+                    throw new Error('HTTP status ' + response.status);
+                }
+
+                const json = await response.json();
                 if (json.success) {
                     alert('更新しました');
                     location.reload();
@@ -994,7 +943,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     btn.textContent = originalText;
                 }
             } catch (error) {
-                alert('通信エラーが発生しました');
+                console.error('Update Error:', error);
+                alert('通信エラーが発生しました。時間を置いて再度お試しください。');
                 btn.disabled = false;
                 btn.textContent = originalText;
             }
@@ -1002,7 +952,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
-</section>
 
 <?php include 'includes/footer.php'; ?>
 
