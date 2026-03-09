@@ -50,7 +50,7 @@ $orderBy = match($sortBy) {
     // 時給カラム廃止のため料金ソートは無効化（created_atにフォールバック）
     'price_low' => 'u.created_at DESC',
     'price_high' => 'u.created_at DESC',
-    default => 'u.is_pro DESC, avg_rating DESC, u.created_at DESC'
+    default => '(CASE WHEN u.profile_image IS NOT NULL AND u.profile_image != \'\' THEN 1 ELSE 0 END + CASE WHEN u.bio IS NOT NULL AND u.bio != \'\' THEN 1 ELSE 0 END) DESC, u.is_pro DESC, avg_rating DESC, u.created_at DESC'
 };
 
 try {
