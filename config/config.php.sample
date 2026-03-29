@@ -90,9 +90,9 @@ define('AINA_API_KEY', $_ENV['AINA_API_KEY'] ?? 'your_api_key_here');
 define('ALLOWED_STATUSES', [3]);
 
 // プランID: メンバープラン以上を許可（フリープランを除外する場合は1を削除）
-// 1=free, 2=member, 3=expert, 4=premium, 5=junior, 6=講師（l2e_agent）, 7=l2e_partnership, 
-// 8=jousou, 9=常総未来AIスクール, 11=agent, 12=partnership_agent, 13=common, 14=ex_legend, 15=アドジュニア
-define('ALLOWED_PLAN_IDS', [2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]);
+// 1=free, 2=member, 3=expert, 4=premium, 5=junior, 6=講師（l2e_agent）, 7=l2e_partnership,
+// 8=jousou, 9=常総未来AIスクール, 11=agent, 12=partnership_agent, 13=common, 14=ex_legend, 15=アドジュニア, 16=メンバー（ESC）
+define('ALLOWED_PLAN_IDS', [2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16]);
 
 // プラン名（表示用・後方互換性のため残す）
 define('ALLOWED_RANKS', [

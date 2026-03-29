@@ -1095,7 +1095,7 @@ function validateUserAccess($user) {
         define('ALLOWED_STATUSES', [3]);
     }
     if (!defined('ALLOWED_PLAN_IDS')) {
-        define('ALLOWED_PLAN_IDS', [2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]);
+        define('ALLOWED_PLAN_IDS', [2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16]);
         error_log('警告: ALLOWED_PLAN_IDsが未定義でした。デフォルト値を使用しています。config/config.phpを更新してください。');
     }
     
