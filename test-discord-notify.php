@@ -2,7 +2,7 @@
 require_once 'config/config.php';
 
 $db = Database::getInstance();
-$job = $db->fetch("
+$job = $db->selectOne("
     SELECT j.id, j.title, j.budget_min, j.budget_max, j.urgency, j.category_id
     FROM jobs j
     ORDER BY j.created_at DESC

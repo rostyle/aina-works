@@ -889,7 +889,7 @@ function notifyNewJobToDiscord($jobId, $title, $budgetMin, $budgetMax, $urgency,
     if ($categoryId) {
         try {
             $db = Database::getInstance();
-            $cat = $db->fetch("SELECT name FROM categories WHERE id = ?", [$categoryId]);
+            $cat = $db->selectOne("SELECT name FROM categories WHERE id = ?", [$categoryId]);
             if ($cat) {
                 $categoryName = $cat['name'];
             }
