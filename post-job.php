@@ -134,6 +134,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 $db->commit();
 
+                // Discord通知（投稿処理には影響させない）
+                try {
+                    notifyNewJobToDiscord(
+                        $jobId,
+                        $formData['title'],
+                        $formData['budget_min'],
+                        $formData['budget_max'],
+                        $formData['urgency'],
+                        $formData['category_id']
+                    );
+                } catch (Exception $e) {
+                    error_log('[post-job] Discord通知失敗: ' . $e->getMessage());
+                }
+
                 setFlash('success', '案件を投稿しました。');
                 redirect(url('job-detail?id=' . $jobId));
 

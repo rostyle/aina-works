@@ -847,6 +847,84 @@ function sendNotificationMail($to, $subject, $message, $actionUrl = null, $actio
 }
 
 /**
+ * Discord Webhook通知送信
+ */
+function sendDiscordNotification($webhookUrl, $content, $embeds = []) {
+    $payload = ['content' => $content];
+    if (!empty($embeds)) {
+        $payload['embeds'] = $embeds;
+    }
+
+    $ch = curl_init($webhookUrl);
+    curl_setopt_array($ch, [
+        CURLOPT_POST           => true,
+        CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
+        CURLOPT_POSTFIELDS     => json_encode($payload, JSON_UNESCAPED_UNICODE),
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT        => 10,
+    ]);
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($httpCode < 200 || $httpCode >= 300) {
+        error_log("[Discord Webhook] 送信失敗 HTTP {$httpCode}: {$response}");
+        return false;
+    }
+    return true;
+}
+
+/**
+ * 案件投稿時のDiscord通知
+ */
+function notifyNewJobToDiscord($jobId, $title, $budgetMin, $budgetMax, $urgency, $categoryId = null) {
+    $webhookUrl = 'https://discord.com/api/webhooks/1492174898640978011/Pc2Zue4dtZFlQOfsqZOA4ul8QGyxSHJsMaPujrK25mTcM3EemPefRBG1V7cuQa7-ibq2';
+    $jobUrl = url('job-detail?id=' . $jobId, true);
+
+    $urgencyLabels = ['low' => '低', 'medium' => '中', 'high' => '高'];
+    $urgencyLabel = $urgencyLabels[$urgency] ?? $urgency;
+
+    // カテゴリ名を取得
+    $categoryName = '未分類';
+    if ($categoryId) {
+        try {
+            $db = Database::getInstance();
+            $cat = $db->fetch("SELECT name FROM categories WHERE id = ?", [$categoryId]);
+            if ($cat) {
+                $categoryName = $cat['name'];
+            }
+        } catch (Exception $e) {
+            // カテゴリ取得失敗は無視
+        }
+    }
+
+    // 予算表示
+    $budgetText = '未設定';
+    if ($budgetMin && $budgetMax) {
+        $budgetText = number_format($budgetMin) . '円 〜 ' . number_format($budgetMax) . '円';
+    } elseif ($budgetMin) {
+        $budgetText = number_format($budgetMin) . '円 〜';
+    } elseif ($budgetMax) {
+        $budgetText = '〜 ' . number_format($budgetMax) . '円';
+    }
+
+    $embeds = [[
+        'title'       => $title,
+        'url'         => $jobUrl,
+        'color'       => 0x3B82F6,
+        'fields'      => [
+            ['name' => 'カテゴリ',  'value' => $categoryName,  'inline' => true],
+            ['name' => '予算',      'value' => $budgetText,     'inline' => true],
+            ['name' => '緊急度',    'value' => $urgencyLabel,   'inline' => true],
+        ],
+        'timestamp'   => date('c'),
+        'footer'      => ['text' => 'AiNA Works'],
+    ]];
+
+    sendDiscordNotification($webhookUrl, '📢 新しい案件が投稿されました！', $embeds);
+}
+
+/**
  * AiNA API認証（新API対応）
  */
 function authenticateWithAinaApi($email, $password = null) {
