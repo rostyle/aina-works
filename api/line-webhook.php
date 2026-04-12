@@ -166,21 +166,27 @@ if (empty($body)) {
     exit;
 }
 
-lineLog("Received webhook: " . mb_substr($body, 0, 500));
+lineLog("Received webhook (length=" . strlen($body) . ")");
 
 // 署名検証
-if (!empty(DEMI_LINE_CHANNEL_SECRET)) {
+$secretSet = !empty(DEMI_LINE_CHANNEL_SECRET);
+lineLog("Signature check: secret_set=" . ($secretSet ? 'yes' : 'no'));
+if ($secretSet) {
     if (!verifyLineSignature($body, DEMI_LINE_CHANNEL_SECRET)) {
-        lineLog("Signature verification failed");
+        lineLog("Signature verification FAILED");
         http_response_code(200);
         echo 'OK';
         exit;
     }
+    lineLog("Signature verification OK");
 }
 
 // 設定チェック
-if (empty(DEMI_LINE_CHANNEL_ACCESS_TOKEN) || empty(GEMINI_API_KEY)) {
-    lineLog("Missing config: DEMI_LINE_CHANNEL_ACCESS_TOKEN or GEMINI_API_KEY");
+$tokenSet = !empty(DEMI_LINE_CHANNEL_ACCESS_TOKEN);
+$geminiSet = !empty(GEMINI_API_KEY);
+lineLog("Config check: access_token=" . ($tokenSet ? 'yes' : 'no') . " gemini_key=" . ($geminiSet ? 'yes' : 'no'));
+if (!$tokenSet || !$geminiSet) {
+    lineLog("Missing config - aborting");
     http_response_code(200);
     echo 'OK';
     exit;
@@ -195,9 +201,17 @@ if (!$events || !isset($events['events'])) {
     exit;
 }
 
-foreach ($events['events'] as $event) {
+$eventCount = count($events['events']);
+lineLog("Event count: {$eventCount}");
+
+foreach ($events['events'] as $i => $event) {
+    $eventType = $event['type'] ?? 'unknown';
+    $msgType = $event['message']['type'] ?? 'none';
+    lineLog("Event[{$i}]: type={$eventType}, msg_type={$msgType}");
+
     // テキストメッセージイベントのみ処理
     if ($event['type'] !== 'message' || $event['message']['type'] !== 'text') {
+        lineLog("Event[{$i}]: skipped (not text message)");
         continue;
     }
 
@@ -207,12 +221,10 @@ foreach ($events['events'] as $event) {
     $groupId = $event['source']['groupId'] ?? '';
     $userId = $event['source']['userId'] ?? '';
 
-    lineLog("Message from {$sourceType}: " . mb_substr($userText, 0, 100));
-
-    // グループ・個人チャットどちらも処理（テスト段階）
-    // 本番ではグループのみに制限可能: if ($sourceType !== 'group') continue;
+    lineLog("Event[{$i}]: source={$sourceType}, text_len=" . mb_strlen($userText) . ", text=" . mb_substr($userText, 0, 100));
 
     if (empty($userText) || empty($replyToken)) {
+        lineLog("Event[{$i}]: skipped (empty text or replyToken)");
         continue;
     }
 
