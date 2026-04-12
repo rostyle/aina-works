@@ -73,7 +73,17 @@ function lineReply($replyToken, $messages) {
 function callGeminiForPriceConversion($inputText) {
     $systemPrompt = <<<'EOT'
 あなたは求人案件の単価調整アシスタントです。
-入力された求人情報の金額を以下のルールに従って変換し、金額部分のみ変更した求人情報を出力してください。それ以外の文面は一切変更しないでください。
+
+【最重要ルール】
+まず入力テキストが「求人・募集案件の情報」かどうかを判定してください。
+以下のような内容は求人情報ではありません：
+- 雑談、挨拶、質問、相談
+- ニュース、お知らせ、連絡事項
+- 金額や給与の記載がないテキスト
+求人情報でない場合は「NOT_JOB」とだけ出力してください。それ以外は一切出力しないでください。
+
+【求人情報と判定した場合】
+金額を以下のルールに従って変換し、金額部分のみ変更した求人情報を出力してください。それ以外の文面は一切変更しないでください。
 
 【変換ルール】
 1. 時給の場合：600円を引く。ただし日当換算（時給×8時間）が12,000円を下回る場合は、時給 = 12,000 ÷ 8 = 1,500円 とする。
@@ -238,10 +248,13 @@ foreach ($events['events'] as $i => $event) {
     $converted = callGeminiForPriceConversion($userText);
 
     if ($converted === null) {
-        lineReply($replyToken, [[
-            'type' => 'text',
-            'text' => '⚠️ 金額変換処理でエラーが発生しました。しばらくしてからもう一度お試しください。',
-        ]]);
+        lineLog("Event[{$i}]: Gemini API error");
+        continue;
+    }
+
+    // 求人情報でないと判定された場合はスキップ
+    if (trim($converted) === 'NOT_JOB') {
+        lineLog("Event[{$i}]: skipped (NOT_JOB)");
         continue;
     }
 
