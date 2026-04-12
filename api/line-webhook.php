@@ -142,7 +142,7 @@ EOT;
         ]],
         'generationConfig' => [
             'temperature' => 0.1,
-            'maxOutputTokens' => (int)GEMINI_MAX_TOKENS,
+            'maxOutputTokens' => 4096,
         ]
     ];
 
