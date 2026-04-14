@@ -3,10 +3,9 @@
  * LINE Webhook エンドポイント
  *
  * LINEグループに投稿された求人情報を受信し、
- * Gemini APIで金額変換を行い、変換後のテキストをLINEに返信する。
+ * Gemini APIで求人判定＋フォーマット整形、PHPで金額変換して返信する。
  */
 
-// エラー出力を抑制（LINEにはHTTP 200を返す必要がある）
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
 
@@ -69,35 +68,177 @@ function lineReply($replyToken, $messages) {
     return true;
 }
 
-// --- Gemini API 呼び出し ---
-function callGeminiForPriceConversion($inputText) {
+// =============================================================
+// 金額変換（PHP計算） - Geminiに任せずPHPで正確に計算
+// =============================================================
+
+/**
+ * 営業職かどうかを判定
+ */
+function isSalesJob($text) {
+    $keywords = ['営業', '獲得', '推奨販売', 'アポイント獲得', 'クロージング', '光AD', '通信販売', '法人営業'];
+    foreach ($keywords as $kw) {
+        if (mb_strpos($text, $kw) !== false) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * 時給変換: -600円、最低1,300円
+ */
+function convertHourly($amount) {
+    $converted = $amount - 600;
+    return max($converted, 1300);
+}
+
+/**
+ * 日当変換: -3,000円、最低12,000円
+ */
+function convertDaily($amount) {
+    $converted = $amount - 3000;
+    return max($converted, 12000);
+}
+
+/**
+ * 月給変換: -70,000円、一般職は最低270,000円、営業職は最低320,000円
+ */
+function convertMonthly($amount, $isSales) {
+    $converted = $amount - 70000;
+    $min = $isSales ? 320000 : 270000;
+    return max($converted, $min);
+}
+
+/**
+ * 数値を日本語金額表記にフォーマット
+ * 元が「万」表記なら万で返す、それ以外はカンマ区切り
+ */
+function formatJpnAmount($amount, $useMan = false) {
+    if ($useMan && $amount >= 10000 && $amount % 10000 === 0) {
+        return ($amount / 10000) . '万';
+    }
+    return number_format($amount);
+}
+
+/**
+ * テキスト中の金額を変換する
+ * 対応パターン:
+ *   時給: 時給2,100円 / 時給2100円
+ *   日当: 日当15,000円 / 日給15000円
+ *   月給: 月給350,000円 / 月収35万円 / 月給35万〜42万
+ */
+function convertPricesInText($text, $isSales) {
+    $original = $text;
+
+    // --- 時給パターン ---
+    // 時給2,100円 / 時給2100円
+    $text = preg_replace_callback(
+        '/時給\s*([0-9,]+)\s*円/u',
+        function ($m) {
+            $amount = (int)str_replace(',', '', $m[1]);
+            $converted = convertHourly($amount);
+            return '時給' . number_format($converted) . '円';
+        },
+        $text
+    );
+    // 時給レンジ: 時給1,800円〜2,100円
+    $text = preg_replace_callback(
+        '/時給\s*([0-9,]+)\s*円?\s*[〜~～ー―－]\s*([0-9,]+)\s*円/u',
+        function ($m) {
+            $min = convertHourly((int)str_replace(',', '', $m[1]));
+            $max = convertHourly((int)str_replace(',', '', $m[2]));
+            return '時給' . number_format($min) . '円〜' . number_format($max) . '円';
+        },
+        $text
+    );
+
+    // --- 日当・日給パターン ---
+    $text = preg_replace_callback(
+        '/(日当|日給)\s*([0-9,]+)\s*円/u',
+        function ($m) {
+            $amount = (int)str_replace(',', '', $m[2]);
+            $converted = convertDaily($amount);
+            return $m[1] . number_format($converted) . '円';
+        },
+        $text
+    );
+    // 日当レンジ
+    $text = preg_replace_callback(
+        '/(日当|日給)\s*([0-9,]+)\s*円?\s*[〜~～ー―－]\s*([0-9,]+)\s*円/u',
+        function ($m) {
+            $min = convertDaily((int)str_replace(',', '', $m[2]));
+            $max = convertDaily((int)str_replace(',', '', $m[3]));
+            return $m[1] . number_format($min) . '円〜' . number_format($max) . '円';
+        },
+        $text
+    );
+
+    // --- 月給・月収パターン（万円表記） ---
+    // 月給35万〜42万 / 月収38万円〜42万円
+    $text = preg_replace_callback(
+        '/(月給|月収)\s*([0-9]+)\s*万\s*円?\s*[〜~～ー―－]\s*([0-9]+)\s*万\s*円?/u',
+        function ($m) use ($isSales) {
+            $min = convertMonthly((int)$m[2] * 10000, $isSales);
+            $max = convertMonthly((int)$m[3] * 10000, $isSales);
+            return $m[1] . formatJpnAmount($min, true) . '円〜' . formatJpnAmount($max, true) . '円';
+        },
+        $text
+    );
+    // 月給35万円（単独）
+    $text = preg_replace_callback(
+        '/(月給|月収)\s*([0-9]+)\s*万\s*円/u',
+        function ($m) use ($isSales) {
+            $amount = (int)$m[2] * 10000;
+            $converted = convertMonthly($amount, $isSales);
+            return $m[1] . formatJpnAmount($converted, true) . '円';
+        },
+        $text
+    );
+
+    // --- 月給・月収パターン（数字表記） ---
+    // 月給350,000円〜420,000円
+    $text = preg_replace_callback(
+        '/(月給|月収)\s*([0-9,]+)\s*円?\s*[〜~～ー―－]\s*([0-9,]+)\s*円/u',
+        function ($m) use ($isSales) {
+            $min = convertMonthly((int)str_replace(',', '', $m[2]), $isSales);
+            $max = convertMonthly((int)str_replace(',', '', $m[3]), $isSales);
+            return $m[1] . number_format($min) . '円〜' . number_format($max) . '円';
+        },
+        $text
+    );
+    // 月給350,000円（単独）
+    $text = preg_replace_callback(
+        '/(月給|月収)\s*([0-9,]+)\s*円/u',
+        function ($m) use ($isSales) {
+            $amount = (int)str_replace(',', '', $m[2]);
+            $converted = convertMonthly($amount, $isSales);
+            return $m[1] . number_format($converted) . '円';
+        },
+        $text
+    );
+
+    return $text;
+}
+
+// =============================================================
+// Gemini API 呼び出し（求人判定 + フォーマット整形のみ）
+// =============================================================
+function callGeminiForJobFormat($inputText) {
     $systemPrompt = <<<'EOT'
-あなたは求人案件の単価調整・整形アシスタントです。
+あなたは求人案件の整形アシスタントです。
 
 【ステップ1：求人判定】
-まず入力テキストが「求人・募集案件の情報」かどうかを判定してください。
-以下のような内容は求人情報ではありません：
+入力テキストが「求人・募集案件の情報」かどうかを判定してください。
+以下は求人情報ではありません：
 - 雑談、挨拶、質問、相談
 - ニュース、お知らせ、連絡事項
 - 金額や給与の記載がないテキスト
 求人情報でない場合は「NOT_JOB」とだけ出力してください。
 
-【ステップ2：金額変換ルール】
-求人情報と判定した場合、以下のルールで金額を変換します：
-1. 時給の場合：600円を引く。ただし日当換算（時給×8時間）が12,000円を下回る場合は、時給 = 1,500円 とする。
-2. 日当の場合：4,800円を引く。ただし12,000円を下回らない。
-3. 月給（一般職）の場合：70,000円を引く。ただし270,000円を下回らない。
-4. 月給（営業職・販売職・獲得業務あり）の場合：70,000円を引く。ただし330,000円を下回らない。
-5. 月額レンジ表記（例：38万〜42万）の場合：上限・下限それぞれに上記ルールを適用する。
-6. インセンティブ・歩合・交通費の記載はそのまま残す。
-
-【営業職の判定基準】
-以下のいずれかに該当すれば営業職扱い：
-- 「営業」「獲得」「推奨販売」「アポイント獲得」「クロージング」が業務内容に含まれる
-- 光AD、通信販売、法人営業など売上成果が求められる案件
-
-【ステップ3：AiNA Works案件フォーマットに整形】
-金額変換後、以下のフォーマットに整形して出力してください。
+【ステップ2：AiNA Works案件フォーマットに整形】
+求人情報と判定した場合、以下のフォーマットに整形してください。
+金額は元の表記のまま変更せずに記載してください（金額変換は別途システムが行います）。
 元の情報から読み取れる項目のみ記載し、不明な項目は省略してください。
 
 --- 出力フォーマット ---
@@ -107,7 +248,7 @@ function callGeminiForPriceConversion($inputText) {
 {業務内容を箇条書きで整理}
 
 【給与・報酬】
-{変換後の金額を記載。時給/日当/月給を明記}
+{金額は元の表記のまま記載。時給/日当/月給を明記}
 {インセンティブ・歩合があればそのまま記載}
 
 【勤務地】
@@ -121,14 +262,14 @@ function callGeminiForPriceConversion($inputText) {
 
 【待遇・その他】
 {交通費、福利厚生、その他の条件}
-
 ---
 
 【出力ルール】
-- 上記フォーマットのテキストのみを出力すること
-- 説明、前置き、補足は一切不要
-- 情報が読み取れないセクションは丸ごと省略すること
-- 元の情報を勝手に追加・創作しないこと
+- 上記フォーマットのテキストのみを出力
+- 説明、前置き、補足は不要
+- 情報が読み取れないセクションは省略
+- 元の情報を追加・創作しない
+- 金額は一切変更しない
 EOT;
 
     $apiUrl = rtrim(GEMINI_API_BASE_URL, '/') . '/models/'
@@ -148,9 +289,7 @@ EOT;
 
     $ch = curl_init($apiUrl);
     curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        'Content-Type: application/json',
-    ]);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
     curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($requestBody, JSON_UNESCAPED_UNICODE));
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_TIMEOUT, 30);
@@ -185,16 +324,16 @@ EOT;
     return trim($text);
 }
 
-// --- メイン処理 ---
+// =============================================================
+// メイン処理
+// =============================================================
 
-// POSTのみ受け付ける
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(200);
     echo 'OK';
     exit;
 }
 
-// リクエストボディ取得
 $body = file_get_contents('php://input');
 if (empty($body)) {
     http_response_code(200);
@@ -245,7 +384,6 @@ foreach ($events['events'] as $i => $event) {
     $msgType = $event['message']['type'] ?? 'none';
     lineLog("Event[{$i}]: type={$eventType}, msg_type={$msgType}");
 
-    // テキストメッセージイベントのみ処理
     if ($event['type'] !== 'message' || $event['message']['type'] !== 'text') {
         lineLog("Event[{$i}]: skipped (not text message)");
         continue;
@@ -254,50 +392,52 @@ foreach ($events['events'] as $i => $event) {
     $sourceType = $event['source']['type'] ?? '';
     $replyToken = $event['replyToken'] ?? '';
     $userText = $event['message']['text'] ?? '';
-    $groupId = $event['source']['groupId'] ?? '';
-    $userId = $event['source']['userId'] ?? '';
 
-    lineLog("Event[{$i}]: source={$sourceType}, text_len=" . mb_strlen($userText) . ", text=" . mb_substr($userText, 0, 100));
+    lineLog("Event[{$i}]: source={$sourceType}, text_len=" . mb_strlen($userText));
 
     if (empty($userText) || empty($replyToken)) {
         lineLog("Event[{$i}]: skipped (empty text or replyToken)");
         continue;
     }
 
-    // 短いメッセージ（挨拶等）はスキップ（求人情報は通常ある程度の長さがある）
     if (mb_strlen($userText) < 30) {
-        lineLog("Skipped: message too short (" . mb_strlen($userText) . " chars)");
+        lineLog("Event[{$i}]: skipped (too short: " . mb_strlen($userText) . " chars)");
         continue;
     }
 
-    // Gemini APIで金額変換
-    $converted = callGeminiForPriceConversion($userText);
+    // ステップ1: Geminiで求人判定 + フォーマット整形（金額はそのまま）
+    $formatted = callGeminiForJobFormat($userText);
 
-    if ($converted === null) {
+    if ($formatted === null) {
         lineLog("Event[{$i}]: Gemini API error");
         continue;
     }
 
-    // 求人情報でないと判定された場合はスキップ
-    if (trim($converted) === 'NOT_JOB') {
+    if (trim($formatted) === 'NOT_JOB') {
         lineLog("Event[{$i}]: skipped (NOT_JOB)");
         continue;
     }
+
+    // ステップ2: PHPで金額変換
+    $isSales = isSalesJob($userText);
+    lineLog("Event[{$i}]: isSales=" . ($isSales ? 'yes' : 'no'));
+    $converted = convertPricesInText($formatted, $isSales);
+
+    lineLog("Event[{$i}]: price conversion done");
 
     // LINEメッセージは5000文字制限
     if (mb_strlen($converted) > 5000) {
         $converted = mb_substr($converted, 0, 4990) . "\n…（省略）";
     }
 
-    // 変換後テキストを返信
+    // 返信
     $success = lineReply($replyToken, [[
         'type' => 'text',
         'text' => $converted,
     ]]);
 
-    lineLog("Reply " . ($success ? "sent" : "failed") . " for message from {$sourceType}");
+    lineLog("Event[{$i}]: reply " . ($success ? "sent" : "failed"));
 }
 
-// LINE Webhookは常に200を返す
 http_response_code(200);
 echo 'OK';
