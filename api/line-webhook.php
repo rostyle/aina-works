@@ -3,13 +3,18 @@
  * LINE Webhook エンドポイント
  *
  * LINEグループに投稿された求人情報を受信し、
- * Gemini APIで求人判定＋フォーマット整形、PHPで金額変換して返信する。
+ * Gemini APIで求人判定＋構造化、PHPで金額変換してAiNA Worksに案件投稿する。
  */
 
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
 
 require_once __DIR__ . '/../config/config.php';
+
+// LINE Bot投稿者のユーザーID（.envで設定、未設定なら1）
+define('LINE_BOT_CLIENT_ID', (int)($_ENV['LINE_BOT_CLIENT_ID'] ?? 1));
+// LINE Bot投稿のデフォルトカテゴリID（.envで設定、未設定なら1）
+define('LINE_BOT_DEFAULT_CATEGORY_ID', (int)($_ENV['LINE_BOT_DEFAULT_CATEGORY_ID'] ?? 1));
 
 // ログ出力用
 function lineLog($message) {
@@ -69,12 +74,9 @@ function lineReply($replyToken, $messages) {
 }
 
 // =============================================================
-// 金額変換（PHP計算） - Geminiに任せずPHPで正確に計算
+// 金額変換（PHP計算）
 // =============================================================
 
-/**
- * 営業職かどうかを判定
- */
 function isSalesJob($text) {
     $keywords = ['営業', '獲得', '推奨販売', 'アポイント獲得', 'クロージング', '光AD', '通信販売', '法人営業'];
     foreach ($keywords as $kw) {
@@ -85,35 +87,18 @@ function isSalesJob($text) {
     return false;
 }
 
-/**
- * 時給変換: -600円、最低1,300円
- */
 function convertHourly($amount) {
-    $converted = $amount - 600;
-    return max($converted, 1300);
+    return max($amount - 600, 1300);
 }
 
-/**
- * 日当変換: -3,000円、最低12,000円
- */
 function convertDaily($amount) {
-    $converted = $amount - 3000;
-    return max($converted, 12000);
+    return max($amount - 3000, 12000);
 }
 
-/**
- * 月給変換: -70,000円、一般職は最低270,000円、営業職は最低320,000円
- */
 function convertMonthly($amount, $isSales) {
-    $converted = $amount - 70000;
-    $min = $isSales ? 320000 : 270000;
-    return max($converted, $min);
+    return max($amount - 70000, $isSales ? 320000 : 270000);
 }
 
-/**
- * 数値を日本語金額表記にフォーマット
- * 元が「万」表記なら万で返す、それ以外はカンマ区切り
- */
 function formatJpnAmount($amount, $useMan = false) {
     if ($useMan && $amount >= 10000 && $amount % 10000 === 0) {
         return ($amount / 10000) . '万';
@@ -123,26 +108,9 @@ function formatJpnAmount($amount, $useMan = false) {
 
 /**
  * テキスト中の金額を変換する
- * 対応パターン:
- *   時給: 時給2,100円 / 時給2100円
- *   日当: 日当15,000円 / 日給15000円
- *   月給: 月給350,000円 / 月収35万円 / 月給35万〜42万
  */
 function convertPricesInText($text, $isSales) {
-    $original = $text;
-
-    // --- 時給パターン ---
-    // 時給2,100円 / 時給2100円
-    $text = preg_replace_callback(
-        '/時給\s*([0-9,]+)\s*円/u',
-        function ($m) {
-            $amount = (int)str_replace(',', '', $m[1]);
-            $converted = convertHourly($amount);
-            return '時給' . number_format($converted) . '円';
-        },
-        $text
-    );
-    // 時給レンジ: 時給1,800円〜2,100円
+    // 時給レンジ
     $text = preg_replace_callback(
         '/時給\s*([0-9,]+)\s*円?\s*[〜~～ー―－]\s*([0-9,]+)\s*円/u',
         function ($m) {
@@ -152,17 +120,15 @@ function convertPricesInText($text, $isSales) {
         },
         $text
     );
-
-    // --- 日当・日給パターン ---
+    // 時給単独
     $text = preg_replace_callback(
-        '/(日当|日給)\s*([0-9,]+)\s*円/u',
+        '/時給\s*([0-9,]+)\s*円/u',
         function ($m) {
-            $amount = (int)str_replace(',', '', $m[2]);
-            $converted = convertDaily($amount);
-            return $m[1] . number_format($converted) . '円';
+            return '時給' . number_format(convertHourly((int)str_replace(',', '', $m[1]))) . '円';
         },
         $text
     );
+
     // 日当レンジ
     $text = preg_replace_callback(
         '/(日当|日給)\s*([0-9,]+)\s*円?\s*[〜~～ー―－]\s*([0-9,]+)\s*円/u',
@@ -173,9 +139,16 @@ function convertPricesInText($text, $isSales) {
         },
         $text
     );
+    // 日当単独
+    $text = preg_replace_callback(
+        '/(日当|日給)\s*([0-9,]+)\s*円/u',
+        function ($m) {
+            return $m[1] . number_format(convertDaily((int)str_replace(',', '', $m[2]))) . '円';
+        },
+        $text
+    );
 
-    // --- 月給・月収パターン（万円表記） ---
-    // 月給35万〜42万 / 月収38万円〜42万円
+    // 月給万円レンジ
     $text = preg_replace_callback(
         '/(月給|月収)\s*([0-9]+)\s*万\s*円?\s*[〜~～ー―－]\s*([0-9]+)\s*万\s*円?/u',
         function ($m) use ($isSales) {
@@ -185,19 +158,16 @@ function convertPricesInText($text, $isSales) {
         },
         $text
     );
-    // 月給35万円（単独）
+    // 月給万円単独
     $text = preg_replace_callback(
         '/(月給|月収)\s*([0-9]+)\s*万\s*円/u',
         function ($m) use ($isSales) {
-            $amount = (int)$m[2] * 10000;
-            $converted = convertMonthly($amount, $isSales);
-            return $m[1] . formatJpnAmount($converted, true) . '円';
+            return $m[1] . formatJpnAmount(convertMonthly((int)$m[2] * 10000, $isSales), true) . '円';
         },
         $text
     );
 
-    // --- 月給・月収パターン（数字表記） ---
-    // 月給350,000円〜420,000円
+    // 月給数字レンジ
     $text = preg_replace_callback(
         '/(月給|月収)\s*([0-9,]+)\s*円?\s*[〜~～ー―－]\s*([0-9,]+)\s*円/u',
         function ($m) use ($isSales) {
@@ -207,13 +177,11 @@ function convertPricesInText($text, $isSales) {
         },
         $text
     );
-    // 月給350,000円（単独）
+    // 月給数字単独
     $text = preg_replace_callback(
         '/(月給|月収)\s*([0-9,]+)\s*円/u',
         function ($m) use ($isSales) {
-            $amount = (int)str_replace(',', '', $m[2]);
-            $converted = convertMonthly($amount, $isSales);
-            return $m[1] . number_format($converted) . '円';
+            return $m[1] . number_format(convertMonthly((int)str_replace(',', '', $m[2]), $isSales)) . '円';
         },
         $text
     );
@@ -221,12 +189,54 @@ function convertPricesInText($text, $isSales) {
     return $text;
 }
 
+/**
+ * テキストから金額（円単位）を抽出する
+ * budget_min / budget_max 用
+ */
+function extractBudgetFromText($text, $isSales) {
+    $amounts = [];
+
+    // 時給
+    if (preg_match_all('/時給\s*([0-9,]+)\s*円/u', $text, $matches)) {
+        foreach ($matches[1] as $m) {
+            $amounts[] = convertHourly((int)str_replace(',', '', $m));
+        }
+    }
+    // 日当
+    if (preg_match_all('/(日当|日給)\s*([0-9,]+)\s*円/u', $text, $matches)) {
+        foreach ($matches[2] as $m) {
+            $amounts[] = convertDaily((int)str_replace(',', '', $m));
+        }
+    }
+    // 月給（万）
+    if (preg_match_all('/(月給|月収)\s*([0-9]+)\s*万/u', $text, $matches)) {
+        foreach ($matches[2] as $m) {
+            $amounts[] = convertMonthly((int)$m * 10000, $isSales);
+        }
+    }
+    // 月給（数字）
+    if (preg_match_all('/(月給|月収)\s*([0-9,]+)\s*円/u', $text, $matches)) {
+        foreach ($matches[2] as $m) {
+            $val = (int)str_replace(',', '', $m);
+            if ($val > 10000) { // 万円表記と重複しないよう
+                $amounts[] = convertMonthly($val, $isSales);
+            }
+        }
+    }
+
+    if (empty($amounts)) {
+        return ['min' => 0, 'max' => 0];
+    }
+
+    return ['min' => min($amounts), 'max' => max($amounts)];
+}
+
 // =============================================================
-// Gemini API 呼び出し（求人判定 + フォーマット整形のみ）
+// Gemini API 呼び出し（求人判定 + JSON構造化）
 // =============================================================
-function callGeminiForJobFormat($inputText) {
+function callGeminiForJobParse($inputText) {
     $systemPrompt = <<<'EOT'
-あなたは求人案件の整形アシスタントです。
+あなたは求人案件の解析アシスタントです。
 
 【ステップ1：求人判定】
 入力テキストが「求人・募集案件の情報」かどうかを判定してください。
@@ -234,42 +244,31 @@ function callGeminiForJobFormat($inputText) {
 - 雑談、挨拶、質問、相談
 - ニュース、お知らせ、連絡事項
 - 金額や給与の記載がないテキスト
-求人情報でない場合は「NOT_JOB」とだけ出力してください。
+求人情報でない場合は以下のJSONのみ出力：
+{"is_job": false}
 
-【ステップ2：AiNA Works案件フォーマットに整形】
-求人情報と判定した場合、以下のフォーマットに整形してください。
-金額は元の表記のまま変更せずに記載してください（金額変換は別途システムが行います）。
-元の情報から読み取れる項目のみ記載し、不明な項目は省略してください。
+【ステップ2：求人情報を構造化】
+求人情報と判定した場合、以下のJSON形式で出力してください。
+金額は元の表記のまま変更せずに記載してください。
+読み取れない項目はnullにしてください。
 
---- 出力フォーマット ---
-📋 {案件タイトル（簡潔に）}
-
-【仕事内容】
-{業務内容を箇条書きで整理}
-
-【給与・報酬】
-{金額は元の表記のまま記載。時給/日当/月給を明記}
-{インセンティブ・歩合があればそのまま記載}
-
-【勤務地】
-{勤務地の情報}
-
-【勤務時間・期間】
-{勤務時間、期間、シフトなどの情報}
-
-【応募条件】
-{必要なスキル・経験・資格}
-
-【待遇・その他】
-{交通費、福利厚生、その他の条件}
----
+{
+  "is_job": true,
+  "title": "案件タイトル（簡潔に30文字以内）",
+  "description": "以下の形式で整形した案件説明文（改行を含むテキスト）：\n\n【仕事内容】\n・業務内容1\n・業務内容2\n\n【給与・報酬】\n時給/日当/月給の情報（元の金額のまま）\n\n【勤務地】\n勤務地情報\n\n【勤務時間・期間】\n勤務時間や期間の情報\n\n【応募条件】\n必要なスキル・経験\n\n【待遇・その他】\n交通費・福利厚生など",
+  "location": "勤務地（都道府県＋市区町村程度）",
+  "duration_weeks": 4,
+  "urgency": "medium"
+}
 
 【出力ルール】
-- 上記フォーマットのテキストのみを出力
-- 説明、前置き、補足は不要
-- 情報が読み取れないセクションは省略
+- JSONのみ出力（説明・前置き・コードフェンス不要）
+- descriptionの中は改行(\n)を使って整形
+- 金額は一切変更しない（システムが後で変換する）
+- titleは簡潔に（「募集」「スタッフ」など不要な語は省略可）
+- duration_weeksは記載がなければ4（デフォルト）
+- urgencyは「急募」等あればhigh、通常はmedium
 - 元の情報を追加・創作しない
-- 金額は一切変更しない
 EOT;
 
     $apiUrl = rtrim(GEMINI_API_BASE_URL, '/') . '/models/'
@@ -284,6 +283,7 @@ EOT;
         'generationConfig' => [
             'temperature' => 0.1,
             'maxOutputTokens' => 4096,
+            'responseMimeType' => 'application/json',
         ]
     ];
 
@@ -321,7 +321,87 @@ EOT;
         return null;
     }
 
-    return trim($text);
+    // JSON抽出
+    $text = trim($text);
+    if (strpos($text, '```') !== false) {
+        $text = preg_replace('/```[a-zA-Z]*\n?|```/', '', $text);
+    }
+    $start = strpos($text, '{');
+    $end = strrpos($text, '}');
+    if ($start !== false && $end !== false && $end > $start) {
+        $text = substr($text, $start, $end - $start + 1);
+    }
+
+    $parsed = json_decode($text, true);
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        lineLog("Gemini JSON parse error: " . json_last_error_msg() . " / text: " . mb_substr($text, 0, 200));
+        return null;
+    }
+
+    return $parsed;
+}
+
+// =============================================================
+// DB投稿
+// =============================================================
+function postJobToDatabase($jobData) {
+    try {
+        $db = Database::getInstance();
+
+        $title = mb_substr($jobData['title'] ?? '新規案件', 0, 200);
+        $description = $jobData['description'] ?? '';
+        $location = $jobData['location'] ?? null;
+        $durationWeeks = (int)($jobData['duration_weeks'] ?? 4);
+        $urgency = $jobData['urgency'] ?? 'medium';
+        $budgetMin = (int)($jobData['budget_min'] ?? 0);
+        $budgetMax = (int)($jobData['budget_max'] ?? 0);
+
+        if ($durationWeeks < 1) $durationWeeks = 4;
+        if ($durationWeeks > 52) $durationWeeks = 52;
+        if (!in_array($urgency, ['low', 'medium', 'high'])) $urgency = 'medium';
+
+        $db->beginTransaction();
+
+        $jobId = $db->insert("
+            INSERT INTO jobs (
+                client_id, title, description, category_id,
+                budget_min, budget_max, duration_weeks,
+                required_skills, location, urgency
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ", [
+            LINE_BOT_CLIENT_ID,
+            $title,
+            $description,
+            LINE_BOT_DEFAULT_CATEGORY_ID,
+            $budgetMin,
+            $budgetMax,
+            $durationWeeks,
+            json_encode([]),
+            $location,
+            $urgency,
+        ]);
+
+        $db->commit();
+
+        // Discord通知
+        try {
+            notifyNewJobToDiscord(
+                $jobId, $title, $budgetMin, $budgetMax,
+                $urgency, LINE_BOT_DEFAULT_CATEGORY_ID
+            );
+        } catch (Exception $e) {
+            lineLog("Discord notify failed: " . $e->getMessage());
+        }
+
+        return $jobId;
+
+    } catch (Exception $e) {
+        if (isset($db)) {
+            try { $db->rollback(); } catch (Exception $ex) {}
+        }
+        lineLog("DB insert failed: " . $e->getMessage());
+        return null;
+    }
 }
 
 // =============================================================
@@ -345,7 +425,6 @@ lineLog("Received webhook (length=" . strlen($body) . ")");
 
 // 署名検証
 $secretSet = !empty(DEMI_LINE_CHANNEL_SECRET);
-lineLog("Signature check: secret_set=" . ($secretSet ? 'yes' : 'no'));
 if ($secretSet) {
     if (!verifyLineSignature($body, DEMI_LINE_CHANNEL_SECRET)) {
         lineLog("Signature verification FAILED");
@@ -353,14 +432,10 @@ if ($secretSet) {
         echo 'OK';
         exit;
     }
-    lineLog("Signature verification OK");
 }
 
 // 設定チェック
-$tokenSet = !empty(DEMI_LINE_CHANNEL_ACCESS_TOKEN);
-$geminiSet = !empty(GEMINI_API_KEY);
-lineLog("Config check: access_token=" . ($tokenSet ? 'yes' : 'no') . " gemini_key=" . ($geminiSet ? 'yes' : 'no'));
-if (!$tokenSet || !$geminiSet) {
+if (empty(DEMI_LINE_CHANNEL_ACCESS_TOKEN) || empty(GEMINI_API_KEY)) {
     lineLog("Missing config - aborting");
     http_response_code(200);
     echo 'OK';
@@ -370,73 +445,76 @@ if (!$tokenSet || !$geminiSet) {
 // イベント解析
 $events = json_decode($body, true);
 if (!$events || !isset($events['events'])) {
-    lineLog("Invalid event format");
     http_response_code(200);
     echo 'OK';
     exit;
 }
 
-$eventCount = count($events['events']);
-lineLog("Event count: {$eventCount}");
-
 foreach ($events['events'] as $i => $event) {
-    $eventType = $event['type'] ?? 'unknown';
-    $msgType = $event['message']['type'] ?? 'none';
-    lineLog("Event[{$i}]: type={$eventType}, msg_type={$msgType}");
-
-    if ($event['type'] !== 'message' || $event['message']['type'] !== 'text') {
-        lineLog("Event[{$i}]: skipped (not text message)");
+    if (($event['type'] ?? '') !== 'message' || ($event['message']['type'] ?? '') !== 'text') {
         continue;
     }
 
-    $sourceType = $event['source']['type'] ?? '';
     $replyToken = $event['replyToken'] ?? '';
     $userText = $event['message']['text'] ?? '';
-
-    lineLog("Event[{$i}]: source={$sourceType}, text_len=" . mb_strlen($userText));
+    $sourceType = $event['source']['type'] ?? '';
 
     if (empty($userText) || empty($replyToken)) {
-        lineLog("Event[{$i}]: skipped (empty text or replyToken)");
         continue;
     }
 
     if (mb_strlen($userText) < 30) {
-        lineLog("Event[{$i}]: skipped (too short: " . mb_strlen($userText) . " chars)");
+        lineLog("Event[{$i}]: skipped (too short)");
         continue;
     }
 
-    // ステップ1: Geminiで求人判定 + フォーマット整形（金額はそのまま）
-    $formatted = callGeminiForJobFormat($userText);
+    // ステップ1: Geminiで求人判定 + 構造化JSON取得
+    $parsed = callGeminiForJobParse($userText);
 
-    if ($formatted === null) {
+    if ($parsed === null) {
         lineLog("Event[{$i}]: Gemini API error");
         continue;
     }
 
-    if (trim($formatted) === 'NOT_JOB') {
+    if (empty($parsed['is_job'])) {
         lineLog("Event[{$i}]: skipped (NOT_JOB)");
         continue;
     }
 
-    // ステップ2: PHPで金額変換
+    lineLog("Event[{$i}]: job detected - title: " . ($parsed['title'] ?? ''));
+
+    // ステップ2: PHPで金額変換（description内のテキスト）
     $isSales = isSalesJob($userText);
-    lineLog("Event[{$i}]: isSales=" . ($isSales ? 'yes' : 'no'));
-    $converted = convertPricesInText($formatted, $isSales);
-
-    lineLog("Event[{$i}]: price conversion done");
-
-    // LINEメッセージは5000文字制限
-    if (mb_strlen($converted) > 5000) {
-        $converted = mb_substr($converted, 0, 4990) . "\n…（省略）";
+    if (!empty($parsed['description'])) {
+        $parsed['description'] = convertPricesInText($parsed['description'], $isSales);
     }
 
-    // 返信
-    $success = lineReply($replyToken, [[
-        'type' => 'text',
-        'text' => $converted,
-    ]]);
+    // ステップ3: budget_min / budget_max を元テキストから抽出・変換
+    $budget = extractBudgetFromText($userText, $isSales);
+    $parsed['budget_min'] = $budget['min'];
+    $parsed['budget_max'] = $budget['max'];
 
-    lineLog("Event[{$i}]: reply " . ($success ? "sent" : "failed"));
+    lineLog("Event[{$i}]: budget min={$budget['min']} max={$budget['max']} isSales=" . ($isSales ? 'yes' : 'no'));
+
+    // ステップ4: DBに案件投稿
+    $jobId = postJobToDatabase($parsed);
+
+    if ($jobId === null) {
+        lineReply($replyToken, [[
+            'type' => 'text',
+            'text' => "案件の投稿に失敗しました。",
+        ]]);
+        continue;
+    }
+
+    $jobUrl = rtrim(BASE_URL, '/') . '/job-detail?id=' . $jobId;
+    lineLog("Event[{$i}]: job posted - id={$jobId} url={$jobUrl}");
+
+    // LINEに投稿完了通知
+    lineReply($replyToken, [[
+        'type' => 'text',
+        'text' => "✅ 案件を投稿しました！\n\n📋 {$parsed['title']}\n🔗 {$jobUrl}",
+    ]]);
 }
 
 http_response_code(200);
