@@ -11,8 +11,8 @@ ini_set('display_errors', 0);
 
 require_once __DIR__ . '/../config/config.php';
 
-// LINE Bot投稿者のユーザーID（.envで設定、未設定なら1）
-define('LINE_BOT_CLIENT_ID', (int)($_ENV['LINE_BOT_CLIENT_ID'] ?? 1));
+// LINE Bot投稿者のユーザーID
+define('LINE_BOT_CLIENT_ID', 112);
 // LINE Bot投稿のデフォルトカテゴリID（.envで設定、未設定なら1）
 define('LINE_BOT_DEFAULT_CATEGORY_ID', (int)($_ENV['LINE_BOT_DEFAULT_CATEGORY_ID'] ?? 1));
 
