@@ -106,13 +106,29 @@ function formatJpnAmount($amount, $useMan = false) {
     return number_format($amount);
 }
 
+/** 全角数字・全角カンマを正規化（給与表記パース用） */
+function salary_normalize_text($text) {
+    static $fw = '０１２３４５６７８９';
+    static $as = '0123456789';
+    $text = strtr($text, $fw, $as);
+    return str_replace('，', ',', $text);
+}
+
+/** 年収（万円）→ 月額（円・概算） */
+function annualManToMonthlyYen($man) {
+    return (int)round((float)$man * 10000 / 12);
+}
+
 /**
  * テキスト中の金額を変換する
  */
 function convertPricesInText($text, $isSales) {
-    // 時給レンジ
+    $text = salary_normalize_text($text);
+
+    // --- 金額が先・単位が後（レンジは単独より先） ---
+    // 〇〇円/時
     $text = preg_replace_callback(
-        '/時給\s*([0-9,]+)\s*円?\s*[〜~～ー―－]\s*([0-9,]+)\s*円/u',
+        '/([0-9,]+)\s*円?\s*[〜~～ー―－]\s*([0-9,]+)\s*円\s*[/／]\s*(?:時|ｈ|H)/u',
         function ($m) {
             $min = convertHourly((int)str_replace(',', '', $m[1]));
             $max = convertHourly((int)str_replace(',', '', $m[2]));
@@ -120,18 +136,98 @@ function convertPricesInText($text, $isSales) {
         },
         $text
     );
-    // 時給単独
     $text = preg_replace_callback(
-        '/時給\s*([0-9,]+)\s*円/u',
+        '/([0-9,]+)\s*円\s*[/／]\s*(?:時|ｈ|H)/u',
+        function ($m) {
+            return '時給' . number_format(convertHourly((int)str_replace(',', '', $m[1]))) . '円';
+        },
+        $text
+    );
+    // 〇〇円/日
+    $text = preg_replace_callback(
+        '/([0-9,]+)\s*円?\s*[〜~～ー―－]\s*([0-9,]+)\s*円\s*[/／]\s*日/u',
+        function ($m) {
+            $min = convertDaily((int)str_replace(',', '', $m[1]));
+            $max = convertDaily((int)str_replace(',', '', $m[2]));
+            return '日給' . number_format($min) . '円〜' . number_format($max) . '円';
+        },
+        $text
+    );
+    $text = preg_replace_callback(
+        '/([0-9,]+)\s*円\s*[/／]\s*日/u',
+        function ($m) {
+            return '日給' . number_format(convertDaily((int)str_replace(',', '', $m[1]))) . '円';
+        },
+        $text
+    );
+    // 〇〇万/月（円省略）
+    $text = preg_replace_callback(
+        '/([0-9]+)\s*万\s*[/／]\s*月/u',
+        function ($m) use ($isSales) {
+            return '月給' . formatJpnAmount(convertMonthly((int)$m[1] * 10000, $isSales), true) . '円';
+        },
+        $text
+    );
+    // 〇〇円/月
+    $text = preg_replace_callback(
+        '/([0-9,]+)\s*円?\s*[〜~～ー―－]\s*([0-9,]+)\s*円\s*[/／]\s*月/u',
+        function ($m) use ($isSales) {
+            $min = convertMonthly((int)str_replace(',', '', $m[1]), $isSales);
+            $max = convertMonthly((int)str_replace(',', '', $m[2]), $isSales);
+            return '月給' . number_format($min) . '円〜' . number_format($max) . '円';
+        },
+        $text
+    );
+    $text = preg_replace_callback(
+        '/([0-9,]+)\s*円\s*[/／]\s*月/u',
+        function ($m) use ($isSales) {
+            return '月給' . number_format(convertMonthly((int)str_replace(',', '', $m[1]), $isSales)) . '円';
+        },
+        $text
+    );
+    $text = preg_replace_callback(
+        '/([0-9]+)\s*万\s*円\s*[/／]\s*月/u',
+        function ($m) use ($isSales) {
+            return '月給' . formatJpnAmount(convertMonthly((int)$m[1] * 10000, $isSales), true) . '円';
+        },
+        $text
+    );
+
+    // ＠1,500円（アルバイト表記の時給）
+    $text = preg_replace_callback(
+        '/[@＠]\s*([0-9,]+)\s*円/u',
         function ($m) {
             return '時給' . number_format(convertHourly((int)str_replace(',', '', $m[1]))) . '円';
         },
         $text
     );
 
-    // 日当レンジ
+    // --- ラベルが先（コロン・全角スペース可） ---
+    $lblHour = '(時給|時間額)';
+    $lblDay = '(日当|日給|日額)';
+    $lblMonth = '(月給|月収|月額|基本給|支給額)';
+
+    // 時給レンジ・単独
     $text = preg_replace_callback(
-        '/(日当|日給)\s*([0-9,]+)\s*円?\s*[〜~～ー―－]\s*([0-9,]+)\s*円/u',
+        '/' . $lblHour . '[：:\s]*([0-9,]+)\s*円?\s*[〜~～ー―－]\s*([0-9,]+)\s*円/u',
+        function ($m) {
+            $min = convertHourly((int)str_replace(',', '', $m[2]));
+            $max = convertHourly((int)str_replace(',', '', $m[3]));
+            return $m[1] . number_format($min) . '円〜' . number_format($max) . '円';
+        },
+        $text
+    );
+    $text = preg_replace_callback(
+        '/' . $lblHour . '[：:\s]*([0-9,]+)\s*円/u',
+        function ($m) {
+            return $m[1] . number_format(convertHourly((int)str_replace(',', '', $m[2]))) . '円';
+        },
+        $text
+    );
+
+    // 日当レンジ・単独
+    $text = preg_replace_callback(
+        '/' . $lblDay . '[：:\s]*([0-9,]+)\s*円?\s*[〜~～ー―－]\s*([0-9,]+)\s*円/u',
         function ($m) {
             $min = convertDaily((int)str_replace(',', '', $m[2]));
             $max = convertDaily((int)str_replace(',', '', $m[3]));
@@ -139,18 +235,36 @@ function convertPricesInText($text, $isSales) {
         },
         $text
     );
-    // 日当単独
     $text = preg_replace_callback(
-        '/(日当|日給)\s*([0-9,]+)\s*円/u',
+        '/' . $lblDay . '[：:\s]*([0-9,]+)\s*円/u',
         function ($m) {
             return $m[1] . number_format(convertDaily((int)str_replace(',', '', $m[2]))) . '円';
         },
         $text
     );
 
-    // 月給万円レンジ
+    // 年収・年俸（万円）→ 月換算で表示
     $text = preg_replace_callback(
-        '/(月給|月収)\s*([0-9]+)\s*万\s*円?\s*[〜~～ー―－]\s*([0-9]+)\s*万\s*円?/u',
+        '/(?:想定|見込み|予定)?(?:年収|年俸)[：:\s]*([0-9]+)\s*万\s*円?\s*[〜~～ー―－]\s*([0-9]+)\s*万\s*円?/u',
+        function ($m) use ($isSales) {
+            $min = convertMonthly(annualManToMonthlyYen($m[1]), $isSales);
+            $max = convertMonthly(annualManToMonthlyYen($m[2]), $isSales);
+            return '月給（年収換算）' . number_format($min) . '円〜' . number_format($max) . '円';
+        },
+        $text
+    );
+    $text = preg_replace_callback(
+        '/(?:想定|見込み|予定)?(?:年収|年俸)[：:\s]*([0-9]+)\s*万(?:\s*円)?/u',
+        function ($m) use ($isSales) {
+            $y = convertMonthly(annualManToMonthlyYen($m[1]), $isSales);
+            return '月給（年収換算）' . number_format($y) . '円';
+        },
+        $text
+    );
+
+    // 月給万円レンジ・単独（「万」の後ろに円省略可）
+    $text = preg_replace_callback(
+        '/' . $lblMonth . '[：:\s]*([0-9]+)\s*万\s*円?\s*[〜~～ー―－]\s*([0-9]+)\s*万\s*円?/u',
         function ($m) use ($isSales) {
             $min = convertMonthly((int)$m[2] * 10000, $isSales);
             $max = convertMonthly((int)$m[3] * 10000, $isSales);
@@ -158,18 +272,17 @@ function convertPricesInText($text, $isSales) {
         },
         $text
     );
-    // 月給万円単独
     $text = preg_replace_callback(
-        '/(月給|月収)\s*([0-9]+)\s*万\s*円/u',
+        '/' . $lblMonth . '[：:\s]*([0-9]+)\s*万(?:\s*円)?/u',
         function ($m) use ($isSales) {
             return $m[1] . formatJpnAmount(convertMonthly((int)$m[2] * 10000, $isSales), true) . '円';
         },
         $text
     );
 
-    // 月給数字レンジ
+    // 月給数字レンジ・単独（円単位）
     $text = preg_replace_callback(
-        '/(月給|月収)\s*([0-9,]+)\s*円?\s*[〜~～ー―－]\s*([0-9,]+)\s*円/u',
+        '/' . $lblMonth . '[：:\s]*([0-9,]+)\s*円?\s*[〜~～ー―－]\s*([0-9,]+)\s*円/u',
         function ($m) use ($isSales) {
             $min = convertMonthly((int)str_replace(',', '', $m[2]), $isSales);
             $max = convertMonthly((int)str_replace(',', '', $m[3]), $isSales);
@@ -177,11 +290,26 @@ function convertPricesInText($text, $isSales) {
         },
         $text
     );
-    // 月給数字単独
     $text = preg_replace_callback(
-        '/(月給|月収)\s*([0-9,]+)\s*円/u',
+        '/' . $lblMonth . '[：:\s]*([0-9,]+)\s*円/u',
         function ($m) use ($isSales) {
             return $m[1] . number_format(convertMonthly((int)str_replace(',', '', $m[2]), $isSales)) . '円';
+        },
+        $text
+    );
+
+    // 給与：25万円（ラベル別）
+    $text = preg_replace_callback(
+        '/給与[：:\s]*([0-9]+)\s*万\s*円/u',
+        function ($m) use ($isSales) {
+            return '給与' . formatJpnAmount(convertMonthly((int)$m[1] * 10000, $isSales), true) . '円';
+        },
+        $text
+    );
+    $text = preg_replace_callback(
+        '/給与[：:\s]*([0-9,]+)\s*円/u',
+        function ($m) use ($isSales) {
+            return '給与' . number_format(convertMonthly((int)str_replace(',', '', $m[1]), $isSales)) . '円';
         },
         $text
     );
@@ -191,36 +319,144 @@ function convertPricesInText($text, $isSales) {
 
 /**
  * テキストから金額（円単位）を抽出する
- * budget_min / budget_max 用
+ * budget_min / budget_max 用（convertPricesInText と同系統の表記を網羅）
  */
 function extractBudgetFromText($text, $isSales) {
+    $text = salary_normalize_text($text);
     $amounts = [];
 
-    // 時給
-    if (preg_match_all('/時給\s*([0-9,]+)\s*円/u', $text, $matches)) {
+    // 時給・時間額（レンジ→単独）
+    if (preg_match_all('/(?:時給|時間額)[：:\s]*([0-9,]+)\s*円?\s*[〜~～ー―－]\s*([0-9,]+)\s*円/u', $text, $matches)) {
+        foreach ($matches[1] as $i => $_) {
+            $amounts[] = convertHourly((int)str_replace(',', '', $matches[1][$i]));
+            $amounts[] = convertHourly((int)str_replace(',', '', $matches[2][$i]));
+        }
+    }
+    if (preg_match_all('/(?:時給|時間額)[：:\s]*([0-9,]+)\s*円/u', $text, $matches)) {
         foreach ($matches[1] as $m) {
             $amounts[] = convertHourly((int)str_replace(',', '', $m));
         }
     }
-    // 日当
-    if (preg_match_all('/(日当|日給)\s*([0-9,]+)\s*円/u', $text, $matches)) {
-        foreach ($matches[2] as $m) {
+    // 〇〇円〜〇〇円/時・〇〇円/時
+    if (preg_match_all('/([0-9,]+)\s*円?\s*[〜~～ー―－]\s*([0-9,]+)\s*円\s*[/／]\s*(?:時|ｈ|H)/u', $text, $matches)) {
+        foreach ($matches[1] as $i => $_) {
+            $amounts[] = convertHourly((int)str_replace(',', '', $matches[1][$i]));
+            $amounts[] = convertHourly((int)str_replace(',', '', $matches[2][$i]));
+        }
+    }
+    if (preg_match_all('/([0-9,]+)\s*円\s*[/／]\s*(?:時|ｈ|H)/u', $text, $matches)) {
+        foreach ($matches[1] as $m) {
+            $amounts[] = convertHourly((int)str_replace(',', '', $m));
+        }
+    }
+    // ＠〇〇円
+    if (preg_match_all('/[@＠]\s*([0-9,]+)\s*円/u', $text, $matches)) {
+        foreach ($matches[1] as $m) {
+            $amounts[] = convertHourly((int)str_replace(',', '', $m));
+        }
+    }
+
+    // 日当・日給・日額（レンジ→単独）
+    if (preg_match_all('/(?:日当|日給|日額)[：:\s]*([0-9,]+)\s*円?\s*[〜~～ー―－]\s*([0-9,]+)\s*円/u', $text, $matches)) {
+        foreach ($matches[1] as $i => $_) {
+            $amounts[] = convertDaily((int)str_replace(',', '', $matches[1][$i]));
+            $amounts[] = convertDaily((int)str_replace(',', '', $matches[2][$i]));
+        }
+    }
+    if (preg_match_all('/(?:日当|日給|日額)[：:\s]*([0-9,]+)\s*円/u', $text, $matches)) {
+        foreach ($matches[1] as $m) {
             $amounts[] = convertDaily((int)str_replace(',', '', $m));
         }
     }
-    // 月給（万）
-    if (preg_match_all('/(月給|月収)\s*([0-9]+)\s*万/u', $text, $matches)) {
-        foreach ($matches[2] as $m) {
+    // 〇〇円〜〇〇円/日・〇〇円/日
+    if (preg_match_all('/([0-9,]+)\s*円?\s*[〜~～ー―－]\s*([0-9,]+)\s*円\s*[/／]\s*日/u', $text, $matches)) {
+        foreach ($matches[1] as $i => $_) {
+            $amounts[] = convertDaily((int)str_replace(',', '', $matches[1][$i]));
+            $amounts[] = convertDaily((int)str_replace(',', '', $matches[2][$i]));
+        }
+    }
+    if (preg_match_all('/([0-9,]+)\s*円\s*[/／]\s*日/u', $text, $matches)) {
+        foreach ($matches[1] as $m) {
+            $amounts[] = convertDaily((int)str_replace(',', '', $m));
+        }
+    }
+
+    // 月：ラベル＋万（レンジ→単独）
+    if (preg_match_all('/(?:月給|月収|月額|基本給|支給額)[：:\s]*([0-9]+)\s*万\s*円?\s*[〜~～ー―－]\s*([0-9]+)\s*万/u', $text, $matches)) {
+        foreach ($matches[1] as $i => $_) {
+            $amounts[] = convertMonthly((int)$matches[1][$i] * 10000, $isSales);
+            $amounts[] = convertMonthly((int)$matches[2][$i] * 10000, $isSales);
+        }
+    }
+    if (preg_match_all('/(?:月給|月収|月額|基本給|支給額)[：:\s]*([0-9]+)\s*万/u', $text, $matches)) {
+        foreach ($matches[1] as $m) {
             $amounts[] = convertMonthly((int)$m * 10000, $isSales);
         }
     }
-    // 月給（数字）
-    if (preg_match_all('/(月給|月収)\s*([0-9,]+)\s*円/u', $text, $matches)) {
-        foreach ($matches[2] as $m) {
+    // 〇万/月・〇万円/月
+    if (preg_match_all('/([0-9]+)\s*万\s*[/／]\s*月/u', $text, $matches)) {
+        foreach ($matches[1] as $m) {
+            $amounts[] = convertMonthly((int)$m * 10000, $isSales);
+        }
+    }
+    if (preg_match_all('/([0-9]+)\s*万\s*円\s*[/／]\s*月/u', $text, $matches)) {
+        foreach ($matches[1] as $m) {
+            $amounts[] = convertMonthly((int)$m * 10000, $isSales);
+        }
+    }
+    // 〇〇円〜〇〇円/月・〇〇円/月
+    if (preg_match_all('/([0-9,]+)\s*円?\s*[〜~～ー―－]\s*([0-9,]+)\s*円\s*[/／]\s*月/u', $text, $matches)) {
+        foreach ($matches[1] as $i => $_) {
+            $amounts[] = convertMonthly((int)str_replace(',', '', $matches[1][$i]), $isSales);
+            $amounts[] = convertMonthly((int)str_replace(',', '', $matches[2][$i]), $isSales);
+        }
+    }
+    if (preg_match_all('/([0-9,]+)\s*円\s*[/／]\s*月/u', $text, $matches)) {
+        foreach ($matches[1] as $m) {
+            $amounts[] = convertMonthly((int)str_replace(',', '', $m), $isSales);
+        }
+    }
+    // 月給・月収…の円レンジ→単独（万表記と二重にならないよう大きい額のみ）
+    if (preg_match_all('/(?:月給|月収|月額|基本給|支給額)[：:\s]*([0-9,]+)\s*円?\s*[〜~～ー―－]\s*([0-9,]+)\s*円/u', $text, $matches)) {
+        foreach ($matches[1] as $i => $_) {
+            $amounts[] = convertMonthly((int)str_replace(',', '', $matches[1][$i]), $isSales);
+            $amounts[] = convertMonthly((int)str_replace(',', '', $matches[2][$i]), $isSales);
+        }
+    }
+    if (preg_match_all('/(?:月給|月収|月額|基本給|支給額)[：:\s]*([0-9,]+)\s*円/u', $text, $matches)) {
+        foreach ($matches[1] as $m) {
             $val = (int)str_replace(',', '', $m);
-            if ($val > 10000) { // 万円表記と重複しないよう
+            if ($val > 10000) {
                 $amounts[] = convertMonthly($val, $isSales);
             }
+        }
+    }
+
+    // 給与：25万円 / 給与250000円
+    if (preg_match_all('/給与[：:\s]*([0-9]+)\s*万\s*円/u', $text, $matches)) {
+        foreach ($matches[1] as $m) {
+            $amounts[] = convertMonthly((int)$m * 10000, $isSales);
+        }
+    }
+    if (preg_match_all('/給与[：:\s]*([0-9,]+)\s*円/u', $text, $matches)) {
+        foreach ($matches[1] as $m) {
+            $val = (int)str_replace(',', '', $m);
+            if ($val > 10000) {
+                $amounts[] = convertMonthly($val, $isSales);
+            }
+        }
+    }
+
+    // 年収・年俸（万円→月換算）レンジ→単独の順
+    if (preg_match_all('/(?:想定|見込み|予定)?(?:年収|年俸)[：:\s]*([0-9]+)\s*万\s*円?\s*[〜~～ー―－]\s*([0-9]+)\s*万/u', $text, $matches)) {
+        foreach ($matches[1] as $i => $_) {
+            $amounts[] = convertMonthly(annualManToMonthlyYen($matches[1][$i]), $isSales);
+            $amounts[] = convertMonthly(annualManToMonthlyYen($matches[2][$i]), $isSales);
+        }
+    }
+    if (preg_match_all('/(?:想定|見込み|予定)?(?:年収|年俸)[：:\s]*([0-9]+)\s*万/u', $text, $matches)) {
+        foreach ($matches[1] as $m) {
+            $amounts[] = convertMonthly(annualManToMonthlyYen($m), $isSales);
         }
     }
 
