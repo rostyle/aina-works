@@ -618,9 +618,12 @@ EOT;
             . ':generateContent?key=' . urlencode(GEMINI_API_KEY);
 
     $requestBody = [
+        'system_instruction' => [
+            'parts' => [['text' => $systemPrompt]]
+        ],
         'contents' => [[
             'role' => 'user',
-            'parts' => [['text' => $systemPrompt . "\n\n--- 以下のテキストを処理してください ---\n\n" . $inputText]]
+            'parts' => [['text' => $inputText]]
         ]],
         'generationConfig' => [
             'temperature' => 0.1,
@@ -679,6 +682,13 @@ EOT;
         lineLog("Gemini JSON parse error: " . json_last_error_msg() . " / text: " . mb_substr($text, 0, 200));
         return null;
     }
+
+    // デバッグ: Geminiが返したJSON全体をログ（descriptionは先頭100文字）
+    $logParsed = $parsed;
+    if (isset($logParsed['description'])) {
+        $logParsed['description'] = mb_substr($logParsed['description'], 0, 100) . '...';
+    }
+    lineLog("Gemini parsed: " . json_encode($logParsed, JSON_UNESCAPED_UNICODE));
 
     return $parsed;
 }
