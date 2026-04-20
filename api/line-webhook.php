@@ -78,7 +78,7 @@ function lineReply($replyToken, $messages) {
 // =============================================================
 
 function isSalesJob($text) {
-    $keywords = ['営業', '獲得', '推奨販売', 'アポイント獲得', 'クロージング', '光AD', '通信販売', '法人営業'];
+    $keywords = ['営業', '獲得', '推奨販売', 'アポイント獲得', 'クロージング', '光AD', '通信販売', '法人営業', 'テレアポ', '発信', '見積もり'];
     foreach ($keywords as $kw) {
         if (mb_strpos($text, $kw) !== false) {
             return true;
@@ -187,6 +187,31 @@ function convertPricesInText($text, $isSales) {
     );
     $text = preg_replace_callback(
         '/([0-9]+)\s*万\s*円\s*[/／]\s*月/u',
+        function ($m) use ($isSales) {
+            return '月給' . formatJpnAmount(convertMonthly((int)$m[1] * 10000, $isSales), true) . '円';
+        },
+        $text
+    );
+
+    // 〇〇円(税別)/時 — 括弧付き注釈を挟むパターン
+    $text = preg_replace_callback(
+        '/([0-9,]+)\s*円\s*\([^)]*\)\s*[/／]\s*(?:時|ｈ|H)/u',
+        function ($m) {
+            return '時給' . number_format(convertHourly((int)str_replace(',', '', $m[1]))) . '円';
+        },
+        $text
+    );
+    // 〇〇円(税別)/日
+    $text = preg_replace_callback(
+        '/([0-9,]+)\s*円\s*\([^)]*\)\s*[/／]\s*日/u',
+        function ($m) {
+            return '日給' . number_format(convertDaily((int)str_replace(',', '', $m[1]))) . '円';
+        },
+        $text
+    );
+    // 〇〇万円／名（月額扱い）
+    $text = preg_replace_callback(
+        '/([0-9]+)\s*万\s*円?\s*[/／]\s*名/u',
         function ($m) use ($isSales) {
             return '月給' . formatJpnAmount(convertMonthly((int)$m[1] * 10000, $isSales), true) . '円';
         },
@@ -310,6 +335,21 @@ function convertPricesInText($text, $isSales) {
         '/給与[：:\s]*([0-9,]+)\s*円/u',
         function ($m) use ($isSales) {
             return '給与' . number_format(convertMonthly((int)str_replace(',', '', $m[1]), $isSales)) . '円';
+        },
+        $text
+    );
+
+    // 単価・請求単価：〇〇円＋交通費 → 時給/日給に変換
+    $text = preg_replace_callback(
+        '/(?:請求単価|単価)[：:\s]*([0-9,]+)\s*円/u',
+        function ($m) {
+            $val = (int)str_replace(',', '', $m[1]);
+            if ($val <= 10000) {
+                return '時給' . number_format(convertHourly($val)) . '円';
+            } elseif ($val <= 30000) {
+                return '日給' . number_format(convertDaily($val)) . '円';
+            }
+            return $m[0]; // 月額以上はそのまま
         },
         $text
     );
@@ -460,6 +500,61 @@ function extractBudgetFromText($text, $isSales) {
         }
     }
 
+    // 〇〇円(税別)/時 — 括弧付き注釈を挟むパターン
+    if (preg_match_all('/([0-9,]+)\s*円\s*(?:\([^)]*\))?\s*[/／]\s*(?:時|ｈ|H)/u', $text, $matches)) {
+        foreach ($matches[1] as $m) {
+            $amounts[] = convertHourly((int)str_replace(',', '', $m));
+        }
+    }
+    // 〇〇円(税別)/日
+    if (preg_match_all('/([0-9,]+)\s*円\s*(?:\([^)]*\))?\s*[/／]\s*日/u', $text, $matches)) {
+        foreach ($matches[1] as $m) {
+            $amounts[] = convertDaily((int)str_replace(',', '', $m));
+        }
+    }
+
+    // 単価：〇〇円/時 or 単価：〇〇万円
+    if (preg_match_all('/(?:単価|請求単価|報酬)[：:\s]*([0-9,]+)\s*円\s*(?:\([^)]*\))?\s*[/／]\s*(?:時|ｈ|H)/u', $text, $matches)) {
+        foreach ($matches[1] as $m) {
+            $amounts[] = convertHourly((int)str_replace(',', '', $m));
+        }
+    }
+    if (preg_match_all('/(?:単価|請求単価|報酬)[：:\s]*([0-9,]+)\s*円\s*(?:\([^)]*\))?\s*[/／]\s*日/u', $text, $matches)) {
+        foreach ($matches[1] as $m) {
+            $amounts[] = convertDaily((int)str_replace(',', '', $m));
+        }
+    }
+    if (preg_match_all('/(?:単価|請求単価)[：:\s]*([0-9,]+)\s*円/u', $text, $matches)) {
+        foreach ($matches[1] as $m) {
+            $val = (int)str_replace(',', '', $m);
+            // 時給帯(800-10000)なら時給、日給帯(10001-30000)なら日給、それ以上は月給
+            if ($val <= 10000) {
+                $amounts[] = convertHourly($val);
+            } elseif ($val <= 30000) {
+                $amounts[] = convertDaily($val);
+            } else {
+                $amounts[] = convertMonthly($val, $isSales);
+            }
+        }
+    }
+    // 〇〇万円／名（月額扱い）
+    if (preg_match_all('/([0-9]+)\s*万\s*円?\s*[/／]\s*名/u', $text, $matches)) {
+        foreach ($matches[1] as $m) {
+            $amounts[] = convertMonthly((int)$m * 10000, $isSales);
+        }
+    }
+    // 〇〇円～（税別）— 下限のみ（時給帯）
+    if (preg_match_all('/(?:報酬|単価)[：:\s]*([0-9,]+)\s*円\s*[〜~～]/u', $text, $matches)) {
+        foreach ($matches[1] as $m) {
+            $val = (int)str_replace(',', '', $m);
+            if ($val <= 10000) {
+                $amounts[] = convertHourly($val);
+            } elseif ($val <= 30000) {
+                $amounts[] = convertDaily($val);
+            }
+        }
+    }
+
     if (empty($amounts)) {
         return ['min' => 0, 'max' => 0];
     }
@@ -472,39 +567,50 @@ function extractBudgetFromText($text, $isSales) {
 // =============================================================
 function callGeminiForJobParse($inputText) {
     $systemPrompt = <<<'EOT'
-あなたは求人案件の解析アシスタントです。
+求人テキストを解析してJSONを返してください。
 
-【ステップ1：求人判定】
-入力テキストが「求人・募集案件の情報」かどうかを判定してください。
-以下は求人情報ではありません：
-- 雑談、挨拶、質問、相談
-- ニュース、お知らせ、連絡事項
-- 金額や給与の記載がないテキスト
-求人情報でない場合は以下のJSONのみ出力：
-{"is_job": false}
+■判定
+求人・募集でなければ {"is_job":false} だけ返す。
+雑談・挨拶・ニュース・金額記載なしは求人ではない。
 
-【ステップ2：求人情報を構造化】
-求人情報と判定した場合、以下のJSON形式で出力してください。
-金額は元の表記のまま変更せずに記載してください。
-読み取れない項目はnullにしてください。
-
+■求人の場合のJSON
 {
   "is_job": true,
-  "title": "案件タイトル（簡潔に30文字以内）",
-  "description": "以下の形式で整形した案件説明文（改行を含むテキスト）：\n\n【仕事内容】\n・業務内容1\n・業務内容2\n\n【給与・報酬】\n時給/日当/月給の情報（元の金額のまま）\n\n【勤務地】\n勤務地情報\n\n【勤務時間・期間】\n勤務時間や期間の情報\n\n【応募条件】\n必要なスキル・経験\n\n【待遇・その他】\n交通費・福利厚生など",
-  "location": "勤務地（都道府県＋市区町村程度）",
+  "title": "30文字以内の案件タイトル",
+  "description": "元テキストの情報をすべて含む説明文",
+  "location": "勤務地（都道府県＋市区町村）",
   "duration_weeks": 4,
   "urgency": "medium"
 }
 
-【出力ルール】
-- JSONのみ出力（説明・前置き・コードフェンス不要）
-- descriptionの中は改行(\n)を使って整形
-- 金額は一切変更しない（システムが後で変換する）
-- titleは簡潔に（「募集」「スタッフ」など不要な語は省略可）
-- duration_weeksは記載がなければ4（デフォルト）
+■descriptionの書き方（重要）
+descriptionには元テキストの情報を漏れなく含めること。
+以下のセクションに分けて改行(\n)で整形する：
+
+【仕事内容】
+業務の詳細をすべて記載
+
+【給与・報酬】
+金額は元の表記のまま一切変更しない
+
+【勤務地】
+場所・最寄り駅
+
+【勤務時間・期間】
+時間・期間・シフト情報
+
+【応募条件】
+必要スキル・経験・人数
+
+【待遇・その他】
+交通費・研修・備考など
+
+■ルール
+- descriptionは絶対に空にしない。必ず元テキストの内容を含める
+- 金額は一切変更しない
+- duration_weeksは記載なければ4
 - urgencyは「急募」等あればhigh、通常はmedium
-- 元の情報を追加・創作しない
+- 情報を追加・創作しない
 EOT;
 
     $apiUrl = rtrim(GEMINI_API_BASE_URL, '/') . '/models/'
@@ -718,6 +824,13 @@ foreach ($events['events'] as $i => $event) {
     }
 
     lineLog("Event[{$i}]: job detected - title: " . ($parsed['title'] ?? ''));
+    lineLog("Event[{$i}]: Gemini desc length: " . mb_strlen($parsed['description'] ?? ''));
+
+    // descriptionが空の場合、元テキストをそのまま使う（フォールバック）
+    if (empty(trim($parsed['description'] ?? ''))) {
+        lineLog("Event[{$i}]: description empty from Gemini, using original text");
+        $parsed['description'] = $userText;
+    }
 
     // ステップ2: PHPで金額変換（description内のテキスト）
     $isSales = isSalesJob($userText);
