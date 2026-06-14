@@ -743,18 +743,20 @@ function sendMail($to, $subject, $body, $isHtml = false) {
     $mail = new PHPMailer\PHPMailer\PHPMailer(true);
     
     try {
-        // サーバー設定
+        // サーバー設定（.env から読み込み）
         $mail->isSMTP();
-        $mail->Host       = 'smtp.lolipop.jp';
+        $mail->Host       = MAIL_HOST;
         $mail->SMTPAuth   = true;
-        $mail->Username   = 'info@aina-works.com';
-        $mail->Password   = '_V1E-WLL0eAX1pw_';
-        $mail->SMTPSecure = PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS;
-        $mail->Port       = 465;
+        $mail->Username   = MAIL_USERNAME;
+        $mail->Password   = MAIL_PASSWORD;
+        $mail->SMTPSecure = (MAIL_ENCRYPTION === 'tls')
+            ? PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS
+            : PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS;
+        $mail->Port       = MAIL_PORT;
         $mail->CharSet    = 'UTF-8';
-        
+
         // 送信者設定
-        $mail->setFrom('info@aina-works.com', 'AiNA Works');
+        $mail->setFrom(MAIL_FROM_ADDRESS, MAIL_FROM_NAME);
         
         // 受信者設定
         if (is_array($to)) {
