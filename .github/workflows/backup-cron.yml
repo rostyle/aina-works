@@ -1,0 +1,35 @@
+name: DB Backup (scheduled)
+
+# 本番（ロリポップ）のDBを毎日バックアップする。
+# GitHub Actions がトークン保護されたエンドポイントを叩き、サーバー上で実行する。
+#
+# 必要な Secrets（リポジトリ Settings > Secrets and variables > Actions）:
+#   BACKUP_BASE_URL       本番のベースURL（末尾スラッシュ無し）例: https://aina-works.com/aina-works
+#   BACKUP_TRIGGER_TOKEN  本番 .env の BACKUP_TRIGGER_TOKEN と同じ値
+
+on:
+  schedule:
+    - cron: '0 19 * * *'   # UTC 19:00 = JST 翌04:00（毎日）
+  workflow_dispatch:        # 手動実行も可能
+
+jobs:
+  trigger-backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger backup endpoint
+        run: |
+          set -euo pipefail
+          url="${{ secrets.BACKUP_BASE_URL }}/scripts/backup-trigger.php"
+          echo "Triggering: ${{ secrets.BACKUP_BASE_URL }}/scripts/backup-trigger.php"
+          code=$(curl -sS --max-time 300 \
+            -H "X-Backup-Token: ${{ secrets.BACKUP_TRIGGER_TOKEN }}" \
+            -o response.txt -w "%{http_code}" \
+            "$url")
+          echo "HTTP status: $code"
+          echo "----- response -----"
+          cat response.txt || true
+          echo "--------------------"
+          if [ "$code" != "200" ]; then
+            echo "::error::Backup failed with HTTP $code"
+            exit 1
+          fi
