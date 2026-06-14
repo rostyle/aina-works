@@ -4,7 +4,7 @@ name: DB Backup (scheduled)
 # GitHub Actions がトークン保護されたエンドポイントを叩き、サーバー上で実行する。
 #
 # 必要な Secrets（リポジトリ Settings > Secrets and variables > Actions）:
-#   BACKUP_BASE_URL       本番のベースURL（末尾スラッシュ無し）例: https://aina-works.com/aina-works
+#   BACKUP_BASE_URL       本番のベースURL（末尾スラッシュ無し）例: https://aina-works.com
 #   BACKUP_TRIGGER_TOKEN  本番 .env の BACKUP_TRIGGER_TOKEN と同じ値
 
 on:
@@ -21,7 +21,8 @@ jobs:
           set -euo pipefail
           url="${{ secrets.BACKUP_BASE_URL }}/scripts/backup-trigger.php"
           echo "Triggering: ${{ secrets.BACKUP_BASE_URL }}/scripts/backup-trigger.php"
-          code=$(curl -sS --max-time 300 \
+          # -L: 本番は .php を拡張子なしへ301リライトするため追従する（同一ホストなのでヘッダーは維持される）
+          code=$(curl -sS -L --max-time 300 \
             -H "X-Backup-Token: ${{ secrets.BACKUP_TRIGGER_TOKEN }}" \
             -o response.txt -w "%{http_code}" \
             "$url")
