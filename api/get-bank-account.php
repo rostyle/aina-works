@@ -28,9 +28,13 @@ try {
 	$db = Database::getInstance();
 	$currentUser = getCurrentUser();
 
-	$mode = $_GET['mode'] ?? 'self';
+	$mode = $_GET['mode'] ?? '';
+	$jobId = (int)($_GET['job_id'] ?? 0);
+	$creatorId = (int)($_GET['creator_id'] ?? 0);
 
-	if ($mode === 'self') {
+	// mode=self の明示指定、または job_id/creator_id が無い場合は自身の主口座を返す。
+	// job_id/creator_id が指定されている場合は依頼者によるクリエイター口座参照とみなす。
+	if ($mode === 'self' || (!$jobId && !$creatorId)) {
 		// 自身の主口座を返す
 		$account = $db->selectOne(
 			"SELECT bank_name, branch_name, account_type, account_number, account_holder_name, account_holder_kana, note
@@ -46,8 +50,6 @@ try {
 	}
 
 	// 依頼者が特定クリエイターの口座を参照（納品後のみ）
-	$jobId = (int)($_GET['job_id'] ?? 0);
-	$creatorId = (int)($_GET['creator_id'] ?? 0);
 
 	if (!$jobId || !$creatorId) {
 		jsonResponse(['error' => '必要な情報が不足しています。ページを再読み込みして再度お試しください。'], 400);
