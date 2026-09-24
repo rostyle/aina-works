@@ -7,6 +7,7 @@ error_reporting(E_ALL);
 ini_set('display_errors', 0);
 
 require_once '../config/config.php';
+require_once __DIR__ . '/../includes/gemini_model.php';
 
 // 出力バッファを完全にクリアしてヘッダー問題を回避
 while (ob_get_level()) {
@@ -134,7 +135,7 @@ $jobData = [
 $userMessage = "SYSTEM:\n" . $systemPrompt . "\n\nJOB_DATA:\n" . json_encode($jobData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
 // Gemini API 呼び出し
-$apiUrl = rtrim(GEMINI_API_BASE_URL, '/') . '/models/' . rawurlencode(GEMINI_MODEL) . ':generateContent?key=' . urlencode(GEMINI_API_KEY);
+$apiUrl = rtrim(GEMINI_API_BASE_URL, '/') . '/models/' . rawurlencode(gemini_model()) . ':generateContent?key=' . urlencode(GEMINI_API_KEY);
 
 $requestBody = [
     'contents' => [[

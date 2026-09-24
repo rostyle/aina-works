@@ -10,6 +10,7 @@ error_reporting(E_ALL);
 ini_set('display_errors', 0);
 
 require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../includes/gemini_model.php';
 
 // LINE Bot投稿者のユーザーID
 define('LINE_BOT_CLIENT_ID', 112);
@@ -614,7 +615,7 @@ descriptionには元テキストの情報を漏れなく含めること。
 EOT;
 
     $apiUrl = rtrim(GEMINI_API_BASE_URL, '/') . '/models/'
-            . rawurlencode(GEMINI_MODEL)
+            . rawurlencode(gemini_model())
             . ':generateContent?key=' . urlencode(GEMINI_API_KEY);
 
     $requestBody = [
