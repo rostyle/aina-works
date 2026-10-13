@@ -880,7 +880,11 @@ function sendDiscordNotification($webhookUrl, $content, $embeds = []) {
  * 案件投稿時のDiscord通知
  */
 function notifyNewJobToDiscord($jobId, $title, $budgetMin, $budgetMax, $urgency, $categoryId = null) {
-    $webhookUrl = 'https://discord.com/api/webhooks/1492174898640978011/Pc2Zue4dtZFlQOfsqZOA4ul8QGyxSHJsMaPujrK25mTcM3EemPefRBG1V7cuQa7-ibq2';
+    $webhookUrl = trim((string)($_ENV['DISCORD_WEBHOOK_URL'] ?? getenv('DISCORD_WEBHOOK_URL') ?: ''));
+    if ($webhookUrl === '') {
+        error_log('[Discord Webhook] DISCORD_WEBHOOK_URL is not configured; notification skipped.');
+        return false;
+    }
     $jobUrl = url('job-detail?id=' . $jobId, true);
 
     $urgencyLabels = ['low' => '低', 'medium' => '中', 'high' => '高'];
