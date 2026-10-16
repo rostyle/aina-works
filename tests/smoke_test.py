@@ -93,7 +93,7 @@ def main():
     # --- S-06: debugスクリプトが無い ---
     for p in ["/debug_env.php", "/debug_schema.php", "/debug_production_stories_v2.php"]:
         c, b, _ = anon.get(p, follow=True)
-        check(f"S-06 {p} gone", c == 404, c)
+        check(f"S-06 {p} gone", c in (403, 404), c)
 
     # --- U-01: 反射XSS ---
     c, b, _ = anon.get("/jobs?status=%3Cscript%3Ealert(1)%3C/script%3E&urgency=%3Cimg%20src=x%3E")

@@ -25,6 +25,8 @@ DirectoryIndex index.php
     RewriteRule \.(sql|log|bak|backup|old|orig|md|lock|ya?ml|ini|sh|py)$ - [F,L,NC]
     RewriteRule (^|/)composer\.(json|lock)$ - [F,L,NC]
     RewriteRule ^(package(-lock)?\.json|tailwind\.config\.js)$ - [F,L,NC]
+    # 削除済みの旧ファイル（デバッグ・旧API）がサーバーに残っていても実行させない
+    RewriteRule ^(debug_[A-Za-z0-9_]+|serve|switch-role|api/(send-chat-message|upload-chat-file|get-chat-messages|get-unread-count))(\.php)?$ - [F,L,NC]
 
     # sitemap.xml は動的生成
     RewriteRule ^sitemap\.xml$ sitemap.php [L]
