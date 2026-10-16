@@ -1,148 +1,109 @@
 <?php
 /**
  * チャットメッセージ送信API
- * 依存関係なしで動作するシンプルなエラーハンドリング
  */
-
-// JSONエラーレスポンスを返すヘルパー関数（クラスに依存しない）
-function sendJsonError($message, $statusCode = 500, $debug = null) {
-    if (ob_get_level()) ob_clean();
-    http_response_code($statusCode);
-    header('Content-Type: application/json; charset=utf-8');
-    $response = [
-        'success' => false,
-        'message' => $message,
-        'error_code' => 'API_ERROR'
-    ];
-    if ($debug) {
-        $response['debug'] = $debug;
-    }
-    echo json_encode($response, JSON_UNESCAPED_UNICODE);
-    exit;
-}
-
-// 出力バッファリング開始
 ob_start();
+ini_set('display_errors', '0');
 
-// エラー表示設定
-error_reporting(E_ALL);
-ini_set('display_errors', 0);
-
-// 致命的エラーをキャッチ
-register_shutdown_function(function() {
+// 致命的エラーでも詳細は返さず、固定文言のJSONにする（詳細はサーバーログ）
+register_shutdown_function(function () {
     $error = error_get_last();
-    if ($error && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
-        sendJsonError(
-            '致命的なエラーが発生しました: ' . $error['message'],
-            500,
-            [
-                'file' => basename($error['file']),
-                'line' => $error['line'],
-                'type' => $error['type']
-            ]
-        );
+    if ($error && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true)) {
+        error_log('send-chat-message fatal: ' . $error['message'] . ' @' . basename($error['file']) . ':' . $error['line']);
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+        if (!headers_sent()) {
+            http_response_code(500);
+            header('Content-Type: application/json; charset=utf-8');
+        }
+        echo json_encode(['success' => false, 'message' => 'メッセージを送信できませんでした。時間をおいて再度お試しください。', 'error_code' => 'SERVER_ERROR'], JSON_UNESCAPED_UNICODE);
     }
 });
 
-// 依存関係を読み込む
-require_once '../config/config.php';
-// ErrorHandlerを明示的に読み込む（オートローダーに頼らない）
-require_once '../includes/error-handler.php';
+require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../includes/error-handler.php';
 
-// ログイン確認
 if (!isLoggedIn()) {
     ErrorHandler::jsonAuthError();
 }
-
-// CSRFトークン検証
-if (!verifyCsrfToken($_POST['csrf_token'] ?? '')) {
-    ErrorHandler::jsonCsrfError();
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+    ErrorHandler::jsonError('POSTリクエストのみ受け付けます', 405);
+}
+if (!verifyCsrfToken(csrfTokenFromRequest())) {
+    ErrorHandler::jsonCsrfError(Messages::CSRF_INVALID);
 }
 
 try {
     $db = Database::getInstance();
     $currentUser = getCurrentUser();
-    
+    if (!$currentUser) {
+        ErrorHandler::jsonAuthError();
+    }
+
     $roomId = (int)($_POST['room_id'] ?? 0);
-    $message = trim($_POST['message'] ?? '');
-    
-    // バリデーション
-    if ($roomId <= 0 || empty($message)) {
+    $message = trim((string)($_POST['message'] ?? ''));
+
+    if ($roomId <= 0 || $message === '') {
         ErrorHandler::jsonError('チャットルームまたはメッセージが正しくありません', 400);
     }
-    
     if (mb_strlen($message) > 1000) {
         ErrorHandler::jsonError('メッセージは1000文字以内で入力してください', 400);
     }
-    
-    // チャットルームの存在確認と権限チェック
+    // 連投の上限（1分30通）
+    if (!rateLimitAllow('chat_send', (string)$currentUser['id'], 30, 60)) {
+        ErrorHandler::jsonError('短時間に送信しすぎています。少し時間をおいてから送ってください。', 429, null, 'RATE_LIMITED');
+    }
+
     $chatRoom = $db->selectOne("
-        SELECT * FROM chat_rooms 
+        SELECT * FROM chat_rooms
         WHERE id = ? AND (user1_id = ? OR user2_id = ?)
     ", [$roomId, $currentUser['id'], $currentUser['id']]);
-    
     if (!$chatRoom) {
         ErrorHandler::jsonNotFoundError('チャットルーム');
     }
-    
-    // メッセージをデータベースに保存
+
     $messageId = $db->insert("
-        INSERT INTO chat_messages (room_id, sender_id, message, created_at) 
+        INSERT INTO chat_messages (room_id, sender_id, message, created_at)
         VALUES (?, ?, ?, NOW())
     ", [$roomId, $currentUser['id'], $message]);
-    
     if (!$messageId) {
-        ErrorHandler::jsonError('データベースへの保存に失敗しました', 500);
+        ErrorHandler::jsonError('メッセージを保存できませんでした', 500);
     }
 
-    // チャットルームの更新時間を更新
     $db->update("UPDATE chat_rooms SET updated_at = NOW() WHERE id = ?", [$roomId]);
-    
-    // 送信したメッセージの詳細を取得
+
     $sentMessage = $db->selectOne("
-        SELECT cm.*, u.full_name as sender_name, u.profile_image as sender_image
+        SELECT cm.*, u.full_name AS sender_name, u.profile_image AS sender_image
         FROM chat_messages cm
         JOIN users u ON cm.sender_id = u.id
         WHERE cm.id = ?
     ", [$messageId]);
-    
-    // 相手にメール通知を送信（失敗してもチャット送信自体は成功させる）
+
+    // 相手へのメール通知（同じ相手・同じルームには10分に1通まで）
     try {
         $recipientId = ($chatRoom['user1_id'] == $currentUser['id']) ? $chatRoom['user2_id'] : $chatRoom['user1_id'];
-        $recipient = $db->selectOne("SELECT email, full_name FROM users WHERE id = ?", [$recipientId]);
-        
-        if ($recipient) {
+        $recipient = $db->selectOne("SELECT email, full_name FROM users WHERE id = ? AND is_active = 1", [$recipientId]);
+        if ($recipient && rateLimitAllow('chat_mail', $roomId . ':' . $recipientId, 1, 600)) {
             $subject = "【AiNA Works】新しいチャットメッセージが届きました";
-            $emailMessage = "こんにちは、{$recipient['full_name']}さん\n\n";
-            $emailMessage .= "{$currentUser['full_name']}さんからチャットメッセージが届きました。\n\n";
-            $emailMessage .= "メッセージ:\n";
-            $emailMessage .= $message . "\n\n";
-            $emailMessage .= "返信はチャットルームで行ってください。";
-            
-            $actionUrl = url('chats', true);
-            sendNotificationMail($recipient['email'], $subject, $emailMessage, $actionUrl, 'チャットを確認する');
+            $emailMessage = "{$currentUser['full_name']}さんからチャットメッセージが届きました。\n\n";
+            $emailMessage .= "メッセージ:\n" . mb_strimwidth($message, 0, 400, '…') . "\n\n";
+            $emailMessage .= "返信はチャットで行ってください。";
+            sendNotificationMail($recipient['email'], $subject, $emailMessage, url('chat?room_id=' . $roomId, true), 'チャットを開く');
         }
     } catch (Throwable $e) {
         error_log('Chat notification mail error: ' . $e->getMessage());
     }
-    
-    // 成功レスポンス
-    if (ob_get_level()) ob_clean();
+
     ErrorHandler::jsonSuccess('メッセージを送信しました', [
         'id' => $sentMessage['id'],
         'sender_id' => $sentMessage['sender_id'],
         'message' => $sentMessage['message'],
         'sender_name' => $sentMessage['sender_name'],
-        'sender_image' => $sentMessage['sender_image'],
+        'sender_image' => uploaded_asset($sentMessage['sender_image'] ?? ''),
         'time' => date('H:i', strtotime($sentMessage['created_at'])),
-        'is_read' => false
+        'is_read' => false,
     ]);
-
 } catch (Throwable $e) {
-    // ErrorHandlerが使えない場合でも確実にJSONを返す
-    sendJsonError('API Error: ' . $e->getMessage(), 500, [
-        'file' => basename($e->getFile()),
-        'line' => $e->getLine(),
-        'type' => get_class($e)
-    ]);
+    ErrorHandler::handleException($e, 'send-chat-message: ' . $e->getMessage());
 }

@@ -1,0 +1,18 @@
+User-agent: *
+Disallow: /admin/
+Disallow: /api/
+Disallow: /dashboard
+Disallow: /profile
+Disallow: /chat
+Disallow: /chats
+Disallow: /favorites
+Disallow: /job-applications
+Disallow: /edit-job
+Disallow: /edit-work
+Disallow: /select-role
+Disallow: /login
+Disallow: /logout
+Disallow: /forgot-password
+Disallow: /reset-password
+
+Sitemap: https://aina-works.com/sitemap.xml

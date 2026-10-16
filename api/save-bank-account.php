@@ -8,7 +8,6 @@ while (ob_get_level()) {
 
 // エラー出力を無効化（JSONレスポンス用）
 ini_set('display_errors', '0');
-error_reporting(0);
 
 header('Content-Type: application/json');
 

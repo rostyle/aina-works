@@ -17,7 +17,14 @@ $budgetMin = trim($_GET['budget_min'] ?? '');
 $budgetMax = trim($_GET['budget_max'] ?? '');
 $location = trim($_GET['location'] ?? '');
 $urgency = trim($_GET['urgency'] ?? '');
-$status = trim($_GET['status'] ?? '');
+// 既定は「募集中」だけを表示（応募できる案件に最短で辿り着けるように）。全件は status=all
+$status = isset($_GET['status']) ? trim((string)$_GET['status']) : 'open';
+if (!in_array($status, ['open', 'in_progress', 'completed', 'closed', 'all', ''], true)) {
+    $status = 'open';
+}
+if ($status === '') {
+    $status = 'all';
+}
 $sortBy = $_GET['sort'] ?? 'newest';
 $page = max(1, (int)($_GET['page'] ?? 1));
 $perPage = 12;
@@ -58,10 +65,14 @@ if ($urgency !== '') {
     $values[] = $urgency;
 }
 
-if ($status !== '') {
+if ($status === 'in_progress') {
+    $conditions[] = "j.status IN ('in_progress','contracted','delivered','approved')";
+} elseif ($status !== 'all') {
     $conditions[] = "j.status = ?";
     $values[] = $status;
 }
+// キャンセルされた案件は一覧に出さない
+$conditions[] = "j.status <> 'cancelled'";
 
 $whereClause = !empty($conditions) ? 'AND ' . implode(' AND ', $conditions) : '';
 
@@ -69,7 +80,7 @@ $whereClause = !empty($conditions) ? 'AND ' . implode(' AND ', $conditions) : ''
 $orderBy = match($sortBy) {
     'budget_high' => 'j.budget_max DESC',
     'budget_low' => 'j.budget_min ASC',
-    'deadline' => 'j.deadline ASC',
+    'deadline' => 'ISNULL(j.deadline), j.deadline ASC',
     'applications' => 'j.applications_count ASC',
     default => 'j.created_at DESC'
 };
@@ -185,8 +196,15 @@ include 'includes/header.php';
 
             <div class="h-px bg-slate-100 w-full my-6"></div>
 
-            <!-- Filters Grid -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <!-- Filters Grid（スマホでは折りたたみ、条件を変えているときは開いておく） -->
+            <?php $hasActiveFilter = $categoryId !== '' || $budgetMin !== '' || $budgetMax !== '' || $urgency !== '' || $status !== 'open' || ($sortBy !== '' && $sortBy !== 'newest'); ?>
+            <button type="button" class="md:hidden w-full flex items-center justify-between px-4 py-3 bg-white border border-slate-200 rounded-lg text-slate-700 font-medium"
+                    aria-controls="job-filters" aria-expanded="<?= $hasActiveFilter ? 'true' : 'false' ?>"
+                    onclick="const f=document.getElementById('job-filters'); f.classList.toggle('hidden'); this.setAttribute('aria-expanded', f.classList.contains('hidden') ? 'false' : 'true');">
+                <span>絞り込み・並び替え<?= $hasActiveFilter ? '（条件あり）' : '' ?></span>
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+            </button>
+            <div id="job-filters" class="<?= $hasActiveFilter ? 'grid' : 'hidden' ?> md:grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                 
                 <!-- Category Filter -->
                 <div class="relative">
@@ -208,8 +226,8 @@ include 'includes/header.php';
                 <div class="relative">
                     <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">ステータス</label>
                     <select name="status" class="w-full pl-4 pr-10 py-3 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-700 font-medium appearance-none cursor-pointer hover:bg-slate-50 transition-colors" onchange="handleFilterChange(this)">
-                        <option value="">全ステータス</option>
                         <option value="open" <?= $status == 'open' ? 'selected' : '' ?>>🟢 募集中</option>
+                        <option value="all" <?= $status == 'all' ? 'selected' : '' ?>>全ステータス</option>
                         <option value="in_progress" <?= $status == 'in_progress' ? 'selected' : '' ?>>🔵 進行中</option>
                         <option value="completed" <?= $status == 'completed' ? 'selected' : '' ?>>⚫ 完了</option>
                         <option value="closed" <?= $status == 'closed' ? 'selected' : '' ?>>🟡 募集終了</option>
@@ -378,6 +396,7 @@ function handleJobSearchSubmit(event) {
                     
                     <?php if ($status): 
                         $statusLabels = [
+                            'all' => 'すべて',
                             'open' => '🟢 募集中',
                             'closed' => '🟡 募集終了', 
                             'contracted' => '🔵 契約済み',
@@ -391,7 +410,7 @@ function handleJobSearchSubmit(event) {
                     ?>
                         <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
                             <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
-                            ステータス: <?= $statusLabel ?>
+                            ステータス: <?= h($statusLabel) ?>
                         </span>
                     <?php endif; ?>
                     
@@ -408,7 +427,7 @@ function handleJobSearchSubmit(event) {
                     ?>
                         <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800 border border-orange-200">
                             <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
-                            緊急度: <?= $urgencyLabel ?>
+                            緊急度: <?= h($urgencyLabel) ?>
                         </span>
                     <?php endif; ?>
                     
@@ -500,7 +519,7 @@ function handleJobSearchSubmit(event) {
                                 </div>
                                 
                                 <h3 class="text-xl font-bold text-slate-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
-                                    <a href="<?= url('job-detail?id=' . $job['id']) ?>" target="_blank" rel="noopener noreferrer" class="block">
+                                    <a href="<?= url('job-detail?id=' . $job['id']) ?>" class="block">
                                         <?= h($job['title']) ?>
                                     </a>
                                 </h3>
@@ -542,7 +561,7 @@ function handleJobSearchSubmit(event) {
                         <!-- Footer Actions -->
                         <div class="flex items-center justify-between pt-4 border-t border-slate-100">
                             <div class="flex items-center">
-                                <img src="<?= uploaded_asset($job['client_image'] ?? 'assets/images/default-avatar.png') ?>" 
+                                <img src="<?= h(uploaded_asset($job['client_image'] ?? 'assets/images/default-avatar.png')) ?>" 
                                      alt="<?= h($job['client_name']) ?>" 
                                      class="w-10 h-10 rounded-full border-2 border-white shadow-sm mr-3">
                                 <div>
@@ -552,7 +571,6 @@ function handleJobSearchSubmit(event) {
                             </div>
 
                             <a href="<?= url('job-detail?id=' . $job['id']) ?>" 
-                               target="_blank" rel="noopener noreferrer"
                                class="inline-flex items-center px-4 py-2 bg-slate-900 text-white text-sm font-medium rounded-lg hover:bg-blue-600 transition-colors shadow-lg shadow-slate-200 group-hover:shadow-blue-500/20">
                                 詳細を見る
                                 <svg class="ml-2 w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
@@ -605,7 +623,6 @@ function handleJobSearchSubmit(event) {
 <section class="relative py-24 bg-slate-900 overflow-hidden">
     <div class="absolute inset-0">
         <div class="absolute inset-0 bg-blue-900/20 mix-blend-multiply"></div>
-        <div class="absolute inset-0 bg-[url('<?= asset('images/grid-pattern.svg') ?>')] opacity-10"></div>
     </div>
     
     <div class="relative z-10 max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">

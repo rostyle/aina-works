@@ -3,14 +3,46 @@ require_once 'config/config.php';
 require_once 'includes/database.php'; 
 require_once 'includes/functions.php';
 
-// データベース接続 & 記事取得
+// データベース接続 & 記事取得（カテゴリ・タグで絞り込み、12件ずつ）
 $interviews = [];
+$categoriesList = [];
+$tagsList = [];
+$filterCategory = is_string($_GET['category'] ?? null) ? trim($_GET['category']) : '';
+$filterTag = is_string($_GET['tag'] ?? null) ? trim($_GET['tag']) : '';
+$page = max(1, (int)($_GET['page'] ?? 1));
+$perPage = 12;
+$pagination = calculatePagination(0, $perPage, 1);
 try {
     $db = Database::getInstance();
-    $interviews = $db->select("SELECT * FROM success_stories WHERE status = 'published' ORDER BY interview_date DESC");
+    $categoriesList = array_column($db->select("SELECT DISTINCT category_name FROM success_stories WHERE status = 'published' AND category_name IS NOT NULL AND category_name <> '' ORDER BY category_name"), 'category_name');
+    $tagsList = array_column($db->select("SELECT DISTINCT tag_type FROM success_stories WHERE status = 'published' AND tag_type IS NOT NULL AND tag_type <> '' ORDER BY tag_type"), 'tag_type');
+
+    $where = ["status = 'published'"];
+    $params = [];
+    if ($filterCategory !== '' && in_array($filterCategory, $categoriesList, true)) {
+        $where[] = 'category_name = ?';
+        $params[] = $filterCategory;
+    } else {
+        $filterCategory = '';
+    }
+    if ($filterTag !== '' && in_array($filterTag, $tagsList, true)) {
+        $where[] = 'tag_type = ?';
+        $params[] = $filterTag;
+    } else {
+        $filterTag = '';
+    }
+    $whereSql = implode(' AND ', $where);
+    $total = (int)($db->selectOne("SELECT COUNT(*) AS c FROM success_stories WHERE {$whereSql}", $params)['c'] ?? 0);
+    $pagination = calculatePagination($total, $perPage, $page);
+    $offset = max(0, (int)$pagination['offset']);
+    $interviews = $db->select("SELECT * FROM success_stories WHERE {$whereSql} ORDER BY interview_date DESC LIMIT {$perPage} OFFSET {$offset}", $params);
 } catch (Exception $e) {
     error_log("Database Error: " . $e->getMessage());
 }
+$storyListUrl = function (array $override) use ($filterCategory, $filterTag) {
+    $q = array_filter(array_merge(['category' => $filterCategory, 'tag' => $filterTag], $override), fn($v) => $v !== '' && $v !== null && $v !== 1);
+    return url('success-stories' . ($q ? '?' . http_build_query($q) : ''));
+};
 
 $pageTitle = '会員インタビュー・実績一覧';
 $pageDescription = 'AiNA Worksで人生を変えた、会員たちのリアルな成功ストーリー。未経験からの挑戦、副業での収入アップ、フリーランスとしての独立など、多様な実績をブログ形式でご紹介します。';
@@ -34,39 +66,33 @@ include 'includes/header.php';
 </section>
 
 <!-- Filter Navigation -->
-<div class="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-gray-200 shadow-sm">
+<?php if (!empty($categoriesList) || !empty($tagsList)): ?>
+<div class="bg-white border-b border-gray-200 shadow-sm">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex flex-col md:flex-row md:items-center justify-between py-4 gap-4">
             <div class="flex items-center overflow-x-auto gap-2 no-scrollbar">
-                <button class="px-4 py-2 rounded-full bg-blue-600 text-white font-bold text-sm whitespace-nowrap">
-                    すべて
-                </button>
-                <button class="px-4 py-2 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 font-medium text-sm whitespace-nowrap transition-colors">
-                    動画編集
-                </button>
-                <button class="px-4 py-2 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 font-medium text-sm whitespace-nowrap transition-colors">
-                    デザイン・画像
-                </button>
-                <button class="px-4 py-2 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 font-medium text-sm whitespace-nowrap transition-colors">
-                    マーケティング
-                </button>
-                <button class="px-4 py-2 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 font-medium text-sm whitespace-nowrap transition-colors">
-                    その他
-                </button>
+                <a href="<?= h($storyListUrl(['category' => '', 'page' => null])) ?>" class="px-4 py-2 rounded-full text-sm whitespace-nowrap <?= $filterCategory === '' ? 'bg-blue-600 text-white font-bold' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 font-medium' ?>">すべて</a>
+                <?php foreach ($categoriesList as $cat): ?>
+                    <a href="<?= h($storyListUrl(['category' => $cat, 'page' => null])) ?>" class="px-4 py-2 rounded-full text-sm whitespace-nowrap <?= $filterCategory === $cat ? 'bg-blue-600 text-white font-bold' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 font-medium' ?>"><?= h($cat) ?></a>
+                <?php endforeach; ?>
             </div>
-            
-            <div class="flex items-center gap-3">
-                <span class="text-sm text-gray-500 hidden md:inline">Tag:</span>
-                <select class="bg-transparent text-sm font-medium text-gray-700 border-none focus:ring-0 cursor-pointer">
-                    <option>働き方で絞り込み</option>
-                    <option>副業からスタート</option>
-                    <option>主婦・ママ</option>
-                    <option>フリーランス</option>
+            <?php if (!empty($tagsList)): ?>
+            <form method="GET" action="<?= h(url('success-stories')) ?>" class="flex items-center gap-3">
+                <?php if ($filterCategory !== ''): ?><input type="hidden" name="category" value="<?= h($filterCategory) ?>"><?php endif; ?>
+                <label for="story-tag" class="text-sm text-gray-500">働き方</label>
+                <select id="story-tag" name="tag" onchange="this.form.submit()" class="bg-white text-sm font-medium text-gray-700 border border-gray-200 rounded-lg px-3 py-2 cursor-pointer">
+                    <option value="">すべて</option>
+                    <?php foreach ($tagsList as $tg): ?>
+                        <option value="<?= h($tg) ?>" <?= $filterTag === $tg ? 'selected' : '' ?>><?= h($tg) ?></option>
+                    <?php endforeach; ?>
                 </select>
-            </div>
+                <noscript><button type="submit" class="text-sm text-blue-600">絞り込む</button></noscript>
+            </form>
+            <?php endif; ?>
         </div>
     </div>
 </div>
+<?php endif; ?>
 
 <!-- Interview Grid -->
 <section class="bg-gray-50 py-16 min-h-screen">
@@ -77,7 +103,7 @@ include 'includes/header.php';
                 <?php foreach ($interviews as $story): ?>
                     <article class="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 group flex flex-col h-full border border-gray-100">
                         <!-- Link to Detail -->
-                        <a href="success-story-detail.php?id=<?= h($story['id']) ?>" class="block h-full flex flex-col">
+                        <a href="<?= h(url('success-story-detail?id=' . (int)$story['id'])) ?>" class="block h-full flex flex-col">
 
                             <!-- Image Area -->
                             <div class="relative h-48 overflow-hidden">
@@ -116,7 +142,7 @@ include 'includes/header.php';
                                     <div class="flex-shrink-0">
                                         <span class="sr-only"><?= h($story['member_name']) ?></span>
                                         <div class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 font-bold overflow-hidden">
-                                            <?= mb_substr($story['member_name'], 0, 1) ?>
+                                            <?= h(mb_substr((string)$story['member_name'], 0, 1)) ?>
                                         </div>
                                     </div>
                                     <div class="ml-3">
@@ -136,35 +162,17 @@ include 'includes/header.php';
             <?php endif; ?>
         </div>
 
-        <!-- Pagination (Static for now) -->
-        <div class="flex justify-center">
-            <nav class="inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                <a href="#" class="relative inline-flex items-center px-4 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
-                    <span class="sr-only">Previous</span>
-                    <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
-                    </svg>
-                </a>
-                <a href="#" aria-current="page" class="z-10 bg-blue-50 border-blue-500 text-blue-600 relative inline-flex items-center px-4 py-2 border text-sm font-medium">
-                    1
-                </a>
-                <a href="#" class="bg-white border-gray-300 text-gray-500 hover:bg-gray-50 relative inline-flex items-center px-4 py-2 border text-sm font-medium">
-                    2
-                </a>
-                <a href="#" class="bg-white border-gray-300 text-gray-500 hover:bg-gray-50 text-gray-700 relative inline-flex items-center px-4 py-2 border text-sm font-medium">
-                    3
-                </a>
-                <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
-                    ...
-                </span>
-                <a href="#" class="relative inline-flex items-center px-4 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
-                    <span class="sr-only">Next</span>
-                    <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
-                    </svg>
-                </a>
-            </nav>
-        </div>
+        <?php if (($pagination['total_pages'] ?? 1) > 1): ?>
+        <nav class="flex justify-center items-center gap-2" aria-label="ページ送り">
+            <?php if ($pagination['has_prev']): ?>
+                <a href="<?= h($storyListUrl(['page' => $pagination['prev_page']])) ?>" class="px-4 py-2 rounded-lg border border-gray-300 bg-white text-sm text-gray-700 hover:bg-gray-50">前へ</a>
+            <?php endif; ?>
+            <span class="px-4 py-2 text-sm text-gray-600"><?= (int)$pagination['current_page'] ?> / <?= (int)$pagination['total_pages'] ?></span>
+            <?php if ($pagination['has_next']): ?>
+                <a href="<?= h($storyListUrl(['page' => $pagination['next_page']])) ?>" class="px-4 py-2 rounded-lg border border-gray-300 bg-white text-sm text-gray-700 hover:bg-gray-50">次へ</a>
+            <?php endif; ?>
+        </nav>
+        <?php endif; ?>
         
     </div>
 </section>

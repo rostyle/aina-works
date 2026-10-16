@@ -16,11 +16,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Form enhancements
     initFormEnhancements();
     
-    // Initialize search functionality
-    initSearch();
-    
-    // Initialize filter functionality
-    initFilters();
+    // 検索・絞り込みは各ページのフォーム送信（サーバー側）で行う。
+    // ここにあったダミーの検索候補・「N個のフィルター適用中」表示・並び替えトーストは誤解を招くため無効化した。
     
     // Initialize modals
     initModals();

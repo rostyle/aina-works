@@ -42,13 +42,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if (isAdminUser()) {
                         redirect('./' . $redirectParam);
                     } else {
-                        // 管理者権限がない場合はログアウトしてエラー
-                        $_SESSION = [];
-                        if (isset($_COOKIE[session_name()])) {
-                            setcookie(session_name(), '', time() - 42000, '/');
-                        }
-                        session_destroy();
-                        $errors['general'] = '管理者権限がありません。';
+                        // 管理者でなければ管理画面には入れない（サイト本体のログインはそのまま）
+                        $errors['general'] = 'このアカウントには管理者権限がありません。';
                     }
                 } else {
                     $errors['general'] = $loginResult['message'] ?? 'ログインに失敗しました。';
@@ -68,13 +63,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>管理画面ログイン</title>
-  <script src="https://cdn.tailwindcss.com"></script>
   <meta name="csrf-token" content="<?= h(generateCsrfToken()) ?>">
   <style>body{min-height:100vh}</style>
   <link rel="icon" type="image/x-icon" href="<?= h(asset('images/favicon.ico')) ?>">
   <!-- 管理画面はローカルDB認証のみ -->
   <!-- info@ai-na.co.jp は .env の ADMIN_EMAILS に設定済みであれば admin 権限が付与されます -->
   <!-- 例: ADMIN_EMAILS=info@ai-na.co.jp -->
+  <link rel="stylesheet" href="<?= h(asset('css/tailwind.css')) ?>">
 </head>
 <body class="bg-gray-50 flex items-center justify-center py-12 px-4">
   <div class="w-full max-w-md">

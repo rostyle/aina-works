@@ -36,22 +36,20 @@ try {
         jsonResponse(['error' => '募集中の案件のみ削除できます'], 422);
     }
 
+    // 採用済みの応募がある案件は消さない（取引の記録を残すため「キャンセル」を使う）
+    if (jobAcceptedCount($jobId) > 0) {
+        jsonResponse(['error' => '採用済みの応募がある案件は削除できません。案件ページから「案件をキャンセルする」を選んでください'], 422);
+    }
+
+    // 応募者へ知らせるため、削除前に取得しておく
+    $title = (string)($db->selectOne("SELECT title FROM jobs WHERE id = ?", [$jobId])['title'] ?? '案件');
+    $applicants = $db->select("
+        SELECT u.email FROM job_applications ja JOIN users u ON ja.creator_id = u.id
+        WHERE ja.job_id = ? AND ja.status = 'pending' AND u.is_active = 1
+    ", [$jobId]);
+
     $db->beginTransaction();
-
-    // 依存データの整理（存在すれば）
-    try {
-        $db->delete("DELETE FROM job_applications WHERE job_id = ?", [$jobId]);
-    } catch (Exception $e) {
-        // テーブルが無い等は無視（本体削除を優先）
-        error_log('job_applications cleanup failed: ' . $e->getMessage());
-    }
-
-    try {
-        // お気に入りに job が対象として存在する場合のクリーンアップ
-        $db->delete("DELETE FROM favorites WHERE target_type = 'job' AND target_id = ?", [$jobId]);
-    } catch (Exception $e) {
-        error_log('favorites cleanup failed: ' . $e->getMessage());
-    }
+    $db->delete("DELETE FROM job_applications WHERE job_id = ?", [$jobId]);
 
     // 本体削除
     $deleted = $db->delete("DELETE FROM jobs WHERE id = ?", [$jobId]);
@@ -60,6 +58,20 @@ try {
     }
 
     $db->commit();
+
+    foreach ($applicants as $a) {
+        try {
+            sendNotificationMail(
+                $a['email'],
+                "【AiNA Works】応募した案件が取り下げられました - {$title}",
+                "ご応募いただいた案件「{$title}」は、依頼者により取り下げられました。\n\nほかの募集中の案件もぜひご覧ください。",
+                url('jobs', true),
+                '募集中の案件を見る'
+            );
+        } catch (Throwable $e) {
+            error_log('delete-job notify: ' . $e->getMessage());
+        }
+    }
 
     jsonResponse([
         'success' => true,

@@ -45,6 +45,8 @@ if (!$story) {
 }
 
 $pageTitle = $story['title'];
+$pageDescription = (string)($story['intro_text'] ?? '');
+$ogImage = !empty($story['main_image']) ? uploaded_asset($story['main_image']) : null;
 include 'includes/header.php';
 ?>
 
@@ -93,7 +95,7 @@ include 'includes/header.php';
                         <?php if (!empty($story['member_image'])): ?>
                             <img src="<?= h(uploaded_asset($story['member_image'])) ?>" class="w-full h-full object-cover">
                         <?php else: ?>
-                            <?= mb_substr($story['member_name'], 0, 1) ?>
+                            <?= h(mb_substr((string)$story['member_name'], 0, 1)) ?>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -103,7 +105,7 @@ include 'includes/header.php';
                 </div>
             </div>
             <p class="text-lg text-gray-700 leading-relaxed font-medium">
-                <?= h($story['intro_text']) ?>
+                <?= nl2br(h($story['intro_text'])) ?>
             </p>
         </div>
 
@@ -117,7 +119,7 @@ include 'includes/header.php';
                             <span class="relative top-1"><?= h($section['heading']) ?></span>
                         </h2>
                         <p class="text-gray-600 leading-loose text-lg">
-                            <?= h($section['body_text']) ?>
+                            <?= nl2br(h($section['body_text'])) ?>
                         </p>
                     </div>
                 <?php endforeach; ?>
@@ -147,7 +149,7 @@ include 'includes/header.php';
         <h3 class="text-xl font-bold text-gray-900 mb-8">他の記事も読む</h3>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
             <?php foreach ($related_stories as $related): ?>
-                <a href="success-story-detail.php?id=<?= $related['id'] ?>" class="group block bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all">
+                <a href="<?= h(url('success-story-detail?id=' . (int)$related['id'])) ?>" class="group block bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all">
                     <div class="h-40 overflow-hidden relative">
                         <img src="<?= h(uploaded_asset($related['main_image'])) ?>" alt="" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
                         <div class="absolute bottom-2 left-2">

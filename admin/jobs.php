@@ -15,11 +15,23 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     $newStatus = trim($_POST['status'] ?? '');
     $allowed = ['open','in_progress','contracted','delivered','closed','completed','cancelled'];
     if ($jobId > 0 && in_array($newStatus, $allowed, true)) {
+        ensureJobWorkflowSchema();
         try {
+            if (!jobStatusWritable($newStatus)) {
+                throw new RuntimeException('jobs.status cannot store ' . $newStatus);
+            }
             $db->update("UPDATE jobs SET status = ? WHERE id = ?", [$newStatus, $jobId]);
+            try {
+                // 募集中に戻したら応募も受け付ける状態にそろえる
+                $db->update("UPDATE jobs SET is_recruiting = ? WHERE id = ?", [$newStatus === 'open' ? 1 : 0, $jobId]);
+            } catch (Throwable $t) {
+                // is_recruiting 列が無い環境
+            }
+            logAdminAction('job_status', 'job', $jobId, ['status' => $newStatus]);
             setFlash('success', '案件ステータスを更新しました');
         } catch (Exception $e) {
-            setFlash('error', '更新に失敗しました: ' . $e->getMessage());
+            error_log('admin/jobs: ' . $e->getMessage());
+            setFlash('error', '更新に失敗しました。時間をおいて再度お試しください');
         }
     }
     redirect(adminUrl('jobs.php'));
@@ -274,11 +286,11 @@ function openJobModal(jobId) {
                 document.getElementById('modal-desc').textContent = job.description; // raw text for admin
                 document.getElementById('modal-category').textContent = job.category_name || '未分類';
                 document.getElementById('modal-date').textContent = job.created_at_formatted;
-                document.getElementById('modal-budget').textContent = `¥${job.budget_min_formatted} ~ ¥${job.budget_max_formatted}`;
+                document.getElementById('modal-budget').textContent = `${job.budget_min_formatted} ~ ${job.budget_max_formatted}`;
                 document.getElementById('modal-deadline').textContent = job.deadline_formatted;
                 
                 document.getElementById('modal-client-name').textContent = job.client_name;
-                document.getElementById('modal-client-img').src = job.client_image ? `../${job.client_image}` : '../assets/images/default-avatar.png'; // Adjust path for admin
+                document.getElementById('modal-client-img').src = job.client_image_url;
                 // Note: client_email might be sensitive, checking if API returned it.
                 if(job.client_email) document.getElementById('modal-client-email').textContent = job.client_email;
 

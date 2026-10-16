@@ -12,21 +12,22 @@ ini_set('display_errors', 0);
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../includes/gemini_model.php';
 
-// LINE Bot投稿者のユーザーID
-define('LINE_BOT_CLIENT_ID', 112);
+// LINE Bot投稿者のユーザーID（.env の LINE_BOT_CLIENT_ID で変更可。既定は本番の運営アカウント112）
+define('LINE_BOT_CLIENT_ID', (int)envValue('LINE_BOT_CLIENT_ID', 112));
+// チャネル設定（本番 config.php の定数を優先し、無ければ .env）
+define('LINE_CHANNEL_SECRET_VALUE', defined('DEMI_LINE_CHANNEL_SECRET') ? (string)DEMI_LINE_CHANNEL_SECRET : (string)envValue('DEMI_LINE_CHANNEL_SECRET', ''));
+define('LINE_CHANNEL_TOKEN_VALUE', defined('DEMI_LINE_CHANNEL_ACCESS_TOKEN') ? (string)DEMI_LINE_CHANNEL_ACCESS_TOKEN : (string)envValue('DEMI_LINE_CHANNEL_ACCESS_TOKEN', ''));
+define('LINE_GEMINI_KEY_VALUE', defined('GEMINI_API_KEY') ? (string)GEMINI_API_KEY : (string)envValue('GEMINI_API_KEY', ''));
 // LINE Bot投稿のデフォルトカテゴリID（.envで設定、未設定なら1）
 define('LINE_BOT_DEFAULT_CATEGORY_ID', (int)($_ENV['LINE_BOT_DEFAULT_CATEGORY_ID'] ?? 1));
 
 // ログ出力用
+// 公開されない storage/logs に書く（.htaccess で外部アクセス禁止）
 function lineLog($message) {
-    $logDir = BASE_PATH . '/logs';
-    if (!is_dir($logDir)) {
-        mkdir($logDir, 0777, true);
-    }
     $timestamp = date('Y-m-d H:i:s');
-    file_put_contents(
-        $logDir . '/line-webhook.log',
-        "[{$timestamp}] {$message}\n",
+    @file_put_contents(
+        storagePath('logs') . '/line-webhook.log',
+        "[{$timestamp}] " . mb_substr((string)$message, 0, 2000) . "\n",
         FILE_APPEND | LOCK_EX
     );
 }
@@ -53,7 +54,7 @@ function lineReply($replyToken, $messages) {
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_HTTPHEADER, [
         'Content-Type: application/json',
-        'Authorization: Bearer ' . DEMI_LINE_CHANNEL_ACCESS_TOKEN,
+        'Authorization: Bearer ' . LINE_CHANNEL_TOKEN_VALUE,
     ]);
     curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -616,7 +617,7 @@ EOT;
 
     $apiUrl = rtrim(GEMINI_API_BASE_URL, '/') . '/models/'
             . rawurlencode(gemini_model())
-            . ':generateContent?key=' . urlencode(GEMINI_API_KEY);
+            . ':generateContent?key=' . urlencode(LINE_GEMINI_KEY_VALUE);
 
     $requestBody = [
         'system_instruction' => [
@@ -776,19 +777,23 @@ if (empty($body)) {
 
 lineLog("Received webhook (length=" . strlen($body) . ")");
 
-// 署名検証
-$secretSet = !empty(DEMI_LINE_CHANNEL_SECRET);
-if ($secretSet) {
-    if (!verifyLineSignature($body, DEMI_LINE_CHANNEL_SECRET)) {
-        lineLog("Signature verification FAILED");
-        http_response_code(200);
-        echo 'OK';
-        exit;
-    }
+// 署名検証（チャネルシークレット未設定なら受け付けない＝誰でも案件を作れる状態にしない）
+if (LINE_CHANNEL_SECRET_VALUE === '') {
+    lineLog("Channel secret is not configured - rejected");
+    error_log('LINE webhook: DEMI_LINE_CHANNEL_SECRET が未設定のため受信を拒否しました');
+    http_response_code(503);
+    echo 'NG';
+    exit;
+}
+if (!verifyLineSignature($body, LINE_CHANNEL_SECRET_VALUE)) {
+    lineLog("Signature verification FAILED");
+    http_response_code(400);
+    echo 'NG';
+    exit;
 }
 
 // 設定チェック
-if (empty(DEMI_LINE_CHANNEL_ACCESS_TOKEN) || empty(GEMINI_API_KEY)) {
+if (LINE_CHANNEL_TOKEN_VALUE === '' || LINE_GEMINI_KEY_VALUE === '') {
     lineLog("Missing config - aborting");
     http_response_code(200);
     echo 'OK';
@@ -811,8 +816,26 @@ foreach ($events['events'] as $i => $event) {
     $replyToken = $event['replyToken'] ?? '';
     $userText = $event['message']['text'] ?? '';
     $sourceType = $event['source']['type'] ?? '';
+    $sourceId = (string)($event['source']['groupId'] ?? $event['source']['roomId'] ?? $event['source']['userId'] ?? '');
 
     if (empty($userText) || empty($replyToken)) {
+        continue;
+    }
+
+    // 送信元の制限（.env の LINE_ALLOWED_SOURCE_IDS にグループID等をカンマ区切りで設定すると、それ以外は無視）
+    $allowedSources = array_filter(array_map('trim', explode(',', (string)envValue('LINE_ALLOWED_SOURCE_IDS', ''))));
+    if (!empty($allowedSources) && !in_array($sourceId, $allowedSources, true)) {
+        lineLog("Event[{$i}]: skipped (source not allowed: {$sourceType} {$sourceId})");
+        continue;
+    }
+    if (empty($allowedSources)) {
+        lineLog("Event[{$i}]: source {$sourceType} {$sourceId} (LINE_ALLOWED_SOURCE_IDS 未設定)");
+    }
+
+    // 同じイベントの再送で二重投稿しない
+    $eventId = (string)($event['webhookEventId'] ?? ($event['message']['id'] ?? ''));
+    if ($eventId !== '' && !rateLimitAllow('line_event', $eventId, 1, 86400)) {
+        lineLog("Event[{$i}]: skipped (duplicate {$eventId})");
         continue;
     }
 

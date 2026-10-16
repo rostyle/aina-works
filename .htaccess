@@ -14,11 +14,28 @@ DirectoryIndex index.php
     # RewriteBase /
 
     # 2. 直接アクセス禁止（セキュリティ）
-    RewriteRule ^(includes|config|sql|vendor)/ - [F,L]
+    RewriteRule ^(includes|config|sql|vendor|logs|backup|tests)/ - [F,L]
+    # 非公開の作業領域（ログ・回数制限・チャット添付）は外から読ませない。添付は api/chat-file.php が参加者にだけ配信する
+    RewriteRule ^storage/(logs|framework|app/private|app/uploads/chat)/ - [F,L]
+    # アップロード領域でスクリプトを実行させない
+    RewriteRule ^storage/.*\.(php[0-9]?|phtml|phar|pht|cgi|pl|py|sh)$ - [F,L,NC]
+    # ドットファイル（.env 等）を読ませない（.well-known は除く）
+    RewriteRule (^|/)\.(?!well-known/) - [F,L]
+    # 設定・ログ・バックアップ・文書の直接取得を拒否（mod_rewrite で書く＝AllowOverride の追加権限が要らない）
+    RewriteRule \.(sql|log|bak|backup|old|orig|md|lock|ya?ml|ini|sh|py)$ - [F,L,NC]
+    RewriteRule (^|/)composer\.(json|lock)$ - [F,L,NC]
+    RewriteRule ^(package(-lock)?\.json|tailwind\.config\.js)$ - [F,L,NC]
+    # 削除済みの旧ファイル（デバッグ・旧API）がサーバーに残っていても実行させない
+    RewriteRule ^(debug_[A-Za-z0-9_]+|serve|switch-role|api/(send-chat-message|upload-chat-file|get-chat-messages|get-unread-count))(\.php)?$ - [F,L,NC]
+
+    # sitemap.xml は動的生成
+    RewriteRule ^sitemap\.xml$ sitemap.php [L]
 
     # 3. /works を /work にリダイレクト (正規化)
     # REQUEST_URI をベースにすることで環境（サブディレクトリの有無）に依存しないリダイレクトを実現
     RewriteCond %{REQUEST_METHOD} GET
+    # 管理画面の /admin/works（作品管理）は対象外（/admin/work/ に飛ばされて404になっていた）
+    RewriteCond %{REQUEST_URI} !/admin/ [NC]
     RewriteCond %{REQUEST_URI} ^(.+)/works/?$ [NC]
     RewriteRule ^ %1/work/ [R=301,L]
 
@@ -31,6 +48,8 @@ DirectoryIndex index.php
     # 5. .php 拡張子を URL から取り除く (外部リダイレクト)
     # 除外ディレクトリ以外で .php 付きアクセスを拡張子なしに 301 リダイレクト
     RewriteCond %{REQUEST_METHOD} GET
+    # エラーページ（ErrorDocument）の内部リクエストはリダイレクトしない
+    RewriteCond %{ENV:REDIRECT_STATUS} ^$
     RewriteCond %{REQUEST_URI} !^/(api|assets|uploads|storage)/
     RewriteCond %{THE_REQUEST} \s[^\s]*\.php [NC]
     RewriteCond %{REQUEST_URI} ^(.+)\.php$ [NC]
@@ -56,6 +75,16 @@ DirectoryIndex index.php
 # Lolipop等の共有サーバーでは、ドメイン直下の設定になる場合があるため、
 # 404が発生する場合はここのパスを調整してください。
 # (例: サイトがドメイン直下なら /404.php、サブディレクトリなら /subdirectory/404.php)
-ErrorDocument 404 404.php
-ErrorDocument 403 404.php
-ErrorDocument 500 404.php
+# 先頭の / が無いと「404.php」という文字列が表示されるだけになるため、ドキュメントルートからのパスで書く
+ErrorDocument 404 /404.php
+ErrorDocument 403 /404.php
+
+# 10. セキュリティヘッダ
+<IfModule mod_headers.c>
+    # PHP側（includes/header.php）でも同じ値を送るため、"set" で上書きして重複させない
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+    Header set Permissions-Policy "camera=(), microphone=(), geolocation=()"
+    Header set Strict-Transport-Security "max-age=31536000" env=HTTPS
+</IfModule>

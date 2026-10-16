@@ -163,7 +163,7 @@ require_once __DIR__ . '/includes/header.php';
         </p>
 
         <!-- Contact Information -->
-        <div class="mt-12 p-6 bg-gray-50 rounded-xl">
+        <div class="mt-12 p-6 bg-gray-50 rounded-xl" id="contact">
           <h3 class="text-lg font-semibold text-gray-900 mb-4">お問い合わせ先</h3>
           <div class="text-gray-700">
             <p class="mb-2"><strong>株式会社AiNA</strong></p>

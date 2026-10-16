@@ -29,7 +29,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             }
         }
     } catch (Exception $e) {
-        setFlash('error', '更新に失敗しました: ' . $e->getMessage());
+        error_log('admin/categories: ' . $e->getMessage());
+        setFlash('error', '更新に失敗しました。時間をおいて再度お試しください');
     }
     redirect(adminUrl('categories.php'));
 }

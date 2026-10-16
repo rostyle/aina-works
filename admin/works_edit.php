@@ -15,7 +15,8 @@ if ($id > 0) {
             redirect(adminUrl('works.php'));
         }
     } catch (Exception $e) {
-        setFlash('error', 'データ取得エラー: ' . $e->getMessage());
+        error_log('admin/works_edit load: ' . $e->getMessage());
+        setFlash('error', 'データを読み込めませんでした');
     }
 }
 
@@ -33,14 +34,14 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     $title = trim($_POST['title'] ?? '');
     $userId = (int)($_POST['user_id'] ?? 0);
     $categoryId = (int)($_POST['category_id'] ?? 0);
-    $status = $_POST['status'] === 'published' ? 'published' : 'archived';
+    $status = ($_POST['status'] ?? '') === 'published' ? 'published' : 'archived';
     $isFeatured = isset($_POST['is_featured']) ? 1 : 0;
     
     if ($title === '' || $userId === 0) {
         $error = 'タイトルとクリエイターは必須です';
     } else {
         try {
-            $mainImage = $_POST['main_image'] ?? '';
+            $mainImage = sanitizeImageRef($_POST['main_image'] ?? '', $work['main_image'] ?? null);
 
             // Handle file upload
             if (isset($_FILES['main_image_file']) && $_FILES['main_image_file']['error'] === UPLOAD_ERR_OK) {
@@ -48,7 +49,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                     $filename = uploadImage($_FILES['main_image_file'], ['max_width' => 1200, 'max_height' => 1200]);
                     $mainImage = 'storage/app/uploads/' . $filename;
                 } catch (Exception $e) {
-                    setFlash('warning', '画像のアップロードに失敗しました（URLは維持されます）: ' . $e->getMessage());
+                    setFlash('warning', '画像のアップロードに失敗しました（URLは維持されます）。JPG・PNG・GIFで5MB以下か確認してください');
                 }
             }
 
@@ -87,7 +88,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             }
             redirect(adminUrl('works.php'));
         } catch (Exception $e) {
-            $error = 'DBエラー: ' . $e->getMessage();
+            error_log('admin/works_edit save: ' . $e->getMessage());
+            $error = '保存できませんでした。入力内容を確認して再度お試しください';
         }
     }
     

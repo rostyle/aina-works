@@ -146,13 +146,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     throw new Exception('ユーザーIDが不正です');
                 }
                 
-                // デバッグ用ログ（本番環境では削除）
-                if (defined('DEBUG') && DEBUG) {
-                    error_log("Profile update values - response_time: " . $responseTime);
-                    error_log("Profile update values - fullName: " . $fullName . ", bio length: " . strlen($bio));
-                    error_log("Profile update values - birthdate: " . $birthdate . ", isCreator: " . $isCreator . ", isClient: " . $isClient);
-                }
-                
                 // ユーザー情報を更新
                 $db->update(
                     "UPDATE users SET full_name = ?, bio = ?, location = ?, website = ?, twitter_url = ?, instagram_url = ?, facebook_url = ?, linkedin_url = ?, youtube_url = ?, tiktok_url = ?, birthdate = ?, response_time = ?, profile_image = ?, is_creator = ?, is_client = ? WHERE id = ?",
@@ -161,7 +154,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 // user_rolesテーブルを更新
                 // 既存のロールを削除
-                $db->delete("DELETE FROM user_roles WHERE user_id = ?", [$userId]);
+                // 消すのは creator / client だけ（admin などの権限はプロフィール保存で消さない）
+                $db->delete("DELETE FROM user_roles WHERE user_id = ? AND role IN ('creator','client')", [$userId]);
                 
                 // 新しいロールを追加
                 if ($isCreator) {
@@ -217,7 +211,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 error_log("Profile update error: " . $e->getMessage());
                 error_log("Stack trace: " . $e->getTraceAsString());
                 error_log("Profile update values - fullName: " . $fullName . ", bio: " . substr($bio, 0, 100) . "...");
-                error_log("Profile update values - birthdate: " . $birthdate . ", userId: " . $userId);
             }
         }
     }
@@ -248,7 +241,7 @@ include 'includes/header.php';
             <input type="hidden" name="csrf_token" value="<?= h(generateCsrfToken()) ?>">
 
             <div class="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-6">
-                <img src="<?= uploaded_asset($user['profile_image'] ?? 'assets/images/default-avatar.png') ?>" alt="プロフィール画像" class="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover mx-auto sm:mx-0">
+                <img src="<?= h(uploaded_asset($user['profile_image'] ?? 'assets/images/default-avatar.png')) ?>" alt="プロフィール画像" class="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover mx-auto sm:mx-0">
                 <div class="text-center sm:text-left">
                     <label for="profile_image" class="block text-sm font-medium text-gray-700 mb-2">プロフィール画像を変更</label>
                     <input type="file" name="profile_image" id="profile_image" class="text-sm text-gray-600 w-full sm:w-auto">
@@ -357,10 +350,10 @@ include 'includes/header.php';
         </form>
 
         <!-- 振込口座設定 -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 lg:p-8 mt-6">
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 lg:p-8 mt-6" id="bank">
             <div class="border-b pb-4 mb-6">
                 <h3 class="text-lg font-medium text-gray-900">振込口座設定</h3>
-                <p class="text-sm text-gray-600 mt-1">案件の報酬を受け取るための銀行口座を設定してください。</p>
+                <p class="text-sm text-gray-600 mt-1">案件の報酬を受け取るための銀行口座です。報酬は依頼者からこの口座へ直接振り込まれます。依頼者に表示されるのは、あなたが「納品を報告」した後だけです。</p>
             </div>
 
             <form id="bank-account-form" class="space-y-4">
@@ -483,7 +476,14 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (hasErrors) {
                 e.preventDefault();
-                alert('以下のエラーがあります：\n\n' + errors.join('\n'));
+                const msg = '入力内容を確認してください：\n' + errors.join('\n');
+                if (typeof showNotification === 'function') {
+                    showNotification(msg, 'error', 8000);
+                } else {
+                    alert(msg);
+                }
+                const firstInvalid = profileForm.querySelector(':invalid') || document.getElementById('birthdate');
+                if (firstInvalid && typeof firstInvalid.focus === 'function') firstInvalid.focus();
                 return false;
             }
         });
@@ -560,7 +560,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             } catch (error) {
                 console.error('save bank account error', error);
-                const errorMsg = '通信エラーが発生しました: ' + error.message;
+                const errorMsg = '通信エラーが発生しました。電波の良い場所でもう一度お試しください。';
                 if (typeof showNotification === 'function') {
                     showNotification(errorMsg, 'error');
                 } else {

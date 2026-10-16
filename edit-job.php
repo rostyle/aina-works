@@ -26,8 +26,9 @@ if ((int)$job['client_id'] !== (int)$currentUser['id']) {
     redirect(url('job-detail?id=' . $jobId));
 }
 
-if ($job['status'] !== 'open') {
-    setFlash('error', '募集中の案件のみ編集できます');
+// 募集中・募集終了（締切延長して再開したい場合）の案件だけ編集できる
+if (!in_array($job['status'], ['open', 'closed'], true)) {
+    setFlash('error', '募集中または募集終了の案件のみ編集できます');
     redirect(url('job-detail?id=' . $jobId));
 }
 
@@ -72,8 +73,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!in_array($urgency, ['low','medium','high'], true)) {
             $urgency = 'medium';
         }
-        if (!empty($deadline) && strtotime($deadline) < time()) {
-            $errors[] = '締切日は未来の日付を入力してください。';
+        if (!empty($deadline) && strtotime($deadline) < strtotime('today')) {
+            $errors[] = '締切日は今日以降の日付を入力してください。';
         }
 
         if (empty($errors)) {
@@ -92,7 +93,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $jobId
                     ]
                 );
-                setFlash('success', '案件を更新しました');
+                $reopened = false;
+                if ($job['status'] === 'closed' && !empty($_POST['reopen']) && (!$deadline || $deadline >= date('Y-m-d'))
+                    && jobAcceptedCount($jobId) < (int)($job['hiring_limit'] ?? 1)) {
+                    $db->update("UPDATE jobs SET status = 'open' WHERE id = ?", [$jobId]);
+                    try { $db->update("UPDATE jobs SET is_recruiting = 1 WHERE id = ?", [$jobId]); } catch (Throwable $t) {}
+                    $reopened = true;
+                }
+                setFlash('success', $reopened ? '案件を更新し、募集を再開しました' : '案件を更新しました');
                 redirect(url('job-detail?id=' . $jobId));
             } catch (Exception $e) {
                 $errors[] = '更新に失敗しました。再度お試しください。';
@@ -168,13 +176,18 @@ include 'includes/header.php';
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">締切</label>
-                    <input type="date" name="deadline" value="<?= h($job['deadline']) ?>" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                    <input type="date" name="deadline" min="<?= date('Y-m-d') ?>" value="<?= h($job['deadline']) ?>" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
                 </div>
             </div>
 
             <div class="flex justify-end space-x-3">
                 <a href="<?= url('job-detail?id=' . $jobId) ?>" class="px-4 py-2 rounded-lg border border-gray-300 text-gray-700">戻る</a>
                 <button type="button" id="deleteJobBtn" class="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700">削除</button>
+                <?php if ($job['status'] === 'closed'): ?>
+                <label class="inline-flex items-center gap-2 text-sm text-gray-700 mr-3">
+                    <input type="checkbox" name="reopen" value="1" checked class="h-4 w-4"> 保存したら募集を再開する
+                </label>
+                <?php endif; ?>
                 <button type="submit" class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700">保存</button>
             </div>
         </form>

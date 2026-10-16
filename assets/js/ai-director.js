@@ -457,25 +457,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderResult(d) {
         if (!dockBody) return;
+        window.__aiDirectorLastResult = d;
         const rec = d.recommended_budget || {};
         const items = Array.isArray(d.pricing_table) ? d.pricing_table : [];
-        const bullets = Array.isArray(d.bullet_points) ? d.bullet_points : [];
+        const bullets = Array.isArray(d.bullet_points) ? d.bullet_points : (Array.isArray(d.improvement_points) ? d.improvement_points : []);
         const scope = Array.isArray(d.scope_breakdown) ? d.scope_breakdown : [];
         const tags = Array.isArray(d.tags) ? d.tags : [];
 
         // ドック用のコンテンツ（添削・改善サンプル版）
         const dockContent = `
-            ${generateDockSection('💰 推奨予算', `${yen(rec.min)} - ${yen(rec.max)} (${d.timeline_weeks || '-'}週)`, null, null)}
-            ${d.ai_review ? generateDockSection('📝 AIディレクターの添削', d.ai_review.replace(/\n/g, '<br>'), 'copyText', d.ai_review) : ''}
-            ${d.improved_sample ? generateDockSection('✨ 改善サンプル', d.improved_sample.replace(/\n/g, '<br>'), 'copyText', d.improved_sample) : ''}
-            ${bullets.length ? generateDockSection('💡 改善ポイント', bullets.map(b => `• ${b}`).join('<br>'), null, null) : ''}
+            ${generateDockSection('💰 推奨予算', `${escapeHtml(yen(rec.min))} - ${escapeHtml(yen(rec.max))} (${escapeHtml(String(d.timeline_weeks || '-'))}週)`, null, null)}
+            ${d.ai_review ? generateDockSection('📝 AIディレクターの添削', escapeHtml(String(d.ai_review)).replace(/\n/g, '<br>'), 'copyText', String(d.ai_review)) : ''}
+            ${d.improved_sample ? generateDockSection('✨ 改善サンプル', escapeHtml(String(d.improved_sample)).replace(/\n/g, '<br>'), 'copyText', String(d.improved_sample)) : ''}
+            ${bullets.length ? generateDockSection('💡 改善ポイント', bullets.map(b => `• ${escapeHtml(String(b))}`).join('<br>'), null, null) : ''}
             ${tags.length ? generateDockSection('🏷️ タグ', tags.map(t => `<span class="inline-block px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs mr-1 mb-1">${escapeHtml(t)}</span>`).join(''), null, null) : ''}
             <div class="ai-result-section">
                 <div class="ai-result-header">
                     <span class="font-medium text-gray-700">📋 フォーム反映</span>
                 </div>
                 <div class="ai-result-content">
-                    <button onclick="applyToForm(${JSON.stringify(d).replace(/"/g, '&quot;')})" class="ai-apply-btn">フォームへ反映</button>
+                    <button onclick="applyToForm(window.__aiDirectorLastResult)" class="ai-apply-btn">フォームへ反映</button>
                 </div>
             </div>
         `;

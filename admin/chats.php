@@ -67,7 +67,7 @@ renderAdminHeader('チャット監視', 'chats');
               <div class="text-sm text-gray-900 whitespace-pre-wrap"><?= h($m['message']) ?></div>
             <?php endif; ?>
             <?php if (!empty($m['file_path'])): ?>
-              <div class="mt-1"><a class="text-blue-600 underline text-sm" href="<?= h(uploaded_asset($m['file_path'])) ?>" target="_blank" rel="noopener">ファイルを開く</a></div>
+              <div class="mt-1"><a class="text-blue-600 underline text-sm" href="<?= h(chatFileUrl($m['id'])) ?>" target="_blank" rel="noopener">ファイルを開く</a></div>
             <?php endif; ?>
           </div>
         <?php endforeach; ?>

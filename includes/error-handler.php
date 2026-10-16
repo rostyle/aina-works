@@ -11,17 +11,6 @@ class ErrorHandler {
      * エラーレスポンスを返す（JSON形式）
      */
     public static function jsonError($message, $statusCode = 400, $errors = null, $errorCode = null) {
-        // 出力バッファをクリア
-        while (ob_get_level()) {
-            ob_end_clean();
-        }
-        
-        if (!headers_sent()) {
-            http_response_code($statusCode);
-            header('Content-Type: application/json; charset=utf-8');
-            header('X-Content-Type-Options: nosniff');
-        }
-        
         $response = [
             'success' => false,
             'message' => $message
@@ -35,25 +24,13 @@ class ErrorHandler {
             $response['error_code'] = $errorCode;
         }
         
-        echo json_encode($response, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
-        exit;
+        jsonResponse($response, $statusCode); // 出力・ヘッダ・exit は jsonResponse に一本化
     }
     
     /**
      * 成功レスポンスを返す（JSON形式）
      */
     public static function jsonSuccess($message = null, $data = null, $statusCode = 200) {
-        // 出力バッファをクリア
-        while (ob_get_level()) {
-            ob_end_clean();
-        }
-        
-        if (!headers_sent()) {
-            http_response_code($statusCode);
-            header('Content-Type: application/json; charset=utf-8');
-            header('X-Content-Type-Options: nosniff');
-        }
-        
         $response = [
             'success' => true
         ];
@@ -66,8 +43,7 @@ class ErrorHandler {
             $response['data'] = $data;
         }
         
-        echo json_encode($response, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
-        exit;
+        jsonResponse($response, $statusCode); // 出力・ヘッダ・exit は jsonResponse に一本化
     }
     
     /**
@@ -152,27 +128,5 @@ class ErrorHandler {
         ];
         
         error_log('Error: ' . json_encode($logData, JSON_UNESCAPED_UNICODE));
-    }
-}
-
-if (!function_exists('jsonResponse')) {
-    /**
-     * 統一されたjsonResponse関数（後方互換性のため）
-     */
-    function jsonResponse($data, $status = 200) {
-        if (isset($data['success']) && !$data['success']) {
-            ErrorHandler::jsonError(
-                $data['message'] ?? $data['error'] ?? 'エラーが発生しました',
-                $status,
-                $data['errors'] ?? null,
-                $data['error_code'] ?? null
-            );
-        } else {
-            ErrorHandler::jsonSuccess(
-                $data['message'] ?? null,
-                isset($data['data']) ? $data['data'] : (isset($data['success']) ? null : $data),
-                $status
-            );
-        }
     }
 }

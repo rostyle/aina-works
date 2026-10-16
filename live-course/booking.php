@@ -6,7 +6,7 @@ $pageDescription = 'ライブコースの予約';
 
 // ログインチェック
 if (!isLoggedIn()) {
-    redirect(url('login'));
+    redirect(url('login?redirect=' . rawurlencode('live-course/booking?id=' . (int)($_GET['id'] ?? 0))));
 }
 
 $user = getCurrentUser();
@@ -20,8 +20,8 @@ if (!$courseId) {
 
 // コース情報を取得（course_booksテーブルから）
 $course = $db->selectOne("
-    SELECT * FROM course_books WHERE id = ? AND start > NOW()
-", [$courseId]);
+    SELECT * FROM course_books WHERE id = ? AND start > ?
+", [$courseId, date('Y-m-d H:i:s')]);
 
 if (!$course) {
     redirect(url('live-course'));
@@ -65,8 +65,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // 予約完了ページへリダイレクト
             redirect(url('live-course/detail?id=' . $courseId . '&booked=1'));
         } catch (Exception $e) {
-            $db->rollBack();
-            $error = $e->getMessage() ?: '予約に失敗しました';
+            try { $db->rollBack(); } catch (Throwable $t) {}
+            error_log('live-course booking: ' . $e->getMessage());
+            $error = '予約できませんでした。時間をおいて再度お試しください。';
         }
     }
 }
@@ -151,19 +152,9 @@ include '../includes/header.php';
 
         <!-- Booking Form -->
         <form method="POST" class="bg-white rounded-lg shadow-md p-6">
-            <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
+            <input type="hidden" name="csrf_token" value="<?= h(generateCsrfToken()) ?>">
 
-            <div class="mb-6">
-                <label for="booking_note" class="block text-sm font-medium text-gray-700 mb-2">
-                    メッセージ（任意）
-                </label>
-                <textarea 
-                    id="booking_note" 
-                    name="booking_note" 
-                    rows="4" 
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-                    placeholder="講師へのメッセージや質問があればご記入ください"></textarea>
-            </div>
+            <p class="mb-6 text-sm text-gray-600">講師への質問は、当日のチャットやAiNAマイページのお問い合わせからお送りください。</p>
 
             <div class="flex gap-4">
                 <a href="<?= url('live-course') ?>" 

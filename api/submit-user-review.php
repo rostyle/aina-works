@@ -1,77 +1,93 @@
 <?php
-require_once '../config/config.php';
+/**
+ * 取引相手へのレビュー（フォーム送信 → プロフィールへ戻る）
+ * AiNA Works上で採用（受諾）された取引がある相手にだけ書ける。1人につき1件で、2回目以降は更新。
+ */
+require_once __DIR__ . '/../config/config.php';
 
-// Always respond with redirects for form posts; use JSON only for fatal errors
+$revieweeId = (int)($_POST['reviewee_id'] ?? 0);
+$back = url('creator-profile?id=' . $revieweeId);
+
 if (!isLoggedIn()) {
-    jsonResponse(['error' => 'ログインが必要です'], 401);
+    setFlash('error', 'レビューを書くにはログインしてください。');
+    redirect(url('login?redirect=' . rawurlencode('creator-profile?id=' . $revieweeId)));
 }
-
-// CSRF
-$csrfToken = $_POST['csrf_token'] ?? '';
-if (!verifyCsrfToken($csrfToken)) {
-    jsonResponse(['error' => '不正なリクエストです'], 403);
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST' || !verifyCsrfToken(csrfTokenFromRequest())) {
+    setFlash('error', '画面の有効期限が切れました。もう一度お試しください。');
+    redirect($back);
 }
 
 try {
     $db = Database::getInstance();
     $currentUser = getCurrentUser();
 
-    $revieweeId = (int)($_POST['reviewee_id'] ?? 0);
     $rating = (int)($_POST['rating'] ?? 0);
     $comment = trim((string)($_POST['comment'] ?? ''));
 
-    // Basic validation
     $errors = [];
     if ($revieweeId <= 0) { $errors[] = 'レビュー対象が指定されていません'; }
-    if ($rating < 1 || $rating > 5) { $errors[] = '評価は1〜5の範囲で入力してください'; }
+    if ($rating < 1 || $rating > 5) { $errors[] = '評価は1〜5で選んでください'; }
     if ($comment === '') { $errors[] = 'コメントを入力してください'; }
-    if (mb_strlen($comment) > 1000) { $errors[] = 'コメントは1000文字以内で入力してください'; }
+    if (mb_strlen($comment) > 1000) { $errors[] = 'コメントは1,000文字以内で入力してください'; }
     if ($revieweeId === (int)$currentUser['id']) { $errors[] = '自分自身にはレビューできません'; }
-
     if (!empty($errors)) {
-        $_SESSION['flash'] = $_SESSION['flash'] ?? [];
-        $_SESSION['flash']['error'] = implode(' / ', $errors);
-        redirect('../creator-profile.php?id=' . $revieweeId);
+        setFlash('error', implode(' / ', $errors));
+        redirect($back);
+    }
+    if (!rateLimitAllow('review_post', (string)$currentUser['id'], 10, 3600)) {
+        setFlash('error', '短時間にレビューが続いています。少し時間をおいてから投稿してください。');
+        redirect($back);
     }
 
-    // Ensure reviewee exists and is active
     $reviewee = $db->selectOne("SELECT id, full_name, email FROM users WHERE id = ? AND is_active = 1", [$revieweeId]);
     if (!$reviewee) {
-        $_SESSION['flash'] = $_SESSION['flash'] ?? [];
-        $_SESSION['flash']['error'] = 'レビュー対象のユーザーが見つかりません';
-        redirect('../creators.php');
+        setFlash('error', 'レビュー対象のユーザーが見つかりません');
+        redirect(url('creators'));
     }
 
-    // Optional: relationship check (at least one related job with relationship)
-    // Not enforced strictly to keep UX simple
+    // 取引（採用）の実績がある相手だけ
+    $related = $db->selectOne("
+        SELECT 1 FROM job_applications ja JOIN jobs j ON ja.job_id = j.id
+        WHERE ja.status = 'accepted'
+          AND ((j.client_id = ? AND ja.creator_id = ?) OR (j.client_id = ? AND ja.creator_id = ?))
+        LIMIT 1
+    ", [$currentUser['id'], $revieweeId, $revieweeId, $currentUser['id']]);
+    if (!$related) {
+        setFlash('error', 'レビューはAiNA Worksで取引（採用）した相手にだけ書けます。');
+        redirect($back);
+    }
 
-    // Insert review (work_id is NULL for user-to-user reviews)
+    $existing = $db->selectOne(
+        "SELECT id FROM reviews WHERE reviewer_id = ? AND reviewee_id = ? AND work_id IS NULL ORDER BY id DESC LIMIT 1",
+        [$currentUser['id'], $revieweeId]
+    );
+    if ($existing) {
+        $db->update("UPDATE reviews SET rating = ?, comment = ? WHERE id = ?", [$rating, $comment, $existing['id']]);
+        setFlash('success', 'レビューを更新しました。');
+        redirect($back);
+    }
+
     $db->insert(
         "INSERT INTO reviews (reviewer_id, reviewee_id, work_id, rating, comment, created_at) VALUES (?, ?, NULL, ?, ?, NOW())",
         [$currentUser['id'], $revieweeId, $rating, $comment]
     );
 
-    // Notify reviewee via email (best effort)
     try {
         if (!empty($reviewee['email'])) {
             $subject = '【AiNA Works】あなたにレビューが投稿されました';
-            $message  = ($currentUser['full_name'] ?? 'ユーザー') . " さんから、あなたのプロフィールにレビューが投稿されました。\n\n";
-            $message .= "評価: " . str_repeat('★', max(1, min(5, $rating))) . " (" . $rating . "/5)\n\n";
-            $message .= "コメント:\n" . $comment . "\n\n";
-            $message .= "プロフィールでレビューを確認できます。";
-            $actionUrl = url('creator-profile?id=' . $revieweeId, true);
-            sendNotificationMail($reviewee['email'], $subject, $message, $actionUrl, 'レビューを確認する');
+            $message  = ($currentUser['full_name'] ?? 'ユーザー') . "さんから、あなたのプロフィールにレビューが投稿されました。\n\n";
+            $message .= "評価: " . str_repeat('★', $rating) . str_repeat('☆', 5 - $rating) . " ({$rating}/5)\n\n";
+            $message .= "コメント:\n" . $comment;
+            sendNotificationMail($reviewee['email'], $subject, $message, url('creator-profile?id=' . $revieweeId, true), 'レビューを確認する');
         }
-    } catch (Exception $e) {
+    } catch (Throwable $e) {
         error_log('User review notify mail error: ' . $e->getMessage());
     }
 
-    $_SESSION['flash'] = $_SESSION['flash'] ?? [];
-    $_SESSION['flash']['success'] = 'レビューを投稿しました。ありがとうございます！';
-    redirect('../creator-profile.php?id=' . $revieweeId);
-} catch (Exception $e) {
-    error_log('Submit user review error: ' . $e->getMessage());
-    jsonResponse(['error' => 'システムエラーが発生しました'], 500);
+    setFlash('success', 'レビューを投稿しました。ありがとうございます！');
+    redirect($back);
+} catch (Throwable $e) {
+    error_log('User review error: ' . $e->getMessage());
+    setFlash('error', 'レビューを保存できませんでした。時間をおいて再度お試しください。');
+    redirect($back);
 }
-
-

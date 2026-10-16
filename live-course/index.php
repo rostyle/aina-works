@@ -19,9 +19,9 @@ $courses = $db->select("
         c.name as category_name
     FROM course_books cb
     LEFT JOIN categories c ON cb.category_id = c.id
-    WHERE cb.start > NOW()
+    WHERE cb.start > ?
     ORDER BY cb.start ASC
-");
+", [date('Y-m-d H:i:s')]);
 
 // ユーザーが予約済みのコースIDを取得
 $bookedCourseIds = [];
@@ -57,7 +57,7 @@ include '../includes/header.php';
                 <?php foreach ($courses as $course): ?>
                     <?php
                     $isBooked = in_array($course['id'], $bookedCourseIds);
-                    $scheduledDate = new DateTime($course['scheduled_at']);
+                    $scheduledDate = new DateTime($course['start'] ?? $course['scheduled_at'] ?? 'now');
                     $now = new DateTime();
                     $isPast = $scheduledDate < $now;
                     ?>

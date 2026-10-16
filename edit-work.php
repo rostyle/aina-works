@@ -2,8 +2,13 @@
 require_once 'config/config.php';
 
 // ログインチェック
-if (!isLoggedIn() || (!isset($_GET['id']) && !hasPermission('create_work'))) {
-    redirect(url('login'));
+if (!isLoggedIn()) {
+    redirect(url('login?redirect=' . rawurlencode('edit-work' . (isset($_GET['id']) ? '?id=' . (int)$_GET['id'] : ''))));
+}
+// 新規投稿はクリエイター設定が必要（未設定なら短い選択画面へ）
+if (!isset($_GET['id']) && !isUserCreator()) {
+    setFlash('info', '作品を載せるには「仕事を受けたい（クリエイター）」の設定が必要です。');
+    redirect(url('select-role?role=creator&redirect=' . rawurlencode('edit-work')));
 }
 
 $user = getCurrentUser();
@@ -47,6 +52,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $formData['price_max'] = (int)($_POST['price_max'] ?? 0);
         $formData['duration_weeks'] = (int)($_POST['duration_weeks'] ?? 0);
 
+        // 入力チェック（必須・長さ・価格の上下）
+        if ($formData['title'] === '' || mb_strlen($formData['title']) > 100) {
+            $errors[] = 'タイトルを100文字以内で入力してください。';
+        }
+        if (mb_strlen($formData['description']) < 20 || mb_strlen($formData['description']) > 5000) {
+            $errors[] = '説明は20〜5,000文字で入力してください（何を作れるか・使ったAI・納期の目安などを書くと依頼が来やすくなります）。';
+        }
+        if ($formData['category_id'] <= 0 || !$db->selectOne("SELECT id FROM categories WHERE id = ? AND is_active = 1", [$formData['category_id']])) {
+            $errors[] = 'カテゴリを選んでください。';
+        }
+        if ($formData['price_min'] < 0 || $formData['price_max'] < 0) {
+            $errors[] = '価格は0円以上で入力してください。';
+        } elseif ($formData['price_max'] > 0 && $formData['price_min'] > $formData['price_max']) {
+            $errors[] = '価格の上限は下限以上にしてください。';
+        }
+        if ($formData['duration_weeks'] < 0 || $formData['duration_weeks'] > 52) {
+            $errors[] = '制作期間は0〜52週で入力してください。';
+        }
+
         // Main image upload (resize & compress)
         if (isset($_FILES['main_image']) && $_FILES['main_image']['error'] === UPLOAD_ERR_OK) {
             try {
@@ -56,7 +80,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ['max_width' => 1600, 'max_height' => 900, 'quality' => 82, 'strict' => true]
                 );
             } catch (Exception $e) {
-                $errors[] = 'メイン画像のアップロードに失敗しました: ' . $e->getMessage();
+                error_log('edit-work image upload: ' . $e->getMessage());
+                $errors[] = 'メイン画像をアップロードできませんでした。JPG・PNG・GIFで5MB以下の画像を選んでください。';
             }
         }
 
@@ -87,6 +112,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 setFlash('success', '作品を保存しました。');
                 redirect(url('work-detail?id=' . $workId));
             } catch (Exception $e) {
+                error_log('edit-work save: ' . $e->getMessage());
                 $errors[] = '作品の保存に失敗しました。';
             }
         }
@@ -152,7 +178,7 @@ include 'includes/header.php';
                 <label class="block text-sm font-medium text-gray-700">メイン画像</label>
                 <?php if ($isEditMode && $formData['main_image']): ?>
                     <div class="mt-2">
-                        <img src="<?= uploaded_asset($formData['main_image']) ?>" alt="現在の画像" class="w-32 h-32 object-cover rounded-md">
+                        <img src="<?= h(uploaded_asset($formData['main_image'])) ?>" alt="現在の画像" class="w-32 h-32 object-cover rounded-md">
                     </div>
                 <?php endif; ?>
                 <input type="file" name="main_image" id="main_image" accept="image/jpeg,image/png,image/gif" class="mt-2">

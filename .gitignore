@@ -55,6 +55,8 @@ uploads/*
 !uploads/.gitkeep
 storage/app/uploads/*
 !storage/app/uploads/.gitkeep
+storage/framework/
+storage/logs/
 assets/uploads/
 public/uploads/
 
@@ -104,7 +106,6 @@ php.ini
 # Development
 debug/
 test/
-tests/
 phpunit.xml
 .phpunit.result.cache
 
@@ -141,3 +142,7 @@ Icon
 .Trashes
 .VolumeIcon.icns
 .com.apple.timemachine.donotpresent
+
+# Python（tests/）
+__pycache__/
+*.pyc

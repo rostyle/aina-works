@@ -58,46 +58,44 @@ try {
     }
     
     // 自分自身へのメッセージ送信を防ぐ
-    if ($currentUser['id'] === $recipientId) {
+    if ((int)$currentUser['id'] === $recipientId) {
         ErrorHandler::jsonError(Messages::USER_SELF_OPERATION, 400, null, 'OWN_RESOURCE');
     }
-    
-    // メッセージをデータベースに保存
-    $messageId = $db->insert("
-        INSERT INTO messages (sender_id, recipient_id, subject, message, created_at) 
-        VALUES (?, ?, ?, ?, NOW())
-    ", [$currentUser['id'], $recipientId, $subject, $message]);
-    
-    if ($messageId) {
-        // 受信者にメール通知を送信
-        try {
-            $recipientUser = $db->selectOne(
-                "SELECT email, full_name FROM users WHERE id = ?",
-                [$recipientId]
-            );
-            
-            if ($recipientUser) {
-                $emailSubject = "【AiNA Works】新しいメッセージが届きました - {$subject}";
-                $emailMessage = "こんにちは、{$recipientUser['full_name']}さん\n\n";
-                $emailMessage .= "{$currentUser['full_name']}さんから新しいメッセージが届きました。\n\n";
-                $emailMessage .= "件名: {$subject}\n\n";
-                $emailMessage .= "メッセージ:\n";
-                $emailMessage .= $message . "\n\n";
-                $emailMessage .= "返信はプラットフォーム上で行ってください。";
-                
-                $actionUrl = url('chats', true);
-                sendNotificationMail($recipientUser['email'], $emailSubject, $emailMessage, $actionUrl, 'メッセージを確認する');
-            }
-        } catch (Exception $e) {
-            error_log('メッセージ通知メール送信エラー: ' . $e->getMessage());
-            // メール送信エラーでもメッセージ送信は成功として処理
-        }
-        
-        ErrorHandler::jsonSuccess('メッセージを送信しました', ['message_id' => $messageId]);
-    } else {
-        ErrorHandler::jsonError('メッセージの送信に失敗しました', 500, null, 'SEND_FAILED');
+    if (!rateLimitAllow('direct_message', (string)$currentUser['id'], 20, 3600)) {
+        ErrorHandler::jsonError('短時間に送信しすぎています。少し時間をおいてから送ってください。', 429, null, 'RATE_LIMITED');
     }
-    
+
+    // 記録（テーブルが無い環境でも相手には届ける）
+    try {
+        $db->insert("
+            INSERT INTO messages (sender_id, recipient_id, subject, message, created_at)
+            VALUES (?, ?, ?, ?, NOW())
+        ", [$currentUser['id'], $recipientId, $subject, $message]);
+    } catch (Throwable $e) {
+        error_log('send-message: messages insert skipped: ' . $e->getMessage());
+    }
+
+    // 相手とのチャットに届ける（返信はチャットで行う）
+    $roomId = postChatNotice((int)$currentUser['id'], $recipientId, "【{$subject}】\n" . $message);
+    if (!$roomId) {
+        ErrorHandler::jsonError('メッセージを送れませんでした。時間をおいて再度お試しください。', 500, null, 'SEND_FAILED');
+    }
+
+    try {
+        $recipientUser = $db->selectOne("SELECT email FROM users WHERE id = ?", [$recipientId]);
+        if ($recipientUser && rateLimitAllow('chat_mail', $roomId . ':' . $recipientId, 1, 600)) {
+            $emailSubject = "【AiNA Works】新しいメッセージが届きました - {$subject}";
+            $emailMessage  = "{$currentUser['full_name']}さんから新しいメッセージが届きました。\n\n";
+            $emailMessage .= "件名: {$subject}\n\n";
+            $emailMessage .= "メッセージ:\n" . mb_strimwidth($message, 0, 600, '…') . "\n\n";
+            $emailMessage .= "返信はチャットで行ってください。";
+            sendNotificationMail($recipientUser['email'], $emailSubject, $emailMessage, url('chat?room_id=' . $roomId, true), 'チャットで返信する');
+        }
+    } catch (Throwable $e) {
+        error_log('メッセージ通知メール送信エラー: ' . $e->getMessage());
+    }
+
+    ErrorHandler::jsonSuccess('メッセージを送りました。返信はチャットに届きます。', ['chat_url' => url('chat?room_id=' . $roomId)]);
 } catch (Exception $e) {
     ErrorHandler::handleException($e, 'Message send error: ' . $e->getMessage());
 }

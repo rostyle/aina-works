@@ -43,8 +43,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     setFlash('success', 'ログインしました。');
                     
                     // リダイレクト先を決定
-                    $redirectUrl = $_GET['redirect'] ?? 'dashboard';
-                    redirect(url($redirectUrl));
+                    // 役割（受注・発注）が未設定なら、最初に短い選択画面を挟む
+                    if (userHasNoRole(getCurrentUser(true)) && !isAdminUser()) {
+                        $next = is_string($_GET['redirect'] ?? null) ? $_GET['redirect'] : 'dashboard';
+                        redirect(url('select-role?redirect=' . rawurlencode($next)));
+                    }
+                    redirect(safeRedirectUrl($_GET['redirect'] ?? ''));
                 } else {
                     $errors['general'] = $loginResult['message'];
                 }
@@ -121,7 +125,7 @@ include 'includes/header.php';
             </style>
         <?php endif; ?>
 
-        <form class="mt-8 space-y-6" action="login.php" method="POST">
+        <form class="mt-8 space-y-6" action="<?= h(url('login' . (isset($_GET['redirect']) && is_string($_GET['redirect']) ? '?redirect=' . rawurlencode($_GET['redirect']) : ''))) ?>" method="POST">
             <input type="hidden" name="csrf_token" value="<?= h(generateCsrfToken()) ?>">
             
             <div class="space-y-5">

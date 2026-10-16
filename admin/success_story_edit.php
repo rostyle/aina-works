@@ -18,7 +18,8 @@ if ($id > 0) {
             redirect(adminUrl('success_stories.php'));
         }
     } catch (Exception $e) {
-        setFlash('error', 'データ取得エラー: ' . $e->getMessage());
+        error_log('admin/story load: ' . $e->getMessage());
+        setFlash('error', 'データを読み込めませんでした');
     }
 }
 
@@ -38,8 +39,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         $error = 'タイトルとメンバー名は必須です';
     } else {
         try {
-            $mainImage = $_POST['main_image'] ?? '';
-            $memberImage = $_POST['member_image'] ?? '';
+            $mainImage = sanitizeImageRef($_POST['main_image'] ?? '', $story['main_image'] ?? null);
+            $memberImage = sanitizeImageRef($_POST['member_image'] ?? '', $story['member_image'] ?? null);
 
             // Handle main image upload
             if (isset($_FILES['main_image_file']) && $_FILES['main_image_file']['error'] === UPLOAD_ERR_OK) {
@@ -47,7 +48,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                     $filename = uploadImage($_FILES['main_image_file'], ['max_width' => 1200, 'max_height' => 1200]);
                     $mainImage = 'storage/app/uploads/' . $filename;
                 } catch (Exception $e) {
-                    setFlash('warning', 'メイン画像のアップロードに失敗しました: ' . $e->getMessage());
+                    setFlash('warning', 'メイン画像のアップロードに失敗しました。JPG・PNG・GIFで5MB以下か確認してください');
                 }
             }
 
@@ -57,7 +58,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                     $filename = uploadImage($_FILES['member_image_file'], ['max_width' => 400, 'max_height' => 400]);
                     $memberImage = 'storage/app/uploads/' . $filename;
                 } catch (Exception $e) {
-                    setFlash('warning', 'メンバー画像のアップロードに失敗しました: ' . $e->getMessage());
+                    setFlash('warning', 'メンバー画像のアップロードに失敗しました。JPG・PNG・GIFで5MB以下か確認してください');
                 }
             }
 
@@ -94,7 +95,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                 redirect(adminUrl('success_story_edit.php?id=' . $newId));
             }
         } catch (Exception $e) {
-            $error = 'DBエラー: ' . $e->getMessage();
+            error_log('admin/story save: ' . $e->getMessage());
+            $error = '保存できませんでした。入力内容（日付など）を確認して再度お試しください';
         }
     }
     
@@ -131,7 +133,7 @@ $flashes = getFlash();
 
 <?php if (!empty($flashes)): ?>
   <?php foreach ($flashes as $type => $msg): if (!$msg) continue; ?>
-    <div class="mb-6 rounded-xl px-4 py-3 flex items-center gap-3 <?= $type === 'success' ? 'bg-green-50 text-green-800 border border-green-100' : 'bg-red-50 text-red-800 border border-red-100' ?>">
+    <div class="mb-6 rounded-xl px-4 py-3 flex items-center gap-3 <?= $type === 'success' ? 'bg-green-50 text-green-800 border border-green-100' : ($type === 'warning' ? 'bg-yellow-50 text-yellow-800 border border-yellow-100' : 'bg-red-50 text-red-800 border border-red-100') ?>">
         <span class="font-medium"><?= h($msg) ?></span>
     </div>
   <?php endforeach; ?>
@@ -204,7 +206,7 @@ $flashes = getFlash();
                     <?php foreach ($sections as $sec): ?>
                         <div class="flex items-start bg-white border rounded-xl p-5 hover:border-indigo-300 hover:shadow-md transition group">
                             <div class="mr-4 flex flex-col items-center">
-                                <span class="bg-gray-100 text-gray-400 text-[10px] px-2 py-0.5 rounded font-mono mb-2">#<?= $sec['display_order'] ?></span>
+                                <span class="bg-gray-100 text-gray-400 text-[10px] px-2 py-0.5 rounded font-mono mb-2">#<?= (int)$sec['display_order'] ?></span>
                             </div>
                             <div class="flex-1 min-w-0">
                                 <h3 class="font-bold text-gray-900 text-base mb-1 truncate"><?= h($sec['heading']) ?></h3>

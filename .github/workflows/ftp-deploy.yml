@@ -13,6 +13,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # 構文エラーのあるPHPを本番に上げない（1ファイルでも失敗したらデプロイしない）
+      - name: PHP syntax check
+        run: |
+          php -v | head -1
+          set -o pipefail
+          find . -name '*.php' -not -path './vendor/*' -not -path './.git/*' -print0 \
+            | xargs -0 -n1 -P4 php -l > /tmp/php-lint.log 2>&1 || { grep -v '^No syntax errors' /tmp/php-lint.log; exit 1; }
+          echo "PHP syntax OK: $(grep -c '^No syntax errors' /tmp/php-lint.log) files"
+
+      # Tailwind のCSSをソース（PHP/JS内のクラス名）から作り直す。コミット済みの assets/css/tailwind.css が古くても本番は最新になる
+      - name: Build Tailwind CSS
+        run: npx --yes tailwindcss@3.4.19 -c tailwind.config.js -i assets/css/tailwind.src.css -o assets/css/tailwind.css --minify
+
       - name: FTP Deploy (FTPS explicit)
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
@@ -27,7 +40,11 @@ jobs:
             **/.git*
             **/.github/**
             **/node_modules/**
-            **/README.md
+            **/*.md
+            **/composer.json
+            **/package.json
+            **/tailwind.config.js
+            **/assets/css/tailwind.src.css
             **/.DS_Store
             **/.env*
             **/sample.env
@@ -82,3 +99,42 @@ jobs:
             **/build/**
             **/public/build/**
           log-level: minimal
+
+      # 本番を読み戻して、反映できたかを確かめる（失敗したらこのジョブが赤になる）
+      - name: Verify live site
+        env:
+          SITE: https://aina-works.com
+        run: |
+          set -u
+          fail=0
+          ok()  { echo "OK   $1"; }
+          ng()  { echo "::error::NG $1"; fail=1; }
+          code() { curl -s -o /tmp/body -w '%{http_code}' --max-time 20 "$@"; }
+          sleep 5
+
+          c=$(code "$SITE/login")
+          if [ "$c" = 200 ] && grep -q 'AiNA Worksにログイン' /tmp/body && grep -q '/assets/css/tailwind.css' /tmp/body && ! grep -q 'cdn.tailwindcss.com' /tmp/body; then ok "login page uses built CSS"; else ng "login page ($c)"; fi
+
+          c=$(code "$SITE/assets/css/tailwind.css")
+          if [ "$c" = 200 ] && grep -q '\.bg-white{' /tmp/body; then ok "tailwind.css served"; else ng "tailwind.css ($c)"; fi
+
+          c=$(code "$SITE/api/health.php")
+          if [ "$c" = 200 ] && grep -q '"ok":true' /tmp/body; then ok "health $(cat /tmp/body)"; else ng "health ($c) $(head -c 200 /tmp/body)"; fi
+          grep -q '"clock_ok":true' /tmp/body || echo "::warning::DBの時刻がPHP(Asia/Tokyo)とずれています: $(cat /tmp/body)"
+
+          c=$(code "$SITE/api/get_job.php?id=1")
+          if [ "$c" = 401 ] || [ "$c" = 403 ]; then ok "get_job anonymous denied ($c)"; else ng "get_job anonymous ($c)"; fi
+
+          for p in debug_env.php debug_schema.php debug_production_stories_v2.php serve.php api/send-chat-message.php api/upload-chat-file.php package.json tailwind.config.js; do
+            c=$(code "$SITE/$p")
+            if [ "$c" = 403 ] || [ "$c" = 404 ]; then ok "$p not served ($c)"; else ng "$p served ($c)"; fi
+          done
+
+          c=$(code "$SITE/sitemap.xml")
+          if [ "$c" = 200 ] && grep -q '<urlset' /tmp/body; then ok "sitemap.xml"; else ng "sitemap.xml ($c)"; fi
+
+          # LINE webhook: 署名なしのPOSTが 400 ならシークレット設定済み、503 なら未設定（求人取り込みが止まっている）
+          c=$(code -X POST -H 'Content-Type: application/json' -d '{}' "$SITE/api/line-webhook.php")
+          if [ "$c" = 400 ]; then ok "LINE webhook secret configured"; else echo "::warning::LINE webhook returned $c（503 なら .env の DEMI_LINE_CHANNEL_SECRET が未設定）"; fi
+
+          exit $fail

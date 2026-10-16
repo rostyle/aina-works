@@ -17,9 +17,11 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     if ($appId > 0 && in_array($newStatus, $allowed, true)) {
         try {
             $db->update("UPDATE job_applications SET status = ? WHERE id = ?", [$newStatus, $appId]);
+            logAdminAction('application_status', 'job_application', $appId, ['status' => $newStatus]);
             setFlash('success', '応募ステータスを更新しました');
         } catch (Exception $e) {
-            setFlash('error', '更新に失敗しました: ' . $e->getMessage());
+            error_log('admin/applications: ' . $e->getMessage());
+            setFlash('error', '更新に失敗しました。時間をおいて再度お試しください');
         }
     }
     redirect(adminUrl('applications.php'));

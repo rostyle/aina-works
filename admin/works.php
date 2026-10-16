@@ -20,15 +20,19 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                 if ($w) {
                     $new = ($w['status'] === 'published') ? 'archived' : 'published';
                     $db->update("UPDATE works SET status = ? WHERE id = ?", [$new, $id]);
+                    logAdminAction('work_status', 'work', $id, ['status' => $new]);
                     setFlash('success', '公開状態を変更しました');
                 }
             } elseif ($action === 'delete') {
+                $before = $db->selectOne("SELECT id, user_id, title FROM works WHERE id = ?", [$id]);
                 $db->execute("DELETE FROM works WHERE id = ?", [$id]);
+                logAdminAction('work_delete', 'work', $id, ['before' => $before]);
                 setFlash('success', '作品を削除しました');
             }
         }
     } catch (Exception $e) {
-        setFlash('error', '処理に失敗しました: ' . $e->getMessage());
+        error_log('admin/works: ' . $e->getMessage());
+        setFlash('error', '処理に失敗しました。時間をおいて再度お試しください');
     }
     redirect(adminUrl('works.php'));
 }

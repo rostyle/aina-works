@@ -46,7 +46,14 @@ try {
 			jsonResponse(['success' => false, 'error' => '振込先情報が登録されていません。プロフィールページから振込先情報を登録してください。'], 404);
 		}
 
-		jsonResponse(['success' => true, 'account' => $account]);
+		// 誰がいつ誰の振込先を見たかを残す（storage/logs は外部から読めない）
+	@file_put_contents(
+		storagePath('logs') . '/bank-access.log',
+		json_encode(['at' => date('c'), 'viewer_id' => (int)$currentUser['id'], 'creator_id' => $creatorId, 'job_id' => $jobId, 'ip' => clientIp()]) . "\n",
+		FILE_APPEND | LOCK_EX
+	);
+
+	jsonResponse(['success' => true, 'account' => $account]);
 	}
 
 	// 依頼者が特定クリエイターの口座を参照（納品後のみ）
@@ -64,8 +71,9 @@ try {
 		jsonResponse(['error' => 'この案件の振込先情報を確認する権限がありません。'], 403);
 	}
 	
-	if (!in_array($job['status'], ['delivered','completed'], true)) {
-		jsonResponse(['error' => '振込先情報は納品後に確認できます。現在の案件ステータスが「納品済み」または「完了」になっているかご確認ください。'], 403);
+	// 「納品済み」はクリエイターが納品を報告したときだけ付く（依頼者は自分で設定できない）
+	if (!in_array($job['status'], ['delivered','approved','completed'], true)) {
+		jsonResponse(['error' => '振込先はクリエイターが納品を報告した後に確認できます。'], 403);
 	}
 
 	// 受諾済みの応募者か確認
@@ -86,6 +94,13 @@ try {
 	if (!$account || $account === false || !is_array($account) || empty($account['bank_name'])) {
 		jsonResponse(['error' => 'クリエイターの振込先情報が登録されていません。クリエイターにプロフィールページから振込先情報を登録してもらう必要があります。'], 404);
 	}
+
+	// 誰がいつ誰の振込先を見たかを残す（storage/logs は外部から読めない）
+	@file_put_contents(
+		storagePath('logs') . '/bank-access.log',
+		json_encode(['at' => date('c'), 'viewer_id' => (int)$currentUser['id'], 'creator_id' => $creatorId, 'job_id' => $jobId, 'ip' => clientIp()]) . "\n",
+		FILE_APPEND | LOCK_EX
+	);
 
 	jsonResponse(['success' => true, 'account' => $account]);
 

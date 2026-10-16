@@ -21,6 +21,10 @@ if (!is_array($input)) {
     ErrorHandler::jsonError('無効なJSONデータです', 400, null, 'INVALID_JSON');
 }
 
+if (!verifyCsrfToken(csrfTokenFromRequest($input))) {
+    ErrorHandler::jsonCsrfError(Messages::CSRF_INVALID);
+}
+
 // バリデーション
 $validation = new ValidationResult();
 $workId = (int)($input['work_id'] ?? 0);

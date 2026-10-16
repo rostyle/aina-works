@@ -1,319 +1,135 @@
 <?php
-// すべての出力をバッファリング（予期せぬ出力を抑制）
+/**
+ * 案件の設定・状態を変える API
+ *  - 依頼者: 募集人数、募集の終了/再開、状態の変更（決められた順番のみ）
+ *  - 採用されたクリエイター: 「納品を報告」（status=delivered）だけ
+ */
 ob_start();
+require_once __DIR__ . '/../config/config.php';
+ini_set('display_errors', '0');
 
-require_once '../config/config.php';
-
-// config.php の DEBUG 設定による上書きを防ぐため、ここで再度エラー報告を抑制
-if (!defined('DEBUG') || !DEBUG) {
-    ini_set('display_errors', '0');
-    error_reporting(E_ALL & ~E_NOTICE & ~E_DEPRECATED & ~E_STRICT & ~E_WARNING);
-} else {
-    // デバッグモードでもJSONレスポンスを壊さないよう、画面への直接表示はオフにする
-    // （エラーは php-errors.log 等に記録されます）
-    ini_set('display_errors', '0');
-    error_reporting(E_ALL);
-}
-
-header('Content-Type: application/json');
-
-// ログイン確認
 if (!isLoggedIn()) {
     jsonResponse(['error' => 'ログインが必要です'], 401);
 }
-
-// CSRF
-$csrfToken = $_POST['csrf_token'] ?? '';
-if (!verifyCsrfToken($csrfToken)) {
-    jsonResponse(['error' => '不正なリクエストです'], 403);
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+    jsonResponse(['error' => 'POSTリクエストのみ受け付けます'], 405);
+}
+if (!verifyCsrfToken(csrfTokenFromRequest())) {
+    jsonResponse(['error' => '画面の有効期限が切れました。ページを再読み込みしてからもう一度お試しください。'], 403);
 }
 
 $jobId = (int)($_POST['job_id'] ?? 0);
-$recruitAction = $_POST['action'] ?? null; // 'open' | 'close' | null (互換用)
-$newStatus = $_POST['status'] ?? null; // 'open' | 'closed' | 'in_progress' | 'contracted' | 'delivered' | 'approved' | 'completed' | 'cancelled'
-$hiringLimit = isset($_POST['hiring_limit']) ? (int)$_POST['hiring_limit'] : null;
+$recruitAction = $_POST['action'] ?? null; // 'open' | 'close'（旧UI互換）
+$newStatus = isset($_POST['status']) && is_string($_POST['status']) && $_POST['status'] !== '' ? $_POST['status'] : null;
+$hiringLimit = isset($_POST['hiring_limit']) && $_POST['hiring_limit'] !== '' ? (int)$_POST['hiring_limit'] : null;
+$note = mb_substr(trim((string)($_POST['note'] ?? '')), 0, 1000);
 
-// デバッグログ
-error_log('Job settings update - jobId: ' . $jobId . ', newStatus: ' . $newStatus . ', hiringLimit: ' . $hiringLimit);
-
-if (!$jobId) {
+if ($jobId <= 0) {
     jsonResponse(['error' => '案件が指定されていません'], 400);
 }
+if ($newStatus !== null && !in_array($newStatus, JOB_STATUSES, true)) {
+    jsonResponse(['error' => '不正なステータスです'], 400);
+}
+
+// 列の用意はトランザクションの外で一度だけ
+ensureJobWorkflowSchema();
 
 try {
     $db = Database::getInstance();
     $currentUser = getCurrentUser();
+    if (!$currentUser) {
+        jsonResponse(['error' => 'ログインが必要です'], 401);
+    }
 
-    // 案件取得 & 権限チェック
     $job = $db->selectOne("SELECT * FROM jobs WHERE id = ?", [$jobId]);
     if (!$job) {
         jsonResponse(['error' => '案件が見つかりません'], 404);
     }
-    if ((int)$job['client_id'] !== (int)$currentUser['id']) {
-        jsonResponse(['error' => '権限がありません'], 403);
+
+    $isClient = (int)$job['client_id'] === (int)$currentUser['id'];
+    $isAcceptedCreator = !$isClient && (bool)$db->selectOne(
+        "SELECT 1 FROM job_applications WHERE job_id = ? AND creator_id = ? AND status = 'accepted' LIMIT 1",
+        [$jobId, $currentUser['id']]
+    );
+    if (!$isClient && !$isAcceptedCreator) {
+        jsonResponse(['error' => 'この案件を操作する権限がありません'], 403);
+    }
+    // クリエイターは「納品を報告」以外できない
+    if ($isAcceptedCreator && ($newStatus !== 'delivered' || $hiringLimit !== null || $recruitAction !== null)) {
+        jsonResponse(['error' => 'この操作は依頼者のみ行えます'], 403);
     }
 
-    // 変更前ステータスを保持（チャット通知用）
     $previousStatus = (string)($job['status'] ?? '');
-    $jobTitleForChat = (string)($job['title'] ?? '');
+    $hasHiringLimit = array_key_exists('hiring_limit', $job);
+    $hasRecruiting = array_key_exists('is_recruiting', $job);
 
     $db->beginTransaction();
-
-    // カラム存在チェック + ソフトマイグレーション
-    $hasRecruiting = false;
-    $hasHiringLimit = false;
-    $hasAcceptedCount = false;
-
-    try {
-        $db->selectOne("SELECT is_recruiting FROM jobs LIMIT 1");
-        $hasRecruiting = true;
-    } catch (Exception $e) {}
-
-    try {
-        $db->selectOne("SELECT hiring_limit FROM jobs LIMIT 1");
-        $hasHiringLimit = true;
-    } catch (Exception $e) {}
-
-    try {
-        $db->selectOne("SELECT accepted_count FROM jobs LIMIT 1");
-        $hasAcceptedCount = true;
-    } catch (Exception $e) {}
-
-    try {
-        if (!$hasHiringLimit) {
-            // 募集人数
-            $db->update("ALTER TABLE jobs ADD COLUMN hiring_limit INT NOT NULL DEFAULT 1");
-            $hasHiringLimit = true;
-        }
-    } catch (Exception $e) {
-        // 権限等で失敗しても続行
-    }
-    try {
-        if (!$hasRecruiting) {
-            // 募集状態（ON/OFF）
-            $db->update("ALTER TABLE jobs ADD COLUMN is_recruiting TINYINT(1) NOT NULL DEFAULT 1");
-            $hasRecruiting = true;
-        }
-    } catch (Exception $e) {
-        // 続行
-    }
-
-    // ステータスENUMの互換マイグレーション（本番環境でENUMの場合に不足値を追加）
-    try {
-        $statusCol = $db->selectOne("SHOW COLUMNS FROM jobs LIKE 'status'");
-        if ($statusCol) {
-            $typeDef = (string)($statusCol['Type'] ?? $statusCol['type'] ?? '');
-            if ($typeDef !== '' && stripos($typeDef, 'enum(') === 0) {
-                // e.g. enum('open','closed',...)
-                $valuesStr = substr($typeDef, 5, -1); // remove "enum(" and trailing ")"
-                $current = array_map(function($v){ return trim($v, " '" ); }, explode(',', $valuesStr));
-                $required = ['open','closed','in_progress','contracted','delivered','approved','completed','cancelled'];
-                $merged = array_values(array_unique(array_merge($current, $required)));
-                if (count($merged) !== count($current)) {
-                    $enumList = "'" . implode("','", $merged) . "'";
-                    error_log('[jobs.status enum] current=' . json_encode($current, JSON_UNESCAPED_UNICODE) . ' -> new=' . $enumList);
-                    $db->update("ALTER TABLE jobs MODIFY status ENUM($enumList) NOT NULL DEFAULT 'open'");
-                }
-            }
-        }
-    } catch (Exception $e) {
-        error_log('[jobs.status enum] migration failed: ' . $e->getMessage());
-        // 失敗しても本処理は続行（権限や権限外環境）
-    }
-
+    // 同時操作で状態が食い違わないよう行をロックして読み直す
+    $job = $db->selectOne("SELECT * FROM jobs WHERE id = ? FOR UPDATE", [$jobId]);
+    $previousStatus = (string)($job['status'] ?? '');
+    $acceptedCount = jobAcceptedCount($jobId);
     $updates = 0;
 
-    // 募集人数の更新
-    if ($hiringLimit !== null) {
-        if ($hiringLimit <= 0) {
-            $hiringLimit = 1;
+    // 募集人数（採用済み人数より少なくはできない）
+    if ($hiringLimit !== null && $isClient) {
+        $hiringLimit = max(1, min(100, $hiringLimit));
+        if ($hiringLimit < $acceptedCount) {
+            $db->rollback();
+            jsonResponse(['error' => "すでに{$acceptedCount}人を採用しているため、募集人数を{$acceptedCount}人より少なくできません"], 400);
         }
-        if ($hasHiringLimit) {
-            $currentLimit = isset($job['hiring_limit']) ? (int)$job['hiring_limit'] : 1;
-            error_log('Current hiring_limit: ' . $currentLimit . ', New hiring_limit: ' . $hiringLimit);
-            
-            if ($currentLimit !== $hiringLimit) {
-                $updates += $db->update("UPDATE jobs SET hiring_limit = ? WHERE id = ?", [$hiringLimit, $jobId]);
-                error_log('Hiring limit updated from ' . $currentLimit . ' to ' . $hiringLimit);
-            } else {
-                error_log('Hiring limit unchanged: ' . $hiringLimit);
-            }
-        } else {
-            error_log('hiring_limit column does not exist');
+        if ($hasHiringLimit && (int)($job['hiring_limit'] ?? 1) !== $hiringLimit) {
+            $updates += $db->update("UPDATE jobs SET hiring_limit = ? WHERE id = ?", [$hiringLimit, $jobId]);
         }
     }
 
-    // 募集の終了/再開（互換）
-    // 新UIで status が指定されている場合は action を無視する
-    if ($newStatus === null && ($recruitAction === 'open' || $recruitAction === 'close')) {
-        if ($hasRecruiting) {
-            $updates += $db->update(
-                "UPDATE jobs SET is_recruiting = ? WHERE id = ?",
-                [$recruitAction === 'open' ? 1 : 0, $jobId]
-            );
-        } else {
-            // フォールバック：ステータスで表現（close -> closed, open -> open）
-            if ($recruitAction === 'open') {
-                if (!in_array($job['status'], ['completed', 'cancelled'], true)) {
-                    $updates += $db->update("UPDATE jobs SET status = 'open' WHERE id = ?", [$jobId]);
-                }
-            } else {
-                $updates += $db->update("UPDATE jobs SET status = 'closed' WHERE id = ?", [$jobId]);
-            }
+    // 募集の終了/再開（旧UI互換）→ 状態変更に読み替える
+    if ($newStatus === null && $isClient && ($recruitAction === 'open' || $recruitAction === 'close')) {
+        $newStatus = $recruitAction === 'open' ? 'open' : 'closed';
+        if ($newStatus === $previousStatus) {
+            $newStatus = null;
         }
     }
 
-    // ステータス直接更新（新UI）
-    if ($newStatus !== null) {
-        $allowed = ['open','closed','in_progress','contracted','delivered','approved','completed','cancelled'];
+    if ($newStatus !== null && $newStatus !== $previousStatus) {
+        $allowed = jobNextStatuses($previousStatus, $isClient ? 'client' : 'creator', $acceptedCount);
         if (!in_array($newStatus, $allowed, true)) {
-            throw new Exception('不正なステータス');
+            $db->rollback();
+            $msg = '「' . jobStatusLabel($previousStatus) . '」から「' . jobStatusLabel($newStatus) . '」には変更できません';
+            if ($newStatus === 'delivered' && $isClient) {
+                $msg = '「納品済み」はクリエイターが納品を報告したときに切り替わります';
+            }
+            jsonResponse(['error' => $msg], 400);
         }
-        
-        error_log('Current status: ' . $job['status'] . ', New status: ' . $newStatus);
-        
-        // 現在と異なる場合のみ更新
-        if ($job['status'] !== $newStatus) {
-            $updates += $db->update("UPDATE jobs SET status = ? WHERE id = ?", [$newStatus, $jobId]);
-            error_log('Status updated from ' . $job['status'] . ' to ' . $newStatus);
-        } else {
-            error_log('Status unchanged: ' . $newStatus);
+        if (!jobStatusWritable($newStatus)) {
+            $db->rollback();
+            error_log('update-job-settings: jobs.status cannot store ' . $newStatus);
+            jsonResponse(['error' => 'いまはこの状態に変更できません。時間をおいて再度お試しください。'], 503);
         }
-
-        // ステータスと募集状態の整合性（カラムがある場合のみ）
+        // 再募集は募集人数に空きがあるときだけ
+        if ($newStatus === 'open' && $acceptedCount >= (int)($hiringLimit ?? $job['hiring_limit'] ?? 1)) {
+            $db->rollback();
+            jsonResponse(['error' => '募集人数に達しているため再募集できません。先に募集人数を増やしてください'], 400);
+        }
+        $updates += $db->update("UPDATE jobs SET status = ? WHERE id = ?", [$newStatus, $jobId]);
         if ($hasRecruiting) {
-            if ($newStatus === 'open') {
-                $db->update("UPDATE jobs SET is_recruiting = 1 WHERE id = ?", [$jobId]);
-            }
-            if (in_array($newStatus, ['closed','in_progress','contracted','delivered','approved','completed','cancelled'], true)) {
-                $db->update("UPDATE jobs SET is_recruiting = 0 WHERE id = ?", [$jobId]);
-            }
+            $db->update("UPDATE jobs SET is_recruiting = ? WHERE id = ?", [$newStatus === 'open' ? 1 : 0, $jobId]);
         }
-    }
-
-    // 受諾数の再計算（カラムがあれば同期）
-    if ($hasAcceptedCount) {
-        $countRow = $db->selectOne("SELECT COUNT(*) as cnt FROM job_applications WHERE job_id = ? AND status = 'accepted'", [$jobId]);
-        $db->update("UPDATE jobs SET accepted_count = ? WHERE id = ?", [(int)($countRow['cnt'] ?? 0), $jobId]);
     }
 
     $db->commit();
 
-    // ステータス変更時のチャット自動通知（ベストエフォート）
-    try {
-        if ($newStatus !== null && $previousStatus !== '' && $previousStatus !== $newStatus) {
-            // 受諾済みクリエイター全員に通知
-            $acceptedCreators = $db->select(
-                "SELECT DISTINCT creator_id FROM job_applications WHERE job_id = ? AND status = 'accepted'",
-                [$jobId]
-            );
-
-            if (!empty($acceptedCreators)) {
-                $statusLabels = [
-                    'open' => '募集中',
-                    'closed' => '募集終了',
-                    'contracted' => '契約済み',
-                    'delivered' => '納品済み',
-                    'approved' => '検収済み',
-                    'cancelled' => 'キャンセル',
-                    'in_progress' => '進行中', // 互換
-                    'completed' => '完了'       // 互換
-                ];
-
-                $labelOld = $statusLabels[$previousStatus] ?? $previousStatus;
-                $labelNew = $statusLabels[$newStatus] ?? $newStatus;
-
-                $systemMessage  = "【案件ステータス変更のお知らせ】\n";
-                $systemMessage .= "案件: " . ($jobTitleForChat !== '' ? $jobTitleForChat : '案件') . "\n";
-                $systemMessage .= "ステータス: {$labelOld} → {$labelNew}\n\n";
-                $systemMessage .= "本メッセージはシステムからの自動通知です。";
-
-                foreach ($acceptedCreators as $row) {
-                    $creatorId = (int)$row['creator_id'];
-                    if ($creatorId <= 0) { continue; }
-
-                    // チャットルーム確保
-                    $room = $db->selectOne(
-                        "SELECT id FROM chat_rooms WHERE (user1_id = ? AND user2_id = ?) OR (user1_id = ? AND user2_id = ?)",
-                        [$currentUser['id'], $creatorId, $creatorId, $currentUser['id']]
-                    );
-                    if (!$room) {
-                        $roomId = (int)$db->insert(
-                            "INSERT INTO chat_rooms (user1_id, user2_id, created_at) VALUES (?, ?, NOW())",
-                            [$currentUser['id'], $creatorId]
-                        );
-                    } else {
-                        $roomId = (int)$room['id'];
-                    }
-
-                    // システム通知を送信（送信者は依頼者）
-                    $db->insert(
-                        "INSERT INTO chat_messages (room_id, sender_id, message, created_at) VALUES (?, ?, ?, NOW())",
-                        [$roomId, $currentUser['id'], $systemMessage]
-                    );
-                }
-
-                // ステータスが完了になった場合は、双方にレビュー依頼を送る
-                if ($newStatus === 'completed') {
-                    foreach ($acceptedCreators as $row) {
-                        $creatorId = (int)$row['creator_id'];
-                        if ($creatorId <= 0) { continue; }
-
-                        // チャットルーム確保（再利用）
-                        $room = $db->selectOne(
-                            "SELECT id FROM chat_rooms WHERE (user1_id = ? AND user2_id = ?) OR (user1_id = ? AND user2_id = ?)",
-                            [$currentUser['id'], $creatorId, $creatorId, $currentUser['id']]
-                        );
-                        if (!$room) {
-                            $roomId = (int)$db->insert(
-                                "INSERT INTO chat_rooms (user1_id, user2_id, created_at) VALUES (?, ?, NOW())",
-                                [$currentUser['id'], $creatorId]
-                            );
-                        } else {
-                            $roomId = (int)$room['id'];
-                        }
-
-                        $clientProfileUrl = url('creator-profile?id=' . (int)$currentUser['id'], true);
-                        $creatorProfileUrl = url('creator-profile?id=' . $creatorId, true);
-
-                        $reviewMessage  = "【相互レビューのお願い】\n";
-                        $reviewMessage .= "案件: " . ($jobTitleForChat !== '' ? $jobTitleForChat : '案件') . " は完了しました。\n\n";
-                        $reviewMessage .= "依頼者さまへ: クリエイターの対応や品質について、プロフィールよりレビューのご協力をお願いします。\n";
-                        $reviewMessage .= "クリエイタープロフィール: " . $creatorProfileUrl . "\n\n";
-                        $reviewMessage .= "クリエイターさまへ: 依頼者とのやり取りについて、フィードバックのレビューをお願いします。\n";
-                        $reviewMessage .= "依頼者プロフィール: " . $clientProfileUrl . "\n\n";
-                        $reviewMessage .= "レビューは今後のマッチング品質向上に役立ちます。ご協力ありがとうございます。";
-
-                        $db->insert(
-                            "INSERT INTO chat_messages (room_id, sender_id, message, created_at) VALUES (?, ?, ?, NOW())",
-                            [$roomId, $currentUser['id'], $reviewMessage]
-                        );
-                    }
-                }
-            }
-        }
-    } catch (Exception $e) {
-        // 通知失敗は本処理に影響させない
-        error_log('Job status change chat notify failed: ' . $e->getMessage());
+    // 状態が変わったら相手に知らせる（チャット＋メール。失敗しても本処理は成功）
+    if ($newStatus !== null && $newStatus !== $previousStatus) {
+        notifyJobStatusChange($job, $previousStatus, $newStatus, $currentUser, $isClient, $note);
     }
 
-    // 最新状態を返却
     $job = $db->selectOne("SELECT * FROM jobs WHERE id = ?", [$jobId]);
-    $acceptedRow = $db->selectOne("SELECT COUNT(*) as cnt FROM job_applications WHERE job_id = ? AND status = 'accepted'", [$jobId]);
-    $acceptedCount = (int)($acceptedRow['cnt'] ?? 0);
-    $limit = $hasHiringLimit ? (int)($job['hiring_limit'] ?? 1) : null;
-    $isRecruiting = $hasRecruiting ? (int)($job['is_recruiting'] ?? 1) : null;
-
-    $message = $updates > 0 ? '設定を更新しました' : '変更はありません';
-    if ($newStatus !== null) {
-        // フロントの意図がステータス変更の場合は、文言を明確化
-        $message = ($job['status'] === $newStatus) ? 'ステータスを更新しました' : $message;
-    }
-    if ($hiringLimit !== null && $limit !== null) {
-        if ($limit === (int)$hiringLimit) {
-            // 掲載人数が反映された場合
-            $message = '募集人数を更新しました';
-        }
+    $acceptedCount = jobAcceptedCount($jobId);
+    $message = ($newStatus !== null && $newStatus !== $previousStatus)
+        ? '「' . jobStatusLabel($job['status']) . '」に変更しました'
+        : ($updates > 0 ? '設定を更新しました' : '変更はありません');
+    if ($hiringLimit !== null && $newStatus === null) {
+        $message = '募集人数を更新しました';
     }
 
     jsonResponse([
@@ -321,15 +137,79 @@ try {
         'message' => $message,
         'job' => [
             'status' => $job['status'],
-            'is_recruiting' => $isRecruiting,
-            'hiring_limit' => $limit,
-            'accepted_count' => $acceptedCount
-        ]
+            'status_label' => jobStatusLabel($job['status']),
+            'is_recruiting' => $hasRecruiting ? (int)($job['is_recruiting'] ?? 1) : null,
+            'hiring_limit' => $hasHiringLimit ? (int)($job['hiring_limit'] ?? 1) : null,
+            'accepted_count' => $acceptedCount,
+        ],
     ]);
-} catch (Exception $e) {
+} catch (Throwable $e) {
     if (isset($db)) {
-        try { $db->rollback(); } catch (Exception $ignore) {}
+        try { $db->rollback(); } catch (Throwable $ignore) {}
     }
     error_log('Update job settings error: ' . $e->getMessage());
-    jsonResponse(['error' => 'システムエラーが発生しました'], 500);
+    jsonResponse(['error' => 'システムエラーが発生しました。時間をおいて再度お試しください。'], 500);
+}
+
+/**
+ * 状態変更の通知
+ */
+function notifyJobStatusChange(array $job, string $from, string $to, array $actor, bool $actorIsClient, string $note): void {
+    try {
+        $db = Database::getInstance();
+        $jobId = (int)$job['id'];
+        $title = (string)($job['title'] ?? '案件');
+        $jobUrl = url('job-detail?id=' . $jobId, true);
+
+        if ($actorIsClient) {
+            $recipients = array_map('intval', array_column($db->select(
+                "SELECT DISTINCT creator_id FROM job_applications WHERE job_id = ? AND status = 'accepted'",
+                [$jobId]
+            ), 'creator_id'));
+        } else {
+            $recipients = [(int)$job['client_id']];
+        }
+        if (empty($recipients)) {
+            return;
+        }
+
+        if ($to === 'delivered') {
+            $chat = "【納品のご報告】\n案件: {$title}\n{$actor['full_name']}さんが納品を報告しました。\n内容を確認し、問題なければ案件ページの「検収して完了にする」を押してください。修正が必要な場合は「修正を依頼する」を押してください。";
+            $subject = "【AiNA Works】納品の報告が届きました - {$title}";
+            $mail = "{$actor['full_name']}さんから納品の報告が届きました。\n\n案件: {$title}\n\n内容を確認し、問題なければ案件ページで「検収して完了にする」を押してください。";
+            $action = '案件を確認する';
+        } elseif ($to === 'contracted' && $from === 'delivered') {
+            $chat = "【修正のご依頼】\n案件: {$title}\n依頼者から修正の依頼がありました。チャットで内容を確認し、対応後にもう一度「納品を報告する」を押してください。";
+            $subject = "【AiNA Works】修正の依頼が届きました - {$title}";
+            $mail = "依頼者から修正の依頼がありました。\n\n案件: {$title}\n\nチャットで内容を確認し、対応後にもう一度「納品を報告する」を押してください。";
+            $action = '案件を確認する';
+        } elseif ($to === 'completed') {
+            $chat = "【検収完了】\n案件: {$title} は完了しました。お疲れさまでした。\n\nお互いのプロフィールからレビューをお願いします。レビューは次のお仕事につながります。\n依頼者プロフィール: " . url('creator-profile?id=' . (int)$job['client_id'], true);
+            $subject = "【AiNA Works】案件が完了しました - {$title}";
+            $mail = "依頼者が検収を完了し、案件が完了しました。\n\n案件: {$title}\n\n報酬の受け取りは、依頼者からのお振込をご確認ください。よろしければ依頼者へのレビューもお願いします。";
+            $action = '案件を見る';
+        } else {
+            $chat = "【案件ステータス変更のお知らせ】\n案件: {$title}\nステータス: " . jobStatusLabel($from) . ' → ' . jobStatusLabel($to);
+            $subject = "【AiNA Works】案件のステータスが変わりました - {$title}";
+            $mail = "案件のステータスが「" . jobStatusLabel($from) . "」から「" . jobStatusLabel($to) . "」に変わりました。\n\n案件: {$title}";
+            $action = '案件を見る';
+        }
+        if ($note !== '') {
+            $chat .= "\n\nメッセージ:\n" . $note;
+            $mail .= "\n\nメッセージ:\n" . $note;
+        }
+
+        foreach ($recipients as $rid) {
+            if ($rid <= 0 || $rid === (int)$actor['id']) {
+                continue;
+            }
+            postChatNotice((int)$actor['id'], $rid, $chat);
+            $u = $db->selectOne("SELECT email FROM users WHERE id = ? AND is_active = 1", [$rid]);
+            if ($u && !empty($u['email'])) {
+                sendNotificationMail($u['email'], $subject, $mail, $jobUrl, $action);
+            }
+        }
+    } catch (Throwable $e) {
+        error_log('notifyJobStatusChange: ' . $e->getMessage());
+    }
 }

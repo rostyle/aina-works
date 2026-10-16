@@ -101,8 +101,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $formData['urgency'] = 'medium';
         }
 
-        if (!empty($formData['deadline']) && strtotime($formData['deadline']) < time()) {
-            $errors[] = '締切日は未来の日付を入力してください。';
+        if (!empty($formData['deadline']) && strtotime($formData['deadline']) < strtotime('today')) {
+            $errors[] = '締切日は今日以降の日付を入力してください。';
+        }
+
+        // 連続投稿の上限（1日10件）
+        if (empty($errors) && !rateLimitAllow('job_post', (string)($_SESSION['user_id'] ?? 0), 10, 86400)) {
+            $errors[] = '今日はこれ以上案件を投稿できません。明日以降にお試しください。';
         }
 
         // エラーがない場合は保存
@@ -110,8 +115,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try {
                 $db->beginTransaction();
 
-                // 仮のクライアントID（実際はセッションから取得）
-                $clientId = getCurrentUser()['id'] ?? 1;
+                $clientId = (int)$_SESSION['user_id'];
 
                 $jobId = $db->insert("
                     INSERT INTO jobs (
@@ -131,6 +135,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $formData['urgency'],
                     $formData['deadline'] ?: null
                 ]);
+
+                // 投稿した人は依頼者として扱う（ダッシュボードの表示・役割選択の手間を減らす）
+                $db->update("UPDATE users SET is_client = 1 WHERE id = ? AND is_client = 0", [$clientId]);
 
                 $db->commit();
 
@@ -291,7 +298,6 @@ include 'includes/header.php';
                         <div class="flex-1 ml-6">
                             <div class="w-full bg-gray-200 rounded-full overflow-hidden"><div id="ai-director-progress" class="ai-progress" style="width:0%"></div></div>
                         </div>
-                        <p class="text-xs text-gray-500 mt-1">100円以上、100円単位で入力してください</p>
                     </div>
                 </div>
             </div>
@@ -493,35 +499,30 @@ include 'includes/header.php';
 <section class="bg-white py-16">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="text-center mb-12">
-            <h2 class="text-3xl font-bold text-gray-900 mb-4">案件投稿の流れ</h2>
-            <p class="text-lg text-gray-600">簡単3ステップで優秀なクリエイターとマッチング</p>
+            <h2 class="text-3xl font-bold text-gray-900 mb-4">依頼から完了までの流れ</h2>
+            <p class="text-lg text-gray-600">投稿から支払いまで、AiNA Worksの画面とチャットで進めます</p>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div class="text-center">
-                <div class="w-16 h-16 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <span class="text-2xl font-bold">1</span>
+        <ol class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <?php
+            $flowSteps = [
+                ['案件を投稿', '内容・予算・締切を入力します。投稿するとクリエイターに通知されます。'],
+                ['応募を選ぶ', '届いた応募を見比べ、「受諾」か「見送り」を選びます。定員まで受諾すると募集が締め切られます。'],
+                ['チャットで進める', '受諾した相手とのチャットが開きます。進め方・納期・お振込先をここで確認します。'],
+                ['納品の報告', 'クリエイターが納品物をチャットで渡し、「納品を報告」を押します。メールでお知らせします。'],
+                ['検収して完了', '内容を確認し、案件ページの「検収して完了にする」を押します。修正が必要なら「修正を依頼する」。'],
+                ['お支払いとレビュー', 'クリエイターの口座へ直接お振込みください（振込先は応募管理に表示）。最後にお互いにレビューします。'],
+            ];
+            foreach ($flowSteps as $i => [$t, $d]): ?>
+            <li class="bg-white rounded-xl border border-gray-200 p-5">
+                <div class="flex items-center gap-3 mb-2">
+                    <span class="w-9 h-9 bg-purple-100 text-purple-700 rounded-full flex items-center justify-center font-bold"><?= $i + 1 ?></span>
+                    <h3 class="text-base font-semibold text-gray-900"><?= h($t) ?></h3>
                 </div>
-                <h3 class="text-lg font-semibold text-gray-900 mb-2">案件情報を入力</h3>
-                <p class="text-gray-600">依頼したい案件の詳細、予算、期間などを入力してください。</p>
-            </div>
-
-            <div class="text-center">
-                <div class="w-16 h-16 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <span class="text-2xl font-bold">2</span>
-                </div>
-                <h3 class="text-lg font-semibold text-gray-900 mb-2">クリエイターから応募</h3>
-                <p class="text-gray-600">投稿した案件に興味を持ったクリエイターから応募が届きます。</p>
-            </div>
-
-            <div class="text-center">
-                <div class="w-16 h-16 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <span class="text-2xl font-bold">3</span>
-                </div>
-                <h3 class="text-lg font-semibold text-gray-900 mb-2">最適な人材を選択</h3>
-                <p class="text-gray-600">応募者の中から最適なクリエイターを選んでプロジェクトを開始。</p>
-            </div>
-        </div>
+                <p class="text-sm text-gray-600 leading-relaxed"><?= h($d) ?></p>
+            </li>
+            <?php endforeach; ?>
+        </ol>
     </div>
 </section>
 

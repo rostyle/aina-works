@@ -74,6 +74,18 @@
                             </svg>
                             プライバシーポリシー
                         </a></li>
+                        <li><a href="<?= url('terms#contact') ?>" class="text-gray-300 hover:text-white transition-colors duration-300 flex items-center group">
+                            <svg class="w-4 h-4 mr-2 text-gray-500 group-hover:text-primary-400 transition-colors duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                            </svg>
+                            お問い合わせ
+                        </a></li>
+                        <li><a href="https://ai-na.co.jp/" target="_blank" rel="noopener" class="text-gray-300 hover:text-white transition-colors duration-300 flex items-center group">
+                            <svg class="w-4 h-4 mr-2 text-gray-500 group-hover:text-primary-400 transition-colors duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                            </svg>
+                            運営会社
+                        </a></li>
                     </ul>
                 </div>
             </div>
@@ -89,8 +101,8 @@
                             <a href="<?= url('terms') ?>" class="text-gray-400 hover:text-white transition-colors duration-300">利用規約</a>
                             <span class="text-gray-600">•</span>
                             <a href="<?= url('privacy') ?>" class="text-gray-400 hover:text-white transition-colors duration-300">プライバシーポリシー</a>
-                            <!-- <span class="text-gray-600">•</span>
-                            <a href="<?= url('contact.php') ?>" class="text-gray-400 hover:text-white transition-colors duration-300">お問い合わせ</a> -->
+                            <span class="text-gray-600">•</span>
+                            <a href="<?= url('terms#contact') ?>" class="text-gray-400 hover:text-white transition-colors duration-300">お問い合わせ</a>
                         </div>
                     </div>
                     
@@ -112,91 +124,11 @@
     <script src="<?= asset('js/main.js') ?>"></script>
     
     <script>
-        // Enhanced Mobile menu toggle with animations
-        function toggleMobileMenu() {
-            const menu = document.getElementById('mobile-menu');
-            const button = document.getElementById('mobile-menu-button');
-            const isHidden = menu.classList.contains('hidden');
-            
-            if (isHidden) {
-                menu.classList.remove('hidden');
-                menu.classList.add('mobile-menu-enter');
-                button.setAttribute('aria-expanded', 'true');
-                button.setAttribute('aria-label', 'メニューを閉じる');
-                // Focus management
-                const firstLink = menu.querySelector('a');
-                if (firstLink) setTimeout(() => firstLink.focus(), 100);
-                // Change hamburger to X
-                button.innerHTML = `
-                    <svg class="h-6 w-6 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                `;
-            } else {
-                menu.classList.add('hidden');
-                menu.classList.remove('mobile-menu-enter');
-                button.setAttribute('aria-expanded', 'false');
-                button.setAttribute('aria-label', 'メニューを開く');
-                button.focus(); // Return focus to button
-                // Change X back to hamburger
-                button.innerHTML = `
-                    <svg class="h-6 w-6 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                    </svg>
-                `;
-            }
-        }
-
-        // Quick Search Modal Toggle
-        function toggleQuickSearch() {
-            const modal = document.getElementById('quick-search-modal');
-            const input = document.getElementById('quick-search-input');
-            const isVisible = !modal.classList.contains('opacity-0');
-            
-            if (!isVisible) {
-                modal.classList.remove('opacity-0', 'invisible');
-                modal.querySelector('.bg-white').classList.remove('scale-95');
-                modal.querySelector('.bg-white').classList.add('scale-100');
-                setTimeout(() => input.focus(), 100);
-            } else {
-                modal.classList.add('opacity-0', 'invisible');
-                modal.querySelector('.bg-white').classList.add('scale-95');
-                modal.querySelector('.bg-white').classList.remove('scale-100');
-            }
-        }
-
-        // Enhanced keyboard navigation
+        // モバイルメニューが開いている間は Tab のフォーカスをメニュー内で循環させる（Esc で閉じる処理は header.php）
         document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                // Close quick search modal
-                const modal = document.getElementById('quick-search-modal');
-                if (modal && !modal.classList.contains('opacity-0')) {
-                    toggleQuickSearch();
-                    return;
-                }
-                
-                // Close mobile menu
-                // Close mobile menu using header's close function if available
-                const mobileMenu = document.getElementById('mobile-menu');
-                if (mobileMenu && !mobileMenu.classList.contains('hidden')) {
-                    if (typeof closeMobileMenu === 'function') {
-                        closeMobileMenu();
-                    } else if (typeof toggleMobileMenu === 'function') {
-                        toggleMobileMenu();
-                    }
-                    return;
-                }
-            }
-            
-            // Trap focus in mobile menu
-            if (!document.getElementById('mobile-menu').classList.contains('hidden')) {
+            const mobileMenu = document.getElementById('mobile-menu');
+            if (mobileMenu && !mobileMenu.classList.contains('hidden')) {
                 trapFocus(e, 'mobile-menu');
-            }
-            
-            // Trap focus in quick search modal
-            const modal = document.getElementById('quick-search-modal');
-            if (modal && !modal.classList.contains('opacity-0')) {
-                trapFocus(e, 'quick-search-modal');
             }
         });
         
@@ -225,13 +157,6 @@
                 }
             }
         }
-
-        // Close modal on backdrop click
-        document.getElementById('quick-search-modal')?.addEventListener('click', function(e) {
-            if (e.target === this) {
-                toggleQuickSearch();
-            }
-        });
 
         // Enhanced Auto-hide flash messages with better animations
         function initFlashMessages() {
@@ -328,46 +253,6 @@
             });
         }
 
-        // Newsletter signup handler
-        function initNewsletterSignup() {
-            const form = document.querySelector('footer input[type="email"]')?.parentElement;
-            if (form) {
-                const input = form.querySelector('input[type="email"]');
-                const button = form.querySelector('button');
-                
-                button.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    const email = input.value.trim();
-                    
-                    if (!email) {
-                        showNotification('メールアドレスを入力してください', 'warning');
-                        return;
-                    }
-                    
-                    if (!isValidEmail(email)) {
-                        showNotification('有効なメールアドレスを入力してください', 'error');
-                        return;
-                    }
-                    
-                    // Simulate API call
-                    button.innerHTML = '<div class="loading loading-sm"></div>';
-                    button.disabled = true;
-                    
-                    setTimeout(() => {
-                        showNotification('ニュースレターの登録が完了しました！', 'success');
-                        input.value = '';
-                        button.innerHTML = '登録';
-                        button.disabled = false;
-                    }, 1500);
-                });
-            }
-        }
-
-        // Email validation
-        function isValidEmail(email) {
-            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-        }
-
         // Enhanced notification system with live region
         function showNotification(message, type = 'info', duration = 5000) {
             // Update live region for screen readers
@@ -380,13 +265,18 @@
             const notification = document.createElement('div');
             notification.className = `fixed top-24 right-4 z-50 p-4 rounded-2xl shadow-xl backdrop-blur-lg border max-w-sm transform translate-x-full transition-all duration-300 ${getNotificationClasses(type)}`;
             
+            // メッセージは必ずテキストとして扱う（改行のみ<br>に変換）
+            const safeMessage = String(message ?? '')
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;').replace(/'/g, '&#39;')
+                .replace(/\n/g, '<br>');
             notification.innerHTML = `
                 <div class="flex items-start space-x-3">
                     <div class="flex-shrink-0">
                         ${getNotificationIcon(type)}
                     </div>
                     <div class="flex-1 min-w-0">
-                        <p class="text-sm font-medium text-gray-900">${message}</p>
+                        <p class="text-sm font-medium text-gray-900">${safeMessage}</p>
                     </div>
                     <button onclick="this.parentElement.parentElement.remove()" 
                             class="flex-shrink-0 p-1 text-gray-400 hover:text-gray-600 rounded-lg transition-colors duration-200">
@@ -440,24 +330,10 @@
             initHeaderScrollEffect();
             initSmoothScrolling();
             initScrollAnimations();
-            initNewsletterSignup();
             
             // フォームローディングは loading.js の initFormLoadingHandlers() で処理される
             // 既存のコードは新しいシステムに置き換え済み
         });
-
-        // Performance optimization: Debounce scroll events
-        function debounce(func, wait) {
-            let timeout;
-            return function executedFunction(...args) {
-                const later = () => {
-                    clearTimeout(timeout);
-                    func(...args);
-                };
-                clearTimeout(timeout);
-                timeout = setTimeout(later, wait);
-            };
-        }
     </script>
 
     <?php if (isset($additionalJs)): ?>

@@ -17,13 +17,18 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     
     try {
         if ($id > 0 && $action === 'delete') {
-            $db->delete("DELETE FROM success_stories WHERE id = ?", [$id]);
-            // Also delete sections
+            $before = $db->selectOne("SELECT id, title, member_name FROM success_stories WHERE id = ?", [$id]);
+            $db->beginTransaction();
             $db->delete("DELETE FROM success_story_sections WHERE success_story_id = ?", [$id]);
+            $db->delete("DELETE FROM success_stories WHERE id = ?", [$id]);
+            $db->commit();
+            logAdminAction('success_story_delete', 'success_story', $id, ['before' => $before]);
             setFlash('success', '記事を削除しました');
         }
     } catch (Exception $e) {
-        setFlash('error', '処理に失敗しました: ' . $e->getMessage());
+        try { $db->rollback(); } catch (Throwable $t) {}
+        error_log('admin/success_stories: ' . $e->getMessage());
+        setFlash('error', '処理に失敗しました。時間をおいて再度お試しください');
     }
     redirect(adminUrl('success_stories.php'));
 }
@@ -55,7 +60,7 @@ $flashes = getFlash();
 
 <?php if (!empty($flashes)): ?>
   <?php foreach ($flashes as $type => $msg): if (!$msg) continue; ?>
-    <div class="mb-6 rounded-xl px-4 py-3 flex items-center gap-3 <?= $type === 'success' ? 'bg-green-50 text-green-800 border border-green-100' : 'bg-red-50 text-red-800 border border-red-100' ?>">
+    <div class="mb-6 rounded-xl px-4 py-3 flex items-center gap-3 <?= $type === 'success' ? 'bg-green-50 text-green-800 border border-green-100' : ($type === 'warning' ? 'bg-yellow-50 text-yellow-800 border border-yellow-100' : 'bg-red-50 text-red-800 border border-red-100') ?>">
         <?php if ($type === 'success'): ?>
             <svg class="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
         <?php else: ?>
@@ -110,7 +115,7 @@ $flashes = getFlash();
                                 <?php if (!empty($r['member_image'])): ?>
                                     <img src="<?= h(uploaded_asset($r['member_image'])) ?>" class="w-full h-full object-cover">
                                 <?php else: ?>
-                                    <?= mb_substr($r['member_name'], 0, 1) ?>
+                                    <?= h(mb_substr((string)$r['member_name'], 0, 1)) ?>
                                 <?php endif; ?>
                             </div>
                             <div>

@@ -13,18 +13,30 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     }
     $action = $_POST['action'] ?? '';
     $userId = (int)($_POST['user_id'] ?? 0);
+    $selfId = (int)($_SESSION['user_id'] ?? 0);
     if ($userId > 0) {
         try {
+            $enabledAdmins = (int)($db->selectOne("SELECT COUNT(*) AS c FROM user_roles WHERE role = 'admin' AND is_enabled = 1")['c'] ?? 0);
             switch ($action) {
                 case 'toggle_active':
+                    if ($userId === $selfId) {
+                        setFlash('error', '自分自身は無効化できません');
+                        break;
+                    }
                     $target = $db->selectOne("SELECT is_active FROM users WHERE id = ?", [$userId]);
                     if ($target) {
                         $new = ($target['is_active'] ?? 0) ? 0 : 1;
                         $db->update("UPDATE users SET is_active = ? WHERE id = ?", [$new, $userId]);
-                        setFlash('success', 'ユーザーの有効状態を更新しました');
+                        logAdminAction($new ? 'user_activate' : 'user_deactivate', 'user', $userId);
+                        setFlash('success', $new ? 'ユーザーを有効にしました' : 'ユーザーを無効にしました');
                     }
                     break;
                 case 'grant_admin':
+                    $target = $db->selectOne("SELECT is_active FROM users WHERE id = ?", [$userId]);
+                    if (!$target || !(int)$target['is_active']) {
+                        setFlash('error', '無効なユーザーには管理者権限を付与できません');
+                        break;
+                    }
                     $exists = $db->selectOne("SELECT id, is_enabled FROM user_roles WHERE user_id = ? AND role = 'admin'", [$userId]);
                     if ($exists) {
                         if ((int)$exists['is_enabled'] !== 1) {
@@ -33,15 +45,26 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                     } else {
                         $db->insert("INSERT INTO user_roles (user_id, role, is_enabled) VALUES (?, 'admin', 1)", [$userId]);
                     }
-                    setFlash('success', '管理者ロールを付与しました');
+                    logAdminAction('admin_grant', 'user', $userId);
+                    setFlash('success', '管理者権限を付与しました');
                     break;
                 case 'revoke_admin':
+                    if ($userId === $selfId) {
+                        setFlash('error', '自分自身の管理者権限は解除できません（ほかの管理者に依頼してください）');
+                        break;
+                    }
+                    if ($enabledAdmins <= 1) {
+                        setFlash('error', '最後の管理者は解除できません');
+                        break;
+                    }
                     $db->update("UPDATE user_roles SET is_enabled = 0 WHERE user_id = ? AND role = 'admin'", [$userId]);
-                    setFlash('success', '管理者ロールを解除しました');
+                    logAdminAction('admin_revoke', 'user', $userId);
+                    setFlash('success', '管理者権限を解除しました');
                     break;
             }
         } catch (Exception $e) {
-            setFlash('error', '処理に失敗しました: ' . $e->getMessage());
+            error_log('admin/users action error: ' . $e->getMessage());
+            setFlash('error', '処理に失敗しました。時間をおいて再度お試しください');
         }
     }
     redirect(adminUrl('users.php'));
@@ -137,7 +160,7 @@ $flashes = getFlash();
             <form method="POST" class="inline">
               <input type="hidden" name="csrf_token" value="<?= h(generateCsrfToken()) ?>">
               <input type="hidden" name="user_id" value="<?= (int)$r['id'] ?>">
-              <button name="action" value="toggle_active" class="px-3 py-1.5 rounded-md border text-xs <?= (int)$r['is_active'] ? 'bg-white hover:bg-gray-50' : 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700' ?>">
+              <button name="action" value="toggle_active" onclick="return confirm('このユーザーの有効/無効を切り替えます。よろしいですか？')" class="px-3 py-1.5 rounded-md border text-xs <?= (int)$r['is_active'] ? 'bg-white hover:bg-gray-50' : 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700' ?>">
                 <?= (int)$r['is_active'] ? '無効化' : '有効化' ?>
               </button>
             </form>
@@ -145,13 +168,13 @@ $flashes = getFlash();
               <form method="POST" class="inline">
                 <input type="hidden" name="csrf_token" value="<?= h(generateCsrfToken()) ?>">
                 <input type="hidden" name="user_id" value="<?= (int)$r['id'] ?>">
-                <button name="action" value="revoke_admin" class="px-3 py-1.5 rounded-md border text-xs bg-white hover:bg-gray-50">ADMIN解除</button>
+                <button name="action" value="revoke_admin" onclick="return confirm('管理者権限を解除します。よろしいですか？')" class="px-3 py-1.5 rounded-md border text-xs bg-white hover:bg-gray-50">ADMIN解除</button>
               </form>
             <?php else: ?>
               <form method="POST" class="inline">
                 <input type="hidden" name="csrf_token" value="<?= h(generateCsrfToken()) ?>">
                 <input type="hidden" name="user_id" value="<?= (int)$r['id'] ?>">
-                <button name="action" value="grant_admin" class="px-3 py-1.5 rounded-md border text-xs bg-yellow-600 text-white border-yellow-600 hover:bg-yellow-700">ADMIN付与</button>
+                <button name="action" value="grant_admin" onclick="return confirm('管理者権限を付与します。全員のチャットや個人情報を閲覧できるようになります。よろしいですか？')" class="px-3 py-1.5 rounded-md border text-xs bg-yellow-600 text-white border-yellow-600 hover:bg-yellow-700">ADMIN付与</button>
               </form>
             <?php endif; ?>
           </td>

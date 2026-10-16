@@ -59,17 +59,26 @@ $chatRooms = $db->select("
     $currentUser['id'], $currentUser['id'], $currentUser['id']
 ]);
 
-// 選択されたユーザーとのチャットを取得
+// 選択されたユーザーとのチャットを取得（?user_id= または通知メールの ?room_id=）
 $targetUserId = isset($_GET['user_id']) ? (int)$_GET['user_id'] : null;
+if (!$targetUserId && isset($_GET['room_id'])) {
+    $linkedRoom = $db->selectOne(
+        "SELECT user1_id, user2_id FROM chat_rooms WHERE id = ? AND (user1_id = ? OR user2_id = ?)",
+        [(int)$_GET['room_id'], $currentUser['id'], $currentUser['id']]
+    );
+    if ($linkedRoom) {
+        $targetUserId = (int)$linkedRoom['user1_id'] === (int)$currentUser['id'] ? (int)$linkedRoom['user2_id'] : (int)$linkedRoom['user1_id'];
+    }
+}
 $targetUser = null;
 $messages = [];
 $roomId = null;
 
 if ($targetUserId) {
-    // 相手の情報を取得
-    $targetUser = $db->selectOne("SELECT * FROM users WHERE id = ?", [$targetUserId]);
+    // 相手の情報を取得（無効なユーザー・自分自身とはチャットを始めない）
+    $targetUser = $db->selectOne("SELECT * FROM users WHERE id = ? AND is_active = 1", [$targetUserId]);
     
-    if (!$targetUser) {
+    if (!$targetUser || (int)$targetUser['id'] === (int)$currentUser['id']) {
         redirect(url('chat')); // ユーザーが存在しない場合はリストへ
     }
     
@@ -81,6 +90,11 @@ if ($targetUserId) {
     ", [$currentUser['id'], $targetUserId, $targetUserId, $currentUser['id']]);
     
     if (!$chatRoom) {
+        // 新しい相手とのチャット開始は1日20件まで（迷惑行為の抑止）
+        if (!rateLimitAllow('chat_new_room', (string)$currentUser['id'], 20, 86400)) {
+            setFlash('error', '今日はこれ以上新しいチャットを始められません。明日以降にお試しください。');
+            redirect(url('chat'));
+        }
         $roomId = $db->insert("
             INSERT INTO chat_rooms (user1_id, user2_id, created_at, updated_at)
             VALUES (?, ?, NOW(), NOW())
@@ -150,7 +164,7 @@ include 'includes/header.php';
                        class="block p-3 rounded-xl transition-all duration-200 group <?= $isActive ? 'bg-blue-50 shadow-sm ring-1 ring-blue-100' : 'hover:bg-gray-50' ?>">
                         <div class="flex items-center space-x-3">
                             <div class="relative flex-shrink-0">
-                                <img src="<?= uploaded_asset($room['other_user_image'] ?? 'assets/images/default-avatar.png') ?>" 
+                                <img src="<?= h(uploaded_asset($room['other_user_image'] ?? 'assets/images/default-avatar.png')) ?>" 
                                      alt="<?= h($room['other_user_name']) ?>" 
                                      class="w-12 h-12 rounded-full object-cover ring-2 ring-white shadow-sm">
                                 <?php $isOnline = isset($room['other_user_last_seen']) && (time() - strtotime($room['other_user_last_seen'])) <= 300; ?>
@@ -198,7 +212,7 @@ include 'includes/header.php';
                     
                     <div class="flex items-center space-x-3">
                         <div class="relative">
-                            <img src="<?= uploaded_asset($targetUser['profile_image'] ?? 'assets/images/default-avatar.png') ?>" 
+                            <img src="<?= h(uploaded_asset($targetUser['profile_image'] ?? 'assets/images/default-avatar.png')) ?>" 
                                  class="w-10 h-10 rounded-full object-cover ring-2 ring-white shadow-sm">
                             <div class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full"></div>
                         </div>
@@ -220,7 +234,7 @@ include 'includes/header.php';
             </div>
 
             <!-- Messages Area -->
-            <div id="messages-container" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 custom-scrollbar bg-[url('assets/images/chat-pattern.png')] bg-repeat bg-opacity-5">
+            <div id="messages-container" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 custom-scrollbar">
                 <!-- Date Separator Example ->
                 <div class="flex justify-center">
                     <span class="px-3 py-1 bg-gray-100 text-gray-400 text-xs rounded-full">昨日</span>
@@ -244,24 +258,24 @@ include 'includes/header.php';
                         ?>
                         <div class="flex <?= $isMe ? 'justify-end' : 'justify-start' ?> items-end space-x-2 animate-fade-in-up">
                             <?php if (!$isMe): ?>
-                                <img src="<?= uploaded_asset($targetUser['profile_image'] ?? 'assets/images/default-avatar.png') ?>" 
+                                <img src="<?= h(uploaded_asset($targetUser['profile_image'] ?? 'assets/images/default-avatar.png')) ?>" 
                                      class="w-6 h-6 rounded-full object-cover mb-1 shadow-sm">
                             <?php endif; ?>
                             
                             <div class="flex flex-col <?= $isMe ? 'items-end' : 'items-start' ?> max-w-[70%]">
                                 <?php if ($msg['file_path']): ?>
                                     <div class="mb-1">
-                                        <?php if (preg_match('/\.(jpg|jpeg|png|gif)$/i', $msg['file_path'])): ?>
-                                            <a href="<?= uploaded_asset($msg['file_path']) ?>" target="_blank" class="block overflow-hidden rounded-2xl shadow-md hover:shadow-lg transition-shadow">
-                                                <img src="<?= uploaded_asset($msg['file_path']) ?>" alt="添付画像" class="max-w-xs max-h-60 object-cover">
+                                        <?php if (preg_match('/\.(jpg|jpeg|png|gif|webp)$/i', $msg['file_path'])): ?>
+                                            <a href="<?= h(chatFileUrl($msg['id'])) ?>" target="_blank" rel="noopener" class="block overflow-hidden rounded-2xl shadow-md hover:shadow-lg transition-shadow">
+                                                <img src="<?= h(chatFileUrl($msg['id'])) ?>" alt="添付画像" class="max-w-xs max-h-60 object-cover">
                                             </a>
                                         <?php else: ?>
-                                            <a href="<?= uploaded_asset($msg['file_path']) ?>" download class="flex items-center p-3 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors shadow-sm">
+                                            <a href="<?= h(chatFileUrl($msg['id'], true)) ?>" class="flex items-center p-3 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors shadow-sm">
                                                 <svg class="w-8 h-8 text-blue-500 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                                 </svg>
                                                 <div class="text-left">
-                                                    <div class="text-sm font-medium text-gray-900 truncate w-32"><?= basename($msg['file_path']) ?></div>
+                                                    <div class="text-sm font-medium text-gray-900 truncate w-32"><?= h($msg['message'] ?: basename($msg['file_path'])) ?></div>
                                                     <div class="text-xs text-blue-500">ダウンロード</div>
                                                 </div>
                                             </a>
@@ -269,7 +283,7 @@ include 'includes/header.php';
                                     </div>
                                 <?php endif; ?>
                                 
-                                <?php if ($msg['message']): ?>
+                                <?php if ($msg['message'] && empty($msg['file_path'])): ?>
                                     <div class="px-4 py-2.5 rounded-2xl shadow-sm <?= $isMe ? 'bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-br-none' : 'bg-white text-gray-800 border border-gray-100 rounded-bl-none' ?>">
                                         <p class="text-sm leading-relaxed whitespace-pre-wrap"><?= h($msg['message']) ?></p>
                                     </div>
@@ -577,7 +591,7 @@ function addMessageToChat(data) {
     // Profile Image (if not me)
     if (!isMe) {
         contentHtml += `
-            <img src="${data.sender_image}" class="w-6 h-6 rounded-full object-cover mb-1 shadow-sm">
+            <img src="${escapeHtml(data.sender_image || '')}" class="w-6 h-6 rounded-full object-cover mb-1 shadow-sm">
         `;
     }
     
@@ -586,20 +600,21 @@ function addMessageToChat(data) {
     
     // File
     if (data.file_path) {
-        const isImage = /\.(jpg|jpeg|png|gif)$/i.test(data.file_path);
-        const assetUrl = uploadedAsset(data.file_path);
-        const fileName = data.file_path.split('/').pop();
+        const isImage = data.is_image === true || /\.(jpg|jpeg|png|gif|webp)$/i.test(data.file_path);
+        const fileUrl = escapeHtml(data.file_url || '');
+        const downloadUrl = escapeHtml(data.download_url || data.file_url || '');
+        const fileName = escapeHtml(data.message || data.file_path.split('/').pop());
         
         contentHtml += `<div class="mb-1">`;
         if (isImage) {
             contentHtml += `
-                <a href="${assetUrl}" target="_blank" class="block overflow-hidden rounded-xl shadow-sm hover:shadow-md transition-shadow">
-                    <img src="${assetUrl}" alt="添付画像" class="max-w-xs max-h-60 object-cover">
+                <a href="${fileUrl}" target="_blank" rel="noopener" class="block overflow-hidden rounded-xl shadow-sm hover:shadow-md transition-shadow">
+                    <img src="${fileUrl}" alt="添付画像" class="max-w-xs max-h-60 object-cover">
                 </a>
             `;
         } else {
             contentHtml += `
-                <a href="${assetUrl}" download class="flex items-center p-3 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors shadow-sm">
+                <a href="${downloadUrl}" class="flex items-center p-3 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors shadow-sm">
                     <div class="text-sm font-medium text-gray-900 truncate w-32">${fileName}</div>
                 </a>
             `;
@@ -608,7 +623,7 @@ function addMessageToChat(data) {
     }
     
     // Text Message
-    if (data.message) {
+    if (data.message && !data.file_path) {
         const bgClass = isMe ? 'bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-br-none' : 'bg-white text-gray-800 border border-gray-100 rounded-bl-none';
         contentHtml += `
             <div class="px-4 py-2.5 rounded-2xl shadow-sm ${bgClass}">
@@ -618,24 +633,11 @@ function addMessageToChat(data) {
     }
     
     // Time
-    contentHtml += `<span class="text-[10px] text-gray-400 mt-1 px-1">${data.time}</span>`;
+    contentHtml += `<span class="text-[10px] text-gray-400 mt-1 px-1">${escapeHtml(data.time || '')}</span>`;
     contentHtml += `</div>`; // Close wrapper
     
     div.innerHTML = contentHtml;
     container.appendChild(div);
-}
-
-// Helper for JS asset path (simplified)
-function uploadedAsset(path) {
-    if (path.startsWith('http')) return path;
-    const baseUrl = '<?= rtrim(BASE_URL, "/") ?>';
-    
-    // If path already starts with storage/, don't add it again
-    if (path.startsWith('storage/')) {
-        return baseUrl + '/' + path;
-    }
-    
-    return baseUrl + '/storage/app/uploads/' + path;
 }
 
 function escapeHtml(text) {

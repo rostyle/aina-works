@@ -25,7 +25,8 @@ try {
         $story = $db->selectOne("SELECT * FROM success_stories WHERE id = ?", [$storyId]);
     }
 } catch (Exception $e) {
-    setFlash('error', $e->getMessage());
+    error_log('admin/section load: ' . $e->getMessage());
+    setFlash('error', 'データを読み込めませんでした');
     redirect(adminUrl('success_stories.php'));
 }
 
@@ -45,11 +46,14 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     if (($_POST['action'] ?? '') === 'delete' && $id > 0) {
         try {
             $db->delete("DELETE FROM success_story_sections WHERE id = ?", [$id]);
+            logAdminAction('success_story_section_delete', 'success_story_section', $id);
             setFlash('success', 'セクションを削除しました');
-            redirect(adminUrl('success_story_edit.php?id=' . $storyId));
         } catch (Exception $e) {
-            setFlash('error', '削除エラー: ' . $e->getMessage());
+            error_log('admin/section delete: ' . $e->getMessage());
+            setFlash('error', 'セクションを削除できませんでした');
         }
+        // 削除に失敗しても保存処理へ進ませない（空の内容で上書きされるのを防ぐ）
+        redirect(adminUrl('success_story_edit.php?id=' . $storyId));
     }
 
     // Save Action
@@ -76,7 +80,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         redirect(adminUrl('success_story_edit.php?id=' . $storyId));
 
     } catch (Exception $e) {
-        setFlash('error', '保存エラー: ' . $e->getMessage());
+        error_log('admin/section save: ' . $e->getMessage());
+        setFlash('error', '保存できませんでした。入力内容を確認して再度お試しください');
     }
 }
 

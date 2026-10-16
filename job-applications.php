@@ -47,19 +47,15 @@ if ($jobId) {
                 ", [$jobId]);
                 
                 if ($jobInfo) {
-                    error_log("案件情報取得成功: Job ID {$jobId}, Title: {$jobInfo['title']}, Client ID: {$jobInfo['client_id']}");
                 } else {
-                    error_log("案件情報取得失敗: Job ID {$jobId}");
                 }
             } else {
                 // 案件は存在するが、このユーザーが所有者ではない
-                error_log("案件アクセス拒否: Job ID {$jobId}, User ID {$user['id']}, Owner ID {$jobExists['client_id']}");
                 setFlash('error', 'この案件へのアクセス権限がありません。');
                 redirect(url('dashboard'));
             }
         } else {
             // 案件が存在しない
-            error_log("案件が見つからない: Job ID {$jobId}");
             setFlash('error', '案件が見つかりません。');
             redirect(url('dashboard'));
         }
@@ -73,7 +69,7 @@ try {
     // クリエイター：自分の応募一覧
     try {
         $applications = $db->select("
-            SELECT ja.*, j.title as job_title, j.budget_min, j.budget_max, j.client_id,
+            SELECT ja.*, j.title as job_title, j.budget_min, j.budget_max, j.client_id, j.status as job_status,
                    u.full_name as client_name, u.profile_image as client_image, c.name as category_name
             FROM job_applications ja
             LEFT JOIN jobs j ON ja.job_id = j.id
@@ -83,33 +79,6 @@ try {
             ORDER BY ja.created_at DESC
         ", [$user['id']]);
 
-        // JOINが失敗する場合のフォールバック
-        if (empty($applications)) {
-            $basicApplications = $db->select("
-                SELECT * FROM job_applications WHERE creator_id = ? ORDER BY created_at DESC
-            ", [$user['id']]);
-
-            if (!empty($basicApplications)) {
-                $applications = [];
-                foreach ($basicApplications as $app) {
-                    $job = $db->selectOne("SELECT * FROM jobs WHERE id = ?", [$app['job_id']]);
-                    if ($job) {
-                        $client = $db->selectOne("SELECT full_name, profile_image FROM users WHERE id = ?", [$job['client_id']]);
-                        $category = $db->selectOne("SELECT name FROM categories WHERE id = ?", [$job['category_id']]);
-
-                        $app['job_title'] = $job['title'];
-                        $app['budget_min'] = $job['budget_min'];
-                        $app['budget_max'] = $job['budget_max'];
-                        $app['client_id'] = $job['client_id'];
-                        $app['client_name'] = $client['full_name'] ?? 'Unknown';
-                        $app['client_image'] = $client['profile_image'] ?? null;
-                        $app['category_name'] = $category['name'] ?? null;
-
-                        $applications[] = $app;
-                    }
-                }
-            }
-        }
     } catch (Exception $e) {
         $applications = [];
     }
@@ -316,7 +285,7 @@ include 'includes/header.php';
                                 <article class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 border-l-4 border-l-blue-500" role="article">
                                     <div class="flex items-start space-x-4">
                                         <div class="flex flex-col items-center space-y-2">
-                                            <img src="<?= uploaded_asset($app['client_image'] ?? 'assets/images/default-avatar.png') ?>"
+                                            <img src="<?= h(uploaded_asset($app['client_image'] ?? 'assets/images/default-avatar.png')) ?>"
                                                  alt="<?= h($app['client_name'] ?? '依頼者') ?>"
                                                  class="w-16 h-16 rounded-full object-cover" />
                                             <div class="bg-blue-50 border border-blue-200 rounded-lg px-2 py-1">
@@ -375,10 +344,23 @@ include 'includes/header.php';
                                             </div>
 
                                             <div class="flex flex-wrap gap-2" data-application-actions>
+                                                <?php if (($app['status'] ?? '') === 'accepted'): ?>
+                                                    <?php $js = (string)($app['job_status'] ?? ''); ?>
+                                                    <p class="w-full text-sm text-gray-700 mb-1">案件: <?= h(jobStatusLabel($js)) ?><?= in_array($js, ['open', 'closed', 'contracted', 'in_progress'], true) ? '（作業が終わったら「納品を報告する」）' : ($js === 'delivered' ? '（依頼者の検収待ち）' : '') ?></p>
+                                                    <a href="<?= h(url('job-detail?id=' . (int)$app['job_id'])) ?>"
+                                                       class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
+                                                        <?= in_array($js, ['open', 'closed', 'contracted', 'in_progress'], true) ? '納品を報告する' : '案件を見る' ?>
+                                                    </a>
+                                                    <a href="<?= h(url('chat?user_id=' . (int)$app['client_id'])) ?>"
+                                                       class="inline-flex items-center px-3 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors">
+                                                        依頼者とチャット
+                                                    </a>
+                                                <?php else: ?>
                                                 <a href="<?= url('job-detail?id=' . $app['job_id']) ?>"
                                                    class="inline-flex items-center px-3 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors">
                                                     案件詳細
                                                 </a>
+                                                <?php endif; ?>
                                                 <?php if (($app['status'] ?? 'pending') === 'pending'): ?>
                                                     <button type="button"
                                                             data-application-id="<?= $app['id'] ?>"
@@ -471,7 +453,7 @@ include 'includes/header.php';
                                 <article class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 border-l-4 border-l-green-500" role="article">
                                     <div class="flex items-start space-x-4">
                                         <div class="flex flex-col items-center space-y-2">
-                                            <img src="<?= uploaded_asset($app['creator_image'] ?? 'assets/images/default-avatar.png') ?>"
+                                            <img src="<?= h(uploaded_asset($app['creator_image'] ?? 'assets/images/default-avatar.png')) ?>"
                                                  alt="<?= h($app['creator_name'] ?? '応募者') ?>"
                                                  class="w-16 h-16 rounded-full object-cover" />
                                             <div class="bg-green-50 border border-green-200 rounded-lg px-2 py-1">
@@ -507,7 +489,7 @@ include 'includes/header.php';
 
                                             <div class="bg-gray-50 rounded-lg p-3 mb-3">
                                                 <h4 class="text-sm font-medium text-gray-700 mb-1">応募メッセージ</h4>
-                                                <p class="text-sm text-gray-600"><?= nl2br(autolink(h($app['cover_letter']))) ?></p>
+                                                <p class="text-sm text-gray-600"><?= nl2br(autolink($app['cover_letter'])) ?></p>
                                             </div>
 
                                             <p class="text-xs text-gray-500 mb-2">
@@ -730,7 +712,7 @@ async function showBankInfo(jobId, creatorId) {
 
             const msg = lines.join('\n');
             if (typeof showNotification === 'function') {
-                showNotification(msg.replace(/\n/g, '<br>'), 'success', 12000);
+                showNotification(msg, 'success', 12000);
             } else {
                 alert(msg);
             }
