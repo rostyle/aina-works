@@ -314,6 +314,30 @@ def main():
     act = subprocess.run(["mysql", "-N", "-e", "SELECT is_active FROM aina_works.users WHERE id=4"], capture_output=True, text=True).stdout.strip()
     check("deactivated member stays inactive after login attempt", act == "0" and "ご利用いただけません" in b, (act, h.get("Location")))
 
+    # --- C-04 Tailwind はビルド済みCSS（CDNを読まない）、ビルド設定は配信しない ---
+    c, b, _ = anon.get("/")
+    check("C-04 public page uses built tailwind.css", "/assets/css/tailwind.css" in b and "cdn.tailwindcss.com" not in b, c)
+    check("C-04 tailwind.css comes after custom.css (same cascade as old CDN)", 0 < b.find("css/custom.css") < b.find("css/tailwind.css") < b.find("</head>"), c)
+    c, b, _ = ad.get("/admin/users.php", follow=True)
+    check("C-04 admin page uses built tailwind.css", "/assets/css/tailwind.css" in b and "cdn.tailwindcss.com" not in b, c)
+    c, b, h = anon.get("/assets/css/tailwind.css")
+    check("C-04 tailwind.css served", c == 200 and ".bg-white{" in b and "text/css" in h.get("Content-Type", ""), (c, h.get("Content-Type")))
+    for pth in ("/package.json", "/tailwind.config.js"):
+        c, _, _ = anon.get(pth)
+        check(f"C-04 {pth} not served", c in (403, 404), c)
+
+    # --- C-08 自動リンク：本文はエスケープ、URLの & は1回だけエスケープ、末尾の句点は本文に残す ---
+    subprocess.run(["mysql", "--default-character-set=utf8mb4", "-e", "UPDATE aina_works.works SET description='参考 https://example.com/a?x=1&y=2 。<b>太字</b>' WHERE id=1"], check=True)
+    c, b, _ = anon.get("/work-detail?id=1")
+    check("C-08 autolink escapes text and links URL once", c == 200 and 'href="https://example.com/a?x=1&amp;y=2"' in b and "&lt;b&gt;太字&lt;/b&gt;" in b and "&amp;amp;" not in b and "<b>太字</b>" not in b, c)
+
+    # --- C-05/C-06 JSONは charset 付き・ヘルスチェックでDBとPHPの時刻のずれを見る ---
+    c, b, h = anon.get("/api/health.php")
+    hj = json.loads(b) if c == 200 else {}
+    check("C-05 health JSON with charset", "charset=utf-8" in h.get("Content-Type", "") and hj.get("ok") is True, (c, h.get("Content-Type")))
+    # ローカルのDBはUTCのことが多いので値は問わない（本番では clock_ok=true をデプロイ後に確認する）
+    check("C-06 health reports DB/PHP clock agreement", isinstance(hj.get("clock_ok"), bool), b[:120])
+
     ok = sum(1 for r in results if r[1])
     print(f"\n{ok}/{len(results)} passed")
     return 0 if ok == len(results) else 1

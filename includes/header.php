@@ -91,45 +91,10 @@ $navItems = [
     <meta name="twitter:card" content="summary_large_image">
     <link rel="icon" type="image/x-icon" href="<?= asset('images/favicon.ico') ?>">
     <link rel="apple-touch-icon" href="<?= asset('images/logo.png') ?>">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-  tailwind.config = {
-    darkMode: false, // ダークモードを無効化（ライトモード強制）
-    theme: {
-      extend: {
-                    colors: {
-                        primary: {
-                            50: '#eff6ff',
-                            100: '#dbeafe',
-                            200: '#bfdbfe',
-                            300: '#93c5fd',
-                            400: '#60a5fa',
-                            500: '#3b82f6',
-                            600: '#2563eb',
-                            700: '#1d4ed8',
-                            800: '#1e40af',
-                            900: '#1e3a8a'
-                        },
-                        secondary: {
-                            50: '#faf5ff',
-                            100: '#f3e8ff',
-                            200: '#e9d5ff',
-                            300: '#d8b4fe',
-                            400: '#c084fc',
-                            500: '#a855f7',
-                            600: '#9333ea',
-                            700: '#7c3aed',
-                            800: '#6b21a8',
-                            900: '#581c87'
-                        }
-                    }
-                }
-            }
-        }
-    </script>
     <link rel="stylesheet" href="<?= asset('css/custom.css') ?>">
     <link rel="stylesheet" href="<?= asset('css/loading.css') ?>">
     <meta name="theme-color" content="#ffffff">
+    <meta name="color-scheme" content="only light">
     <meta name="csrf-token" content="<?= generateCsrfToken() ?>">
     <style>
         /* モバイルメニューの確実な最前面表示 */
@@ -207,6 +172,8 @@ $navItems = [
         
         /* ダークモード設定は custom.css のCSS変数で制御されます */
     </style>
+    <!-- Tailwind は head の最後（旧CDNと同じく custom.css・head内の<style>より後ろ。順序を変えると見た目が変わる） -->
+    <link rel="stylesheet" href="<?= asset('css/tailwind.css') ?>">
 </head>
 
 <body class="bg-gray-50">
@@ -256,7 +223,7 @@ $navItems = [
                                     id="user-menu-button"
                                     onclick="toggleUserMenu()">
                                 <?php if (!empty($user['profile_image'])): ?>
-                                    <img src="<?= uploaded_asset($user['profile_image']) ?>" alt="プロフィール画像" class="w-8 h-8 rounded-full object-cover">
+                                    <img src="<?= h(uploaded_asset($user['profile_image'])) ?>" alt="プロフィール画像" class="w-8 h-8 rounded-full object-cover">
                                 <?php else: ?>
                                     <div class="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
                                         <span class="text-primary-600 font-semibold text-sm">
@@ -331,7 +298,7 @@ $navItems = [
                         <div class="flex items-center space-x-3">
                             <?php if (isLoggedIn()): ?>
                                 <?php if (!empty($user['profile_image'])): ?>
-                                    <img src="<?= uploaded_asset($user['profile_image']) ?>" alt="プロフィール画像" class="w-10 h-10 rounded-full object-cover border-2 border-white/20">
+                                    <img src="<?= h(uploaded_asset($user['profile_image'])) ?>" alt="プロフィール画像" class="w-10 h-10 rounded-full object-cover border-2 border-white/20">
                                 <?php else: ?>
                                     <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
                                         <span class="text-white font-bold">

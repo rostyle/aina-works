@@ -192,189 +192,6 @@ include 'includes/header.php';
 $showSuccess = isset($_GET['applied']) && $_GET['applied'] == '1';
 ?>
 
-<style>
-/* ダークモードでもライトモードと同じように表示 */
-@media (prefers-color-scheme: dark) {
-    /* ページ全体をライトモードとして扱う */
-    :root {
-        color-scheme: light !important;
-    }
-
-    /* すべての要素をライトモードに強制 */
-    *, *::before, *::after {
-        color-scheme: light !important;
-    }
-    
-    /* 案件詳細ページの白背景要素を強制 */
-    .bg-white,
-    #application-modal .bg-white,
-    section.bg-gray-50,
-    [class*="bg-white"] {
-        background-color: #ffffff !important;
-    }
-    
-    section.bg-gray-50 {
-        background-color: #f9fafb !important;
-    }
-    
-    /* すべてのテキスト色をライトモードに強制 */
-    body, p, h1, h2, h3, h4, h5, h6, span, div, li, td, th {
-        color: #111827 !important;
-    }
-    
-    .text-gray-900,
-    .text-gray-800,
-    .text-gray-700,
-    .text-gray-600,
-    .text-gray-500,
-    .text-gray-400,
-    .text-gray-300 {
-        color: #111827 !important;
-    }
-    
-    .text-gray-800 {
-        color: #1f2937 !important;
-    }
-    
-    .text-gray-700 {
-        color: #374151 !important;
-    }
-    
-    .text-gray-600 {
-        color: #4b5563 !important;
-    }
-    
-    .text-gray-500 {
-        color: #6b7280 !important;
-    }
-    
-    .text-gray-400 {
-        color: #9ca3af !important;
-    }
-    
-    /* 白背景の要素には白文字を適用しない（ただし、青や紫の背景の要素は除く） */
-    .bg-white .text-white:not(.bg-blue-600):not(.bg-blue-700):not(.bg-blue-800):not(.bg-blue-900):not(.bg-gray-600):not(.bg-gray-700):not(.bg-gray-800):not(.bg-gray-900):not(.bg-green-600):not(.bg-green-700):not(.bg-green-800):not(.bg-green-900):not(.bg-red-600):not(.bg-red-700):not(.bg-red-800):not(.bg-red-900):not(.bg-primary-600):not(.bg-primary-700):not(.bg-primary-800):not(.bg-primary-900):not(.bg-secondary-600):not(.bg-secondary-700):not(.bg-secondary-800):not(.bg-secondary-900),
-    #application-modal .text-white:not(.bg-blue-600):not(.bg-blue-700):not(.bg-blue-800):not(.bg-blue-900):not(.bg-gray-600):not(.bg-gray-700):not(.bg-gray-800):not(.bg-gray-900):not(.bg-green-600):not(.bg-green-700):not(.bg-green-800):not(.bg-green-900):not(.bg-red-600):not(.bg-red-700):not(.bg-red-800):not(.bg-red-900):not(.bg-primary-600):not(.bg-primary-700):not(.bg-primary-800):not(.bg-primary-900):not(.bg-secondary-600):not(.bg-secondary-700):not(.bg-secondary-800):not(.bg-secondary-900) {
-        color: #111827 !important;
-    }
-    
-    /* モーダルの背景とボーダー */
-    #application-modal {
-        background-color: rgba(0, 0, 0, 0.5) !important;
-    }
-    
-    #application-modal .bg-white {
-        background-color: #ffffff !important;
-        border-color: #e5e7eb !important;
-    }
-    
-    /* すべての入力要素をライトモードに強制 */
-    #application-modal input,
-    #application-modal textarea,
-    #application-modal select,
-    input,
-    textarea,
-    select,
-    [type="text"],
-    [type="email"],
-    [type="password"],
-    [type="number"],
-    [type="search"],
-    [type="tel"],
-    [type="url"] {
-        background-color: #ffffff !important;
-        color: #111827 !important;
-        border-color: #e5e7eb !important;
-    }
-    
-    input::placeholder,
-    textarea::placeholder {
-        color: #9ca3af !important;
-    }
-    
-    /* バッジとステータス表示の色をライトモードに強制 */
-    .bg-blue-100 {
-        background-color: #dbeafe !important;
-    }
-    
-    .text-blue-800 {
-        color: #1e40af !important;
-    }
-    
-    .bg-green-100 {
-        background-color: #d1fae5 !important;
-    }
-    
-    .text-green-800 {
-        color: #065f46 !important;
-    }
-    
-    .bg-yellow-100 {
-        background-color: #fef3c7 !important;
-    }
-    
-    .text-yellow-800 {
-        color: #92400e !important;
-    }
-    
-    .bg-purple-100 {
-        background-color: #e9d5ff !important;
-    }
-    
-    .text-purple-800 {
-        color: #6b21a8 !important;
-    }
-    
-    .bg-indigo-100 {
-        background-color: #e0e7ff !important;
-    }
-    
-    .text-indigo-800 {
-        color: #3730a3 !important;
-    }
-    
-    .bg-red-100 {
-        background-color: #fee2e2 !important;
-    }
-    
-    .text-red-800 {
-        color: #991b1b !important;
-    }
-    
-    .bg-orange-100 {
-        background-color: #fed7aa !important;
-    }
-    
-    .text-orange-800 {
-        color: #9a3412 !important;
-    }
-    
-    /* ボーダー色をライトモードに強制 */
-    .border-gray-200,
-    .border-gray-300 {
-        border-color: #e5e7eb !important;
-    }
-    
-    /* リンクの色をライトモードに強制 */
-    a:not([class*="text-white"]):not(.bg-blue-600):not(.bg-blue-700):not(.bg-blue-800):not(.bg-blue-900):not(.bg-gray-600):not(.bg-gray-700):not(.bg-gray-800):not(.bg-gray-900):not(.bg-green-600):not(.bg-green-700):not(.bg-green-800):not(.bg-green-900):not(.bg-red-600):not(.bg-red-700):not(.bg-red-800):not(.bg-red-900):not(.bg-primary-600):not(.bg-primary-700):not(.bg-primary-800):not(.bg-primary-900):not(.bg-secondary-600):not(.bg-secondary-700):not(.bg-secondary-800):not(.bg-secondary-900) {
-        color: #2563eb !important;
-    }
-    
-    a:hover:not([class*="text-white"]):not(.bg-blue-600):not(.bg-blue-700):not(.bg-blue-800):not(.bg-blue-900):not(.bg-gray-600):not(.bg-gray-700):not(.bg-gray-800):not(.bg-gray-900):not(.bg-green-600):not(.bg-green-700):not(.bg-green-800):not(.bg-green-900):not(.bg-red-600):not(.bg-red-700):not(.bg-red-800):not(.bg-red-900):not(.bg-primary-600):not(.bg-primary-700):not(.bg-primary-800):not(.bg-primary-900):not(.bg-secondary-600):not(.bg-secondary-700):not(.bg-secondary-800):not(.bg-secondary-900) {
-        color: #1d4ed8 !important;
-    }
-    
-    .text-blue-600,
-    a.text-blue-600 {
-        color: #2563eb !important;
-    }
-    
-    .text-blue-600:hover,
-    a.text-blue-600:hover {
-        color: #1d4ed8 !important;
-    }
-}
-</style>
 
 <!-- Job Detail Section -->
 <section class="py-8 bg-gray-50 min-h-screen overflow-x-hidden">
@@ -424,7 +241,7 @@ $showSuccess = isset($_GET['applied']) && $_GET['applied'] == '1';
                                 </span>
                                 <span class="inline-flex items-center">
                                     <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                                     </svg>
                                     <?= $job['application_count'] ?>件の応募
                                 </span>
@@ -608,7 +425,7 @@ $showSuccess = isset($_GET['applied']) && $_GET['applied'] == '1';
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                     <h2 class="text-xl font-bold text-gray-900 mb-4">案件の詳細</h2>
                     <div class="prose max-w-none break-words" style="word-break: break-word; overflow-wrap: anywhere;">
-                        <?= nl2br(autolink(h($job['description']))) ?>
+                        <?= nl2br(autolink($job['description'])) ?>
                     </div>
                 </div>
 
@@ -640,7 +457,7 @@ $showSuccess = isset($_GET['applied']) && $_GET['applied'] == '1';
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                     <h3 class="text-lg font-semibold text-gray-900 mb-4">依頼者情報</h3>
                     <div class="flex items-center mb-4">
-                        <img src="<?= uploaded_asset($job['client_image'] ?? 'assets/images/default-avatar.png') ?>" 
+                        <img src="<?= h(uploaded_asset($job['client_image'] ?? 'assets/images/default-avatar.png')) ?>" 
                              alt="<?= h($job['client_name']) ?>" 
                              class="w-12 h-12 rounded-full mr-4">
                         <div>

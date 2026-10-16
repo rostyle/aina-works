@@ -296,7 +296,7 @@ include 'includes/header.php';
                             <div class="relative aspect-[4/3] overflow-hidden bg-slate-100">
                                 <a href="<?= url('work-detail?id=' . $work['id']) ?>" class="block w-full h-full">
                                     <div class="absolute inset-0 bg-slate-900/0 group-hover:bg-slate-900/10 transition-colors z-10"></div>
-                                    <img src="<?= uploaded_asset($work['main_image']) ?>" 
+                                    <img src="<?= h(uploaded_asset($work['main_image'])) ?>" 
                                          alt="<?= h($work['title']) ?>" 
                                          class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700" 
                                          loading="lazy">
@@ -343,7 +343,7 @@ include 'includes/header.php';
 
                                 <div class="flex items-center justify-between mb-4">
                                     <div class="flex items-center space-x-2">
-                                        <img src="<?= uploaded_asset($work['creator_image'] ?? 'assets/images/default-avatar.png') ?>" 
+                                        <img src="<?= h(uploaded_asset($work['creator_image'] ?? 'assets/images/default-avatar.png')) ?>" 
                                              alt="<?= h($work['creator_name']) ?>" 
                                              class="w-6 h-6 rounded-full border border-slate-100">
                                         <span class="text-sm text-slate-600 truncate max-w-[120px]"><?= h($work['creator_name']) ?></span>

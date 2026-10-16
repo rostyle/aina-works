@@ -162,7 +162,6 @@ include 'includes/header.php';
         <div class="grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
             <div class="relative">
                  <div class="w-full h-80 bg-gradient-to-br from-blue-100 to-purple-100 rounded-2xl relative overflow-hidden">
-                     <div class="absolute inset-0 bg-[url('<?= asset('images/pattern.svg') ?>')] opacity-10"></div>
                      <div class="absolute inset-0 flex items-center justify-center p-8">
                         <div class="bg-white/80 backdrop-blur-md p-6 rounded-xl shadow-lg border border-white">
                             <p class="text-slate-800 font-bold mb-2">主な対応可能業務</p>

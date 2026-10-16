@@ -561,7 +561,7 @@ function handleJobSearchSubmit(event) {
                         <!-- Footer Actions -->
                         <div class="flex items-center justify-between pt-4 border-t border-slate-100">
                             <div class="flex items-center">
-                                <img src="<?= uploaded_asset($job['client_image'] ?? 'assets/images/default-avatar.png') ?>" 
+                                <img src="<?= h(uploaded_asset($job['client_image'] ?? 'assets/images/default-avatar.png')) ?>" 
                                      alt="<?= h($job['client_name']) ?>" 
                                      class="w-10 h-10 rounded-full border-2 border-white shadow-sm mr-3">
                                 <div>
@@ -623,7 +623,6 @@ function handleJobSearchSubmit(event) {
 <section class="relative py-24 bg-slate-900 overflow-hidden">
     <div class="absolute inset-0">
         <div class="absolute inset-0 bg-blue-900/20 mix-blend-multiply"></div>
-        <div class="absolute inset-0 bg-[url('<?= asset('images/grid-pattern.svg') ?>')] opacity-10"></div>
     </div>
     
     <div class="relative z-10 max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">

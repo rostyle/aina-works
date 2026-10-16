@@ -20,8 +20,8 @@ if (!$courseId) {
 
 // コース情報を取得（course_booksテーブルから）
 $course = $db->selectOne("
-    SELECT * FROM course_books WHERE id = ? AND start > NOW()
-", [$courseId]);
+    SELECT * FROM course_books WHERE id = ? AND start > ?
+", [$courseId, date('Y-m-d H:i:s')]);
 
 if (!$course) {
     redirect(url('live-course'));

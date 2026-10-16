@@ -118,7 +118,7 @@ include 'includes/header.php';
                         <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
                             <!-- Work Image -->
                             <div class="aspect-w-16 aspect-h-9">
-                                <img src="<?= uploaded_asset($work['main_image']) ?>" 
+                                <img src="<?= h(uploaded_asset($work['main_image'])) ?>" 
                                      alt="<?= h($work['title']) ?>" 
                                      class="w-full h-48 object-cover">
                             </div>
@@ -198,7 +198,7 @@ include 'includes/header.php';
                         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
                             <div class="flex items-start justify-between">
                                 <div class="flex items-center space-x-4">
-                                    <img src="<?= uploaded_asset($creator['profile_image'] ?: 'assets/images/default-avatar.png') ?>" 
+                                    <img src="<?= h(uploaded_asset($creator['profile_image'] ?: 'assets/images/default-avatar.png')) ?>" 
                                          alt="<?= h($creator['full_name']) ?>" 
                                          class="w-12 h-12 rounded-full object-cover">
                                     <div>

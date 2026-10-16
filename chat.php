@@ -164,7 +164,7 @@ include 'includes/header.php';
                        class="block p-3 rounded-xl transition-all duration-200 group <?= $isActive ? 'bg-blue-50 shadow-sm ring-1 ring-blue-100' : 'hover:bg-gray-50' ?>">
                         <div class="flex items-center space-x-3">
                             <div class="relative flex-shrink-0">
-                                <img src="<?= uploaded_asset($room['other_user_image'] ?? 'assets/images/default-avatar.png') ?>" 
+                                <img src="<?= h(uploaded_asset($room['other_user_image'] ?? 'assets/images/default-avatar.png')) ?>" 
                                      alt="<?= h($room['other_user_name']) ?>" 
                                      class="w-12 h-12 rounded-full object-cover ring-2 ring-white shadow-sm">
                                 <?php $isOnline = isset($room['other_user_last_seen']) && (time() - strtotime($room['other_user_last_seen'])) <= 300; ?>
@@ -212,7 +212,7 @@ include 'includes/header.php';
                     
                     <div class="flex items-center space-x-3">
                         <div class="relative">
-                            <img src="<?= uploaded_asset($targetUser['profile_image'] ?? 'assets/images/default-avatar.png') ?>" 
+                            <img src="<?= h(uploaded_asset($targetUser['profile_image'] ?? 'assets/images/default-avatar.png')) ?>" 
                                  class="w-10 h-10 rounded-full object-cover ring-2 ring-white shadow-sm">
                             <div class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full"></div>
                         </div>
@@ -234,7 +234,7 @@ include 'includes/header.php';
             </div>
 
             <!-- Messages Area -->
-            <div id="messages-container" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 custom-scrollbar bg-[url('assets/images/chat-pattern.png')] bg-repeat bg-opacity-5">
+            <div id="messages-container" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 custom-scrollbar">
                 <!-- Date Separator Example ->
                 <div class="flex justify-center">
                     <span class="px-3 py-1 bg-gray-100 text-gray-400 text-xs rounded-full">昨日</span>
@@ -258,7 +258,7 @@ include 'includes/header.php';
                         ?>
                         <div class="flex <?= $isMe ? 'justify-end' : 'justify-start' ?> items-end space-x-2 animate-fade-in-up">
                             <?php if (!$isMe): ?>
-                                <img src="<?= uploaded_asset($targetUser['profile_image'] ?? 'assets/images/default-avatar.png') ?>" 
+                                <img src="<?= h(uploaded_asset($targetUser['profile_image'] ?? 'assets/images/default-avatar.png')) ?>" 
                                      class="w-6 h-6 rounded-full object-cover mb-1 shadow-sm">
                             <?php endif; ?>
                             

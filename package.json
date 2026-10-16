@@ -1,0 +1,8 @@
+{
+  "name": "aina-works",
+  "private": true,
+  "description": "AiNA Works のフロント資産ビルド（PHP本体はビルド不要）",
+  "scripts": {
+    "build:css": "npx --yes tailwindcss@3.4.19 -c tailwind.config.js -i assets/css/tailwind.src.css -o assets/css/tailwind.css --minify"
+  }
+}

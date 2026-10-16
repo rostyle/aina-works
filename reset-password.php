@@ -21,8 +21,8 @@ if (!empty($token)) {
         $db = Database::getInstance();
         // トークンはハッシュで保存している（旧形式の平文トークンも有効期限内は受け付ける）
         $resetData = is_string($token) && preg_match('/^[0-9a-f]{64}$/', $token) ? $db->selectOne(
-            "SELECT * FROM password_resets WHERE token IN (?, ?) AND used_at IS NULL AND expires_at > NOW()",
-            [hash('sha256', $token), $token]
+            "SELECT * FROM password_resets WHERE token IN (?, ?) AND used_at IS NULL AND expires_at > ?",
+            [hash('sha256', $token), $token, date('Y-m-d H:i:s')] // expires_at はPHPの時刻で作るので比較もPHPの時刻で
         ) : null;
         
         if ($resetData) {

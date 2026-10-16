@@ -24,6 +24,7 @@ DirectoryIndex index.php
     # 設定・ログ・バックアップ・文書の直接取得を拒否（mod_rewrite で書く＝AllowOverride の追加権限が要らない）
     RewriteRule \.(sql|log|bak|backup|old|orig|md|lock|ya?ml|ini|sh|py)$ - [F,L,NC]
     RewriteRule (^|/)composer\.(json|lock)$ - [F,L,NC]
+    RewriteRule ^(package(-lock)?\.json|tailwind\.config\.js)$ - [F,L,NC]
 
     # sitemap.xml は動的生成
     RewriteRule ^sitemap\.xml$ sitemap.php [L]

@@ -184,15 +184,16 @@ include 'includes/header.php';
             <?php foreach ($categories as $index => $category): ?>
                 <?php
                 // Generate unique gradients for each card
+                // Tailwind はビルド時にソースからクラス名を拾うので、組み立てずに完全な名前で書く
                 $gradients = [
-                    'from-blue-500 to-cyan-400',
-                    'from-purple-500 to-pink-400',
-                    'from-orange-500 to-yellow-400',
-                    'from-green-500 to-emerald-400',
-                    'from-red-500 to-rose-400',
-                    'from-indigo-500 to-violet-400'
+                    ['from-blue-500 to-cyan-400', 'group-hover:shadow-blue-500/30', 'group-hover:from-blue-500 to-cyan-400'],
+                    ['from-purple-500 to-pink-400', 'group-hover:shadow-purple-500/30', 'group-hover:from-purple-500 to-pink-400'],
+                    ['from-orange-500 to-yellow-400', 'group-hover:shadow-orange-500/30', 'group-hover:from-orange-500 to-yellow-400'],
+                    ['from-green-500 to-emerald-400', 'group-hover:shadow-green-500/30', 'group-hover:from-green-500 to-emerald-400'],
+                    ['from-red-500 to-rose-400', 'group-hover:shadow-red-500/30', 'group-hover:from-red-500 to-rose-400'],
+                    ['from-indigo-500 to-violet-400', 'group-hover:shadow-indigo-500/30', 'group-hover:from-indigo-500 to-violet-400'],
                 ];
-                $gradient = $gradients[$index % count($gradients)];
+                [$gradient, $gradientShadow, $gradientHover] = $gradients[$index % count($gradients)];
                 ?>
                 <a href="<?= url('works?category_id=' . $category['id']) ?>" 
                    class="group relative bg-white rounded-3xl p-8 hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-500 hover:-translate-y-2 border border-slate-100 overflow-hidden">
@@ -201,7 +202,7 @@ include 'includes/header.php';
                     <div class="absolute inset-0 bg-gradient-to-br <?= $gradient ?> opacity-0 group-hover:opacity-5 transition-opacity duration-500"></div>
                     
                     <div class="relative z-10 flex flex-col items-center">
-                        <div class="w-24 h-24 rounded-2xl bg-gradient-to-br <?= $gradient ?> p-[2px] mb-6 transform group-hover:scale-110 group-hover:rotate-6 transition-transform duration-500 shadow-lg group-hover:shadow-<?= explode('-', $gradient)[1] ?>-500/30">
+                        <div class="w-24 h-24 rounded-2xl bg-gradient-to-br <?= $gradient ?> p-[2px] mb-6 transform group-hover:scale-110 group-hover:rotate-6 transition-transform duration-500 shadow-lg <?= $gradientShadow ?>">
                             <div class="w-full h-full bg-white rounded-xl flex items-center justify-center text-4xl">
                                 <?php
                                 $icons = [
@@ -217,7 +218,7 @@ include 'includes/header.php';
                             </div>
                         </div>
                         
-                        <h3 class="text-xl font-bold text-slate-900 mb-2 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:<?= $gradient ?> transition-all">
+                        <h3 class="text-xl font-bold text-slate-900 mb-2 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r <?= $gradientHover ?> transition-all">
                             <?= h($category['name']) ?>
                         </h3>
                         

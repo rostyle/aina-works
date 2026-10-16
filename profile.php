@@ -241,7 +241,7 @@ include 'includes/header.php';
             <input type="hidden" name="csrf_token" value="<?= h(generateCsrfToken()) ?>">
 
             <div class="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-6">
-                <img src="<?= uploaded_asset($user['profile_image'] ?? 'assets/images/default-avatar.png') ?>" alt="プロフィール画像" class="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover mx-auto sm:mx-0">
+                <img src="<?= h(uploaded_asset($user['profile_image'] ?? 'assets/images/default-avatar.png')) ?>" alt="プロフィール画像" class="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover mx-auto sm:mx-0">
                 <div class="text-center sm:text-left">
                     <label for="profile_image" class="block text-sm font-medium text-gray-700 mb-2">プロフィール画像を変更</label>
                     <input type="file" name="profile_image" id="profile_image" class="text-sm text-gray-600 w-full sm:w-auto">

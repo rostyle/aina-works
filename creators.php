@@ -401,7 +401,7 @@ include 'includes/header.php';
                                 <!-- Profile Image & Status -->
                                 <div class="relative w-24 h-24 mx-auto mb-4">
                                     <div class="absolute inset-0 bg-white rounded-full p-1 shadow-md">
-                                        <img src="<?= uploaded_asset($creator['profile_image'] ?? 'assets/images/default-avatar.png') ?>" 
+                                        <img src="<?= h(uploaded_asset($creator['profile_image'] ?? 'assets/images/default-avatar.png')) ?>" 
                                              alt="<?= h($creator['full_name']) ?>" 
                                              class="w-full h-full rounded-full object-cover">
                                     </div>

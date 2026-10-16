@@ -22,6 +22,10 @@ jobs:
             | xargs -0 -n1 -P4 php -l > /tmp/php-lint.log 2>&1 || { grep -v '^No syntax errors' /tmp/php-lint.log; exit 1; }
           echo "PHP syntax OK: $(grep -c '^No syntax errors' /tmp/php-lint.log) files"
 
+      # Tailwind のCSSをソース（PHP/JS内のクラス名）から作り直す。コミット済みの assets/css/tailwind.css が古くても本番は最新になる
+      - name: Build Tailwind CSS
+        run: npx --yes tailwindcss@3.4.19 -c tailwind.config.js -i assets/css/tailwind.src.css -o assets/css/tailwind.css --minify
+
       - name: FTP Deploy (FTPS explicit)
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
@@ -38,6 +42,9 @@ jobs:
             **/node_modules/**
             **/*.md
             **/composer.json
+            **/package.json
+            **/tailwind.config.js
+            **/assets/css/tailwind.src.css
             **/.DS_Store
             **/.env*
             **/sample.env

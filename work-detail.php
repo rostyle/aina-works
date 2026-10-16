@@ -126,7 +126,15 @@ $pageDescription = (string)$work['description'];
 $ogImage = !empty($work['main_image']) ? uploaded_asset($work['main_image']) : null;
 
 // 画像配列をデコード
-$images = json_decode($work['images'] ?? '[]', true) ?: [$work['main_image']];
+// メイン画像を先頭に、追加画像（あれば）を重複なしで続ける
+$extraImages = json_decode($work['images'] ?? '[]', true);
+$images = array_values(array_unique(array_filter(
+    array_merge([$work['main_image'] ?? ''], is_array($extraImages) ? $extraImages : []),
+    fn($v) => is_string($v) && $v !== ''
+)));
+if (!$images) {
+    $images = [''];
+}
 $tags = json_decode($work['tags'] ?? '[]', true) ?: [];
 $technologies = json_decode($work['technologies'] ?? '[]', true) ?: [];
 
@@ -156,10 +164,10 @@ include 'includes/header.php';
                     <!-- メイン画像 -->
                     <div class="aspect-w-16 aspect-h-9 bg-gray-100">
                         <img id="main-image" 
-                             src="<?= uploaded_asset($images[0]) ?>" 
+                             src="<?= h(uploaded_asset($images[0])) ?>" 
                              alt="<?= h($work['title']) ?>" 
                              class="w-full h-full object-cover cursor-zoom-in"
-                             onclick="openImageModal('<?= uploaded_asset($images[0]) ?>')">
+                             onclick="openImageModal(imageUrls[currentImageIndex])">
                     </div>
                     
                     <!-- 画像カウンター -->
@@ -191,9 +199,9 @@ include 'includes/header.php';
                     <div class="p-4 bg-gray-50">
                         <div class="flex space-x-3 overflow-x-auto pb-2">
                             <?php foreach ($images as $index => $image): ?>
-                                <button onclick="changeImage('<?= h($image) ?>', <?= $index ?>)" 
+                                <button type="button" onclick="changeImage(<?= (int)$index ?>)" 
                                         class="image-thumb flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 <?= $index === 0 ? 'border-blue-500' : 'border-gray-200' ?> hover:border-blue-300 transition-colors">
-                                    <img src="<?= uploaded_asset($image) ?>" alt="画像<?= $index + 1 ?>" class="w-full h-full object-cover">
+                                    <img src="<?= h(uploaded_asset($image)) ?>" alt="画像<?= $index + 1 ?>" class="w-full h-full object-cover">
                                 </button>
                             <?php endforeach; ?>
                         </div>
@@ -255,7 +263,7 @@ include 'includes/header.php';
                 <div class="mb-8">
                     <h3 class="text-lg font-semibold text-gray-900 mb-4">プロジェクト概要</h3>
                     <div class="prose prose-gray max-w-none">
-                        <p class="text-gray-700 leading-relaxed text-base"><?= nl2br(autolink(h($work['description']))) ?></p>
+                        <p class="text-gray-700 leading-relaxed text-base"><?= nl2br(autolink($work['description'])) ?></p>
                     </div>
                 </div>
 
@@ -352,7 +360,7 @@ include 'includes/header.php';
                     <div class="space-y-6">
                         <?php foreach ($reviews as $review): ?>
                             <div class="flex space-x-4">
-                                <img src="<?= uploaded_asset($review['reviewer_image'] ?? 'assets/images/default-avatar.png') ?>" 
+                                <img src="<?= h(uploaded_asset($review['reviewer_image'] ?? 'assets/images/default-avatar.png')) ?>" 
                                      alt="<?= h($review['reviewer_name']) ?>" 
                                      class="w-12 h-12 rounded-full flex-shrink-0">
                                 <div class="flex-1">
@@ -462,7 +470,7 @@ include 'includes/header.php';
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6 sticky top-24">
                 <div class="text-center mb-6">
                     <div class="relative inline-block mb-4">
-                        <img src="<?= uploaded_asset($work['creator_image'] ?? 'assets/images/default-avatar.png') ?>" 
+                        <img src="<?= h(uploaded_asset($work['creator_image'] ?? 'assets/images/default-avatar.png')) ?>" 
                              alt="<?= h($work['creator_name']) ?>" 
                              class="w-24 h-24 rounded-full mx-auto border-4 border-white shadow-lg">
                         <?php if ($work['is_verified']): ?>
@@ -629,7 +637,7 @@ include 'includes/header.php';
                                                class="block group hover:bg-gray-50 rounded-lg p-3 transition-colors">
                                                 <div class="flex space-x-4">
                                                     <div class="relative flex-shrink-0">
-                                                        <img src="<?= uploaded_asset($relatedWork['main_image']) ?>" 
+                                                        <img src="<?= h(uploaded_asset($relatedWork['main_image'])) ?>" 
                                                              alt="<?= h($relatedWork['title']) ?>" 
                                                              class="w-24 h-24 md:w-28 md:h-28 rounded-lg object-cover group-hover:scale-105 transition-transform">
                                                         <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 rounded-lg transition-all"></div>
@@ -832,10 +840,9 @@ include 'includes/header.php';
 
 <script>
 let currentImageIndex = 0;
-const images = <?= json_encode($images) ?>;
-const imageUrls = <?= json_encode(array_map('uploaded_asset', $images)) ?>;
+const imageUrls = <?= json_encode(array_map('uploaded_asset', $images), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
 
-function changeImage(src, index) {
+function changeImage(index) {
     // 事前に生成されたURLを使用
     const assetSrc = imageUrls[index];
     document.getElementById('main-image').src = assetSrc;
@@ -862,13 +869,13 @@ function changeImage(src, index) {
 }
 
 function previousImage() {
-    const newIndex = currentImageIndex > 0 ? currentImageIndex - 1 : images.length - 1;
-    changeImage(images[newIndex], newIndex);
+    const newIndex = currentImageIndex > 0 ? currentImageIndex - 1 : imageUrls.length - 1;
+    changeImage(newIndex);
 }
 
 function nextImage() {
-    const newIndex = currentImageIndex < images.length - 1 ? currentImageIndex + 1 : 0;
-    changeImage(images[newIndex], newIndex);
+    const newIndex = currentImageIndex < imageUrls.length - 1 ? currentImageIndex + 1 : 0;
+    changeImage(newIndex);
 }
 
 function openImageModal(src) {

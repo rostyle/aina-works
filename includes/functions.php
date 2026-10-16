@@ -146,7 +146,7 @@ function jsonResponse($data, $status = 200) {
     
     if (!headers_sent()) {
         http_response_code($status);
-        header('Content-Type: application/json');
+        header('Content-Type: application/json; charset=utf-8');
         header('X-Content-Type-Options: nosniff');
     }
     
@@ -1606,18 +1606,31 @@ function performLocalLogin($email, $password) {
  * テキスト内のURLを自動的にハイパーリンクに変換
  */
 function autolink($text) {
-    // URLパターン（http, https）
-    $pattern = '/(https?:\/\/[^\s<>"\']+)/i';
-    
-    // URLをリンクに変換
-    $text = preg_replace_callback($pattern, function($matches) {
-        $url = $matches[1];
-        // URLの末尾の句読点を除外
-        $url = rtrim($url, '.,;:!?');
-        return '<a href="' . h($url) . '" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline">' . h($url) . '</a>';
-    }, $text);
-    
-    return $text;
+    // 生のテキストを受け取り、エスケープしてからURLだけをリンクにする（呼び出し側で h() しない）
+    $text = (string)$text;
+    $out = '';
+    $last = 0;
+    if (preg_match_all('~https?://[A-Za-z0-9\-._\~:/?#\[\]@!$&*+,;=%()]+~', $text, $m, PREG_OFFSET_CAPTURE)) {
+        foreach ($m[0] as [$url, $pos]) {
+            // 末尾の句読点と、対応する開き括弧の無い閉じ括弧はURLに含めず、本文として残す
+            while ($url !== '') {
+                $c = substr($url, -1);
+                $unbalanced = ($c === ')' && substr_count($url, '(') < substr_count($url, ')'))
+                    || ($c === ']' && substr_count($url, '[') < substr_count($url, ']'));
+                if (strpos('.,;:!?', $c) === false && !$unbalanced) {
+                    break;
+                }
+                $url = substr($url, 0, -1);
+            }
+            if ($url === '' || !preg_match('~^https?://[^/?#]+~', $url)) {
+                continue;
+            }
+            $out .= h(substr($text, $last, $pos - $last));
+            $out .= '<a href="' . h($url) . '" target="_blank" rel="noopener noreferrer nofollow" class="text-blue-600 hover:text-blue-800 underline break-all">' . h($url) . '</a>';
+            $last = $pos + strlen($url);
+        }
+    }
+    return $out . h(substr($text, $last));
 }
 
 /**
@@ -1660,7 +1673,7 @@ function requireAdmin(): void {
     if (!isAdminUser()) {
         http_response_code(403);
         echo '<!DOCTYPE html><html lang="ja"><head><meta charset="utf-8"><title>403 Forbidden</title>';
-        echo '<script src="https://cdn.tailwindcss.com"></script></head><body class="min-h-screen bg-gray-50 flex items-center justify-center">';
+        echo '<link rel="stylesheet" href="' . h(asset('css/tailwind.css')) . '"></head><body class="min-h-screen bg-gray-50 flex items-center justify-center">';
         echo '<div class="bg-white p-8 rounded-xl shadow-sm border border-gray-200 max-w-lg text-center">';
         echo '<div class="mx-auto mb-4 w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center">';
         echo '<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg>';

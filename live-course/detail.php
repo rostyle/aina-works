@@ -159,7 +159,7 @@ include '../includes/header.php';
                                        class="flex-1 text-blue-600 hover:text-blue-800 break-all">
                                         <?= h($course['place']) ?>
                                     </a>
-                                    <button onclick="copyToClipboard('<?= h($course['place']) ?>')" 
+                                    <button onclick="copyToClipboard(<?= h(json_encode((string)$course['place'], JSON_UNESCAPED_UNICODE)) ?>)" 
                                             class="ml-2 px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
                                         コピー
                                     </button>
@@ -172,7 +172,7 @@ include '../includes/header.php';
                                 <p class="text-sm font-medium text-blue-700 mb-2">ミーティングID</p>
                                 <div class="flex items-center bg-white rounded-md p-3 border border-blue-200">
                                     <span class="flex-1 font-mono text-gray-900"><?= h($course['zoom_id']) ?></span>
-                                    <button onclick="copyToClipboard('<?= h($course['zoom_id']) ?>')" 
+                                    <button onclick="copyToClipboard(<?= h(json_encode((string)$course['zoom_id'], JSON_UNESCAPED_UNICODE)) ?>)" 
                                             class="ml-2 px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
                                         コピー
                                     </button>
@@ -185,7 +185,7 @@ include '../includes/header.php';
                                 <p class="text-sm font-medium text-blue-700 mb-2">パスコード</p>
                                 <div class="flex items-center bg-white rounded-md p-3 border border-blue-200">
                                     <span class="flex-1 font-mono text-gray-900"><?= h($course['zoom_password']) ?></span>
-                                    <button onclick="copyToClipboard('<?= h($course['zoom_password']) ?>')" 
+                                    <button onclick="copyToClipboard(<?= h(json_encode((string)$course['zoom_password'], JSON_UNESCAPED_UNICODE)) ?>)" 
                                             class="ml-2 px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
                                         コピー
                                     </button>

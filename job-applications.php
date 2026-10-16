@@ -285,7 +285,7 @@ include 'includes/header.php';
                                 <article class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 border-l-4 border-l-blue-500" role="article">
                                     <div class="flex items-start space-x-4">
                                         <div class="flex flex-col items-center space-y-2">
-                                            <img src="<?= uploaded_asset($app['client_image'] ?? 'assets/images/default-avatar.png') ?>"
+                                            <img src="<?= h(uploaded_asset($app['client_image'] ?? 'assets/images/default-avatar.png')) ?>"
                                                  alt="<?= h($app['client_name'] ?? '依頼者') ?>"
                                                  class="w-16 h-16 rounded-full object-cover" />
                                             <div class="bg-blue-50 border border-blue-200 rounded-lg px-2 py-1">
@@ -453,7 +453,7 @@ include 'includes/header.php';
                                 <article class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 border-l-4 border-l-green-500" role="article">
                                     <div class="flex items-start space-x-4">
                                         <div class="flex flex-col items-center space-y-2">
-                                            <img src="<?= uploaded_asset($app['creator_image'] ?? 'assets/images/default-avatar.png') ?>"
+                                            <img src="<?= h(uploaded_asset($app['creator_image'] ?? 'assets/images/default-avatar.png')) ?>"
                                                  alt="<?= h($app['creator_name'] ?? '応募者') ?>"
                                                  class="w-16 h-16 rounded-full object-cover" />
                                             <div class="bg-green-50 border border-green-200 rounded-lg px-2 py-1">
@@ -489,7 +489,7 @@ include 'includes/header.php';
 
                                             <div class="bg-gray-50 rounded-lg p-3 mb-3">
                                                 <h4 class="text-sm font-medium text-gray-700 mb-1">応募メッセージ</h4>
-                                                <p class="text-sm text-gray-600"><?= nl2br(autolink(h($app['cover_letter']))) ?></p>
+                                                <p class="text-sm text-gray-600"><?= nl2br(autolink($app['cover_letter'])) ?></p>
                                             </div>
 
                                             <p class="text-xs text-gray-500 mb-2">

@@ -178,7 +178,7 @@ include 'includes/header.php';
                 <label class="block text-sm font-medium text-gray-700">メイン画像</label>
                 <?php if ($isEditMode && $formData['main_image']): ?>
                     <div class="mt-2">
-                        <img src="<?= uploaded_asset($formData['main_image']) ?>" alt="現在の画像" class="w-32 h-32 object-cover rounded-md">
+                        <img src="<?= h(uploaded_asset($formData['main_image'])) ?>" alt="現在の画像" class="w-32 h-32 object-cover rounded-md">
                     </div>
                 <?php endif; ?>
                 <input type="file" name="main_image" id="main_image" accept="image/jpeg,image/png,image/gif" class="mt-2">

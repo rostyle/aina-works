@@ -17,8 +17,7 @@ function renderAdminHeader(string $title = 'Admin', string $active = ''): void {
     echo '<meta name="viewport" content="width=device-width, initial-scale=1">';
     echo '<title>' . h($title) . ' - Admin</title>';
     echo '<link rel="icon" type="image/x-icon" href="' . h(asset('images/favicon.ico')) . '">';
-    echo '<script src="https://cdn.tailwindcss.com"></script>';
-    echo '<script>tailwind.config = { darkMode: false, theme: { extend: {} } }</script>';
+    echo '<link rel="stylesheet" href="' . h(asset('css/tailwind.css')) . '">';
     echo '<meta name="csrf-token" content="' . h(generateCsrfToken()) . '">';
     echo '</head><body class="bg-gray-50">';
     echo '<header class="bg-white/90 backdrop-blur border-b border-gray-200 sticky top-0 z-30">';

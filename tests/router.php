@@ -3,7 +3,7 @@
 $root = dirname(__DIR__);
 $path = rawurldecode(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
 $rel = ltrim($path, '/');
-if (preg_match('#^(includes|config|sql|vendor|logs|backup|tests)/#', $rel) || preg_match('#^storage/(logs|framework|app/uploads/chat)/#', $rel) || preg_match('#^storage/.*\.(php\d?|phtml|phar|pht)$#i', $rel) || preg_match('#(^|/)\.#', $rel)) { http_response_code(403); echo "403"; return true; }
+if (preg_match('#^(includes|config|sql|vendor|logs|backup|tests)/#', $rel) || preg_match('#^storage/(logs|framework|app/uploads/chat)/#', $rel) || preg_match('#^storage/.*\.(php\d?|phtml|phar|pht)$#i', $rel) || preg_match('#(^|/)\.#', $rel) || preg_match('#\.(sql|log|bak|backup|old|orig|md|lock|ya?ml|ini|sh|py)$#i', $rel) || preg_match('#(^|/)composer\.(json|lock)$#i', $rel) || preg_match('#^(package(-lock)?\.json|tailwind\.config\.js)$#i', $rel)) { http_response_code(403); echo "403"; return true; }
 if ($rel === 'sitemap.xml') { $_SERVER['SCRIPT_NAME']='/sitemap.php'; require $root.'/sitemap.php'; return true; }
 if (preg_match('#^works?/?$#', $rel)) { $_SERVER['SCRIPT_NAME']='/works.php'; require $root.'/works.php'; return true; }
 if ($rel === '' ) { $_SERVER['SCRIPT_NAME']='/index.php'; require $root.'/index.php'; return true; }

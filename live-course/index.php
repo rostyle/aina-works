@@ -19,9 +19,9 @@ $courses = $db->select("
         c.name as category_name
     FROM course_books cb
     LEFT JOIN categories c ON cb.category_id = c.id
-    WHERE cb.start > NOW()
+    WHERE cb.start > ?
     ORDER BY cb.start ASC
-");
+", [date('Y-m-d H:i:s')]);
 
 // ユーザーが予約済みのコースIDを取得
 $bookedCourseIds = [];
