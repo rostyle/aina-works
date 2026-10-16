@@ -21,6 +21,12 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                 throw new RuntimeException('jobs.status cannot store ' . $newStatus);
             }
             $db->update("UPDATE jobs SET status = ? WHERE id = ?", [$newStatus, $jobId]);
+            try {
+                // 募集中に戻したら応募も受け付ける状態にそろえる
+                $db->update("UPDATE jobs SET is_recruiting = ? WHERE id = ?", [$newStatus === 'open' ? 1 : 0, $jobId]);
+            } catch (Throwable $t) {
+                // is_recruiting 列が無い環境
+            }
             logAdminAction('job_status', 'job', $jobId, ['status' => $newStatus]);
             setFlash('success', '案件ステータスを更新しました');
         } catch (Exception $e) {

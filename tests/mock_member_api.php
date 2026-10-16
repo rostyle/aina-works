@@ -12,6 +12,7 @@ if ($uri === '/api/external/ainaglam/verify-login') {
     'norole@example.com'  => [1003,'未設定次郎',3,2],
     'quit@example.com'    => [1004,'退会三郎',6,2],
     'free@example.com'    => [1005,'フリー四郎',3,1],
+    'linkedadmin@example.com' => [1006,'紐づき管理者',3,1], // マイページはフリープラン
   ];
   $e = $in['email'] ?? '';
   if (!isset($users[$e]) || ($in['password'] ?? '') !== 'Member1!') { echo json_encode(['result'=>'success','authenticated'=>false]); exit; }

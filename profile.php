@@ -146,12 +146,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     throw new Exception('ユーザーIDが不正です');
                 }
                 
-                // デバッグ用ログ（本番環境では削除）
-                if (defined('DEBUG') && DEBUG) {
-                    error_log("Profile update values - response_time: " . $responseTime);
-                    error_log("Profile update values - fullName: " . $fullName . ", bio length: " . strlen($bio));
-                }
-                
                 // ユーザー情報を更新
                 $db->update(
                     "UPDATE users SET full_name = ?, bio = ?, location = ?, website = ?, twitter_url = ?, instagram_url = ?, facebook_url = ?, linkedin_url = ?, youtube_url = ?, tiktok_url = ?, birthdate = ?, response_time = ?, profile_image = ?, is_creator = ?, is_client = ? WHERE id = ?",
@@ -160,7 +154,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 // user_rolesテーブルを更新
                 // 既存のロールを削除
-                $db->delete("DELETE FROM user_roles WHERE user_id = ?", [$userId]);
+                // 消すのは creator / client だけ（admin などの権限はプロフィール保存で消さない）
+                $db->delete("DELETE FROM user_roles WHERE user_id = ? AND role IN ('creator','client')", [$userId]);
                 
                 // 新しいロールを追加
                 if ($isCreator) {

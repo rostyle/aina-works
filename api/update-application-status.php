@@ -85,7 +85,8 @@ try {
         // 同時に2件受諾しても定員を超えないよう、案件の行をロックしてから数える
         $jobRow = $db->selectOne("SELECT * FROM jobs WHERE id = ? FOR UPDATE", [$application['job_id']]);
         $jobStatus = (string)($jobRow['status'] ?? '');
-        if (!in_array($jobStatus, ['open', 'closed'], true)) {
+        // 空・NULL（旧ENUMで保存できなかった値）は「募集終了」と同じ扱いで受諾できる
+        if (!in_array($jobStatus, ['open', 'closed', ''], true)) {
             $db->rollback();
             jsonResponse(['error' => '「' . jobStatusLabel($jobStatus) . '」の案件では応募を受諾できません'], 400);
         }

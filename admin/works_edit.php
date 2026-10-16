@@ -41,7 +41,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         $error = 'タイトルとクリエイターは必須です';
     } else {
         try {
-            $mainImage = sanitizeImageRef($_POST['main_image'] ?? '');
+            $mainImage = sanitizeImageRef($_POST['main_image'] ?? '', $work['main_image'] ?? null);
 
             // Handle file upload
             if (isset($_FILES['main_image_file']) && $_FILES['main_image_file']['error'] === UPLOAD_ERR_OK) {

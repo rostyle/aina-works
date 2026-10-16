@@ -59,7 +59,7 @@ class Client:
         return self.req("POST", path, data=data, **k)
 
     def csrf(self, path="/login"):
-        _, html, _ = self.get(path)
+        _, html, _ = self.get(path, follow=True)
         m = re.search(r'name="csrf_token" value="([0-9a-f]+)"', html) or re.search(r'csrf-token" content="([0-9a-f]+)"', html)
         return m.group(1) if m else ""
 
@@ -104,6 +104,22 @@ def main():
     tok = cl.csrf("/login?redirect=https://evil.example/")
     c, b, h = cl.req("POST", "/login?redirect=https://evil.example/", data={"csrf_token": tok, "email": "client@example.com", "password": MEMBER_PW})
     check("S-10 open redirect blocked", c in (302, 303) and "evil.example" not in h.get("Location", ""), h.get("Location"))
+
+    # --- S-10: 先頭に / を付けた外部URLでもすり抜けない（レビュー指摘）---
+    for bad in ["/https://evil.example", "/http://evil.example/x", "/%2F%2Fevil.example"]:
+        cl0 = Client()
+        tok = cl0.csrf("/login?redirect=" + urllib.parse.quote(bad, safe=""))
+        c, b, h = cl0.req("POST", "/login?redirect=" + urllib.parse.quote(bad, safe=""), data={"csrf_token": tok, "email": "client@example.com", "password": MEMBER_PW})
+        loc = h.get("Location", "")
+        # サイト内パス（/ で始まり // ではない、スキームなし）なら外部へは飛ばない
+        safe = (loc.startswith("/") and not loc.startswith("//") and "://" not in loc) or loc.startswith(BASE + "/")
+        check(f"S-10 redirect bypass {bad} blocked", safe, loc)
+
+    # --- マイページに紐づく管理者は、マイページのプランに関係なくローカルパスワードで管理画面に入れる ---
+    la = Client()
+    la.login("linkedadmin@example.com", LOCAL_PW)
+    c, b, _ = la.get("/admin/index.php", follow=True)
+    check("linked admin can log in with local password", c == 200 and "アクセス権限がありません" not in b and "ダッシュボード" in b, c)
 
     # --- S-01: 一般会員が管理画面を使えない ---
     member = Client()
@@ -278,6 +294,25 @@ def main():
         check(f"admin {pth} ok", c == 200 and no_php_error(b) and "アクセス権限がありません" not in b, (c, re.findall(r"(?:Warning|Notice|Fatal error|エラー)[^<]{0,160}", b)[:2]))
     c, b, _ = ad.get("/api/get_job.php?id=1")
     check("admin get_job returns client email", c == 200 and "client@example.com" in b, (c, b[:100]))
+
+    # --- 状態が空の案件でも画面が落ちず、先へ進める（レビュー指摘）---
+    blank_id = subprocess.run(["mysql", "-N", "-e", "SELECT id FROM aina_works.jobs WHERE title='状態が空の案件'"], capture_output=True, text=True).stdout.strip()
+    c, b, _ = cl.get(f"/job-detail?id={blank_id}")
+    check("blank-status job page renders for owner", c == 200 and no_php_error(b) and "job-status-action" in b, (c, re.findall(r"(?:Warning|Fatal error)[^<]{0,160}", b)[:2]))
+
+    # --- プロフィールを保存しても管理者権限が消えない（既存バグ）---
+    ptok = ad.csrf("/profile")
+    ad.post("/profile", {"csrf_token": ptok, "full_name": "管理者", "birthdate": "1990-01-01", "is_client": "1", "bio": "", "response_time": "24"})
+    cnt = subprocess.run(["mysql", "-N", "-e", "SELECT COUNT(*) FROM aina_works.user_roles WHERE user_id=1 AND role='admin' AND is_enabled=1"], capture_output=True, text=True).stdout.strip()
+    check("profile save keeps admin role", cnt == "1", cnt)
+
+    # --- 管理画面で無効にした会員は、ログインしても有効に戻らない（既存バグ）---
+    atok = ad.csrf("/admin/users.php")
+    ad.post("/admin/users.php", {"csrf_token": atok, "action": "toggle_active", "user_id": "4"})
+    off = Client()
+    c, b, h = off.login("norole@example.com", MEMBER_PW)
+    act = subprocess.run(["mysql", "-N", "-e", "SELECT is_active FROM aina_works.users WHERE id=4"], capture_output=True, text=True).stdout.strip()
+    check("deactivated member stays inactive after login attempt", act == "0" and "ご利用いただけません" in b, (act, h.get("Location")))
 
     ok = sum(1 for r in results if r[1])
     print(f"\n{ok}/{len(results)} passed")

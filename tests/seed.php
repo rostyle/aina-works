@@ -18,10 +18,15 @@ $ins->execute(['client@example.com', '依頼者花子', '1002', null, 0, 1, '198
 $ins->execute(['norole@example.com', '未設定次郎', '1003', null, 0, 0, null]);             // 4 会員・役割未設定
 $ins->execute(['quit@example.com', '退会三郎', '1004', $pw, 1, 0, '1990-01-01']);           // 5 退会済み会員（ローカルパスワードあり）
 $ins->execute(['localclient@example.com', 'ローカル依頼社', '', $pw, 0, 1, '1980-01-01']);   // 6 ローカル専用の依頼者
-$pdo->exec("INSERT INTO user_roles (user_id,role,is_enabled) VALUES (1,'admin',1)");
+$ins->execute(['linkedadmin@example.com', '紐づき管理者', '1006', $pw, 0, 0, '1980-01-01']); // 7 マイページに紐づく管理者（マイページはフリープラン）
+$pdo->exec("INSERT INTO user_roles (user_id,role,is_enabled) VALUES (1,'admin',1),(7,'admin',1)");
 $pdo->exec("INSERT INTO works (user_id,title,description,category_id,price_min,price_max,main_image,status) VALUES (2,'バナー制作','AIで作るバナー https://example.com',1,1000,5000,'sample.jpg','published')");
 $pdo->exec("INSERT INTO jobs (client_id,category_id,title,description,budget_min,budget_max,urgency,status,deadline) VALUES (3,1,'LPのバナー作成','新商品LPのバナーを3枚作ってほしいです。サイズは1200x628。',10000,30000,'medium','open',DATE_ADD(CURDATE(), INTERVAL 14 DAY))");
 $pdo->exec("INSERT INTO jobs (client_id,category_id,title,description,budget_min,budget_max,urgency,status,deadline) VALUES (3,1,'締切なし案件','説明文説明文説明文説明文説明文説明文説明文説明文説明文説明文説明文説明文説明文',5000,10000,'low','open',NULL)");
 $pdo->exec("INSERT INTO jobs (client_id,category_id,title,description,budget_min,budget_max,urgency,status,deadline) VALUES (3,1,'完了済み案件','説明文説明文説明文説明文説明文説明文説明文説明文説明文説明文説明文説明文説明文',5000,10000,'low','completed',NULL)");
+// 旧ENUMに書けず空文字で保存されてしまった案件（本番にあり得る状態）を再現
+$pdo->exec("SET SESSION sql_mode = ''");
+$pdo->exec("INSERT INTO jobs (client_id,category_id,title,description,budget_min,budget_max,urgency,status,deadline) VALUES (3,1,'状態が空の案件','説明文説明文説明文説明文説明文説明文説明文説明文説明文説明文説明文説明文説明文',5000,10000,'low','contracted',NULL)");
+$pdo->exec("SET SESSION sql_mode = DEFAULT");
 $pdo->exec("INSERT INTO success_stories (title,category_name,tag_type,interview_date,intro_text,member_name,status) VALUES ('未経験から3ヶ月で初受注','デザイン・画像','副業からスタート','2026-09-01','1行目\n2行目','山田','published')");
 echo "seeded\n";

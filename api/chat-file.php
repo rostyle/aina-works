@@ -49,7 +49,8 @@ if ($base === false || $path === false || strpos($path, $base . DIRECTORY_SEPARA
 $finfo = finfo_open(FILEINFO_MIME_TYPE);
 $mime = (string)finfo_file($finfo, $path);
 finfo_close($finfo);
-$inline = in_array($mime, ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'], true) && empty($_GET['dl']);
+// 画像だけ画面内で開く。PDFはブラウザのPDF表示がサンドボックスで動かないことがあるため、常にダウンロード
+$inline = in_array($mime, ['image/jpeg', 'image/png', 'image/gif', 'image/webp'], true) && empty($_GET['dl']);
 if (!$inline && !in_array($mime, ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'], true)) {
     $mime = 'application/octet-stream';
 }

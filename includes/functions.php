@@ -238,10 +238,12 @@ function safeRedirectUrl($target, string $default = 'dashboard'): string {
         $target = substr($target, strlen($sitePath));
     }
     $target = ltrim($target, '/');
-    if ($target === '' || preg_match('#^(login|logout)(\.php)?($|[?/])#', $target)) {
+    // 先頭の / を外した後にスキームが現れる形（/https://… など）も外部URLとして扱う
+    if ($target === '' || preg_match('#^[a-z][a-z0-9+.-]*:#i', $target) || preg_match('#^(login|logout)(\.php)?($|[?/])#', $target)) {
         return url($default);
     }
-    return url($target);
+    // url() は http(s):// をそのまま返すため使わず、サイト内パスとして組み立てる
+    return $sitePath . '/' . $target;
 }
 
 /**
@@ -1298,12 +1300,12 @@ function createOrUpdateUser($apiUser) {
         
         if ($existingUser) {
             // 既存ユーザーの更新
+            // is_active は触らない（管理画面で無効にした利用者がログインで勝手に戻らないように）
             $updateSql = "UPDATE users SET 
                 email = ?,
                 full_name = ?, 
                 aina_user_id = ?, 
-                password_hash = NULL,
-                is_active = 1,
+                password_hash = CASE WHEN EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = users.id AND ur.role = 'admin' AND ur.is_enabled = 1) THEN password_hash ELSE NULL END,
                 updated_at = NOW()
                 WHERE id = ?";
             
@@ -1388,28 +1390,33 @@ function performApiLogin($email, $password) {
     }
     
     // 総当たり対策（失敗が続くメールアドレス・IPはしばらく受け付けない）
+    // 失敗の回数はメール×IP（8回/15分）を主に数える。他人のメールを打ち続けて本人を締め出しにくいよう、
+    // メール単体は緩め（30回/1時間）、IP単体は大量の試行だけを止める（100回/15分）
     $emailKey = strtolower($email);
-    if (!rateLimitAllow('login_fail_email', $emailKey, 8, 900, false)
-        || !rateLimitAllow('login_fail_ip', clientIp(), 30, 900, false)) {
+    $emailIpKey = $emailKey . '|' . clientIp();
+    if (!rateLimitAllow('login_fail_email_ip', $emailIpKey, 8, 900, false)
+        || !rateLimitAllow('login_fail_email', $emailKey, 30, 3600, false)
+        || !rateLimitAllow('login_fail_ip', clientIp(), 100, 900, false)) {
         return [
             'success' => false,
             'message' => 'ログインの失敗が続いたため、一時的に受け付けを止めています。15分ほどおいてから再度お試しください。',
             'error_type' => 'rate_limited'
         ];
     }
-    $recordFailure = function () use ($emailKey) {
-        rateLimitAllow('login_fail_email', $emailKey, 8, 900);
-        rateLimitAllow('login_fail_ip', clientIp(), 30, 900);
+    $recordFailure = function () use ($emailKey, $emailIpKey) {
+        rateLimitAllow('login_fail_email_ip', $emailIpKey, 8, 900);
+        rateLimitAllow('login_fail_email', $emailKey, 30, 3600);
+        rateLimitAllow('login_fail_ip', clientIp(), 100, 900);
     };
 
     // ローカルパスワードはマイページ会員に紐づかないアカウント（管理者・法人など）だけに使う。
     // 会員はマイページAPIで毎回 会員状態・プランを確かめる（退会・未払い・フリープランで使い続けられないように）
     $localAuthResult = performLocalLogin($email, $password);
     if ($localAuthResult['success']) {
-        rateLimitClear('login_fail_email', $emailKey);
+        rateLimitClear('login_fail_email_ip', $emailIpKey);
         return $localAuthResult;
     }
-    if (($localAuthResult['error_type'] ?? '') === 'password_mismatch') {
+    if (($localAuthResult['error_type'] ?? '') === 'password_mismatch' && empty($localAuthResult['linked'])) {
         $recordFailure();
         return [
             'success' => false,
@@ -1453,9 +1460,23 @@ function performApiLogin($email, $password) {
         ];
     }
     
+    // 管理画面で無効にされた利用者は入れない
+    try {
+        $activeRow = Database::getInstance()->selectOne("SELECT is_active FROM users WHERE id = ?", [$userId]);
+        if ($activeRow && (int)$activeRow['is_active'] !== 1) {
+            return [
+                'success' => false,
+                'message' => 'このアカウントは現在ご利用いただけません。お心当たりがない場合はお問い合わせください。',
+                'error_type' => 'inactive_account'
+            ];
+        }
+    } catch (Exception $e) {
+        error_log('active check failed: ' . $e->getMessage());
+    }
+
     // セッション設定（パスワードは保持しない）
     try {
-        rateLimitClear('login_fail_email', $emailKey);
+        rateLimitClear('login_fail_email_ip', $emailIpKey);
         regenerateSessionSecurely();
         $_SESSION['user_id'] = $userId;
         $_SESSION['aina_user_id'] = $apiUser['id'];
@@ -1504,7 +1525,12 @@ function performLocalLogin($email, $password) {
         }
         
         // マイページ会員に紐づくアカウントはローカルパスワードを使わない（API側で会員状態を確認する）
-        if (!empty($user['aina_user_id'])) {
+        // ただし有効な管理者は例外（マイページのプラン状態に関係なく管理画面に入れるように）
+        $isEnabledAdmin = (bool)$db->selectOne(
+            "SELECT 1 FROM user_roles WHERE user_id = ? AND role = 'admin' AND is_enabled = 1 LIMIT 1",
+            [$user['id']]
+        );
+        if (!empty($user['aina_user_id']) && !$isEnabledAdmin) {
             return [
                 'success' => false,
                 'message' => 'API認証が必要です。',
@@ -1518,7 +1544,9 @@ function performLocalLogin($email, $password) {
                 return [
                     'success' => false,
                     'message' => 'メールアドレスまたはパスワードが正しくありません。',
-                    'error_type' => 'password_mismatch'
+                    'error_type' => 'password_mismatch',
+                    // マイページに紐づく管理者は、マイページのパスワードでも入れるよう API 認証へ進める
+                    'linked' => !empty($user['aina_user_id'])
                 ];
             }
         } else {
@@ -1835,7 +1863,10 @@ function jobStatusInfo(?string $status): array {
         'completed'   => ['label' => '完了',       'badge' => 'bg-gray-800 text-white'],
         'cancelled'   => ['label' => 'キャンセル', 'badge' => 'bg-red-100 text-red-800'],
     ];
-    return $map[$status ?? ''] ?? ['label' => (string)$status, 'badge' => 'bg-gray-100 text-gray-700'];
+    if ($status === null || $status === '') {
+        return ['label' => '確認中', 'badge' => 'bg-gray-100 text-gray-700'];
+    }
+    return $map[$status] ?? ['label' => (string)$status, 'badge' => 'bg-gray-100 text-gray-700'];
 }
 
 function jobStatusLabel(?string $status): string {
@@ -1846,7 +1877,11 @@ function jobStatusLabel(?string $status): string {
  * 依頼者・受注者がそれぞれ選べる次の状態
  * @param string $actor 'client' | 'creator'
  */
-function jobNextStatuses(string $from, string $actor, int $acceptedCount): array {
+function jobNextStatuses(?string $from, string $actor, int $acceptedCount): array {
+    // 過去に旧ENUMへ書けず空・NULLで保存された案件は、採用済みなら「契約中」、なければ「募集終了」とみなす
+    if ($from === null || $from === '') {
+        $from = $acceptedCount > 0 ? 'contracted' : 'closed';
+    }
     if ($actor === 'creator') {
         // 採用されたクリエイターだけが「納品を報告」できる
         return in_array($from, ['open', 'closed', 'contracted', 'in_progress'], true) && $acceptedCount > 0 ? ['delivered'] : [];
@@ -1857,8 +1892,10 @@ function jobNextStatuses(string $from, string $actor, int $acceptedCount): array
         case 'closed':
             return $acceptedCount > 0 ? ['open', 'contracted', 'cancelled'] : ['open', 'cancelled'];
         case 'contracted':
-        case 'in_progress':
             return ['cancelled'];
+        case 'in_progress':
+            // 旧フローの進行中データは、依頼者がそのまま完了にもできる（移行期間の行き止まり防止）
+            return ['completed', 'cancelled'];
         case 'delivered':
             // 検収して完了、または修正依頼で契約中に戻す
             return ['completed', 'contracted'];
@@ -2016,10 +2053,14 @@ function userHasNoRole(?array $user): bool {
 /**
  * 管理画面の「画像URL」欄の値を検証する（http(s) の外部URLか、アップロード済みファイルのパスだけ通す）
  */
-function sanitizeImageRef($value): string {
+function sanitizeImageRef($value, $current = null): string {
     $value = trim((string)$value);
     if ($value === '') {
         return '';
+    }
+    // 画像欄を触らずに保存した場合は、今の値をそのまま残す
+    if ($current !== null && $value === trim((string)$current)) {
+        return $value;
     }
     if (preg_match('#^https?://#i', $value)) {
         return filter_var($value, FILTER_VALIDATE_URL) ? mb_substr($value, 0, 255) : '';

@@ -1,7 +1,6 @@
 User-agent: *
 Disallow: /admin/
 Disallow: /api/
-Disallow: /storage/
 Disallow: /dashboard
 Disallow: /profile
 Disallow: /chat

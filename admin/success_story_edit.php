@@ -39,8 +39,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         $error = 'タイトルとメンバー名は必須です';
     } else {
         try {
-            $mainImage = sanitizeImageRef($_POST['main_image'] ?? '');
-            $memberImage = sanitizeImageRef($_POST['member_image'] ?? '');
+            $mainImage = sanitizeImageRef($_POST['main_image'] ?? '', $story['main_image'] ?? null);
+            $memberImage = sanitizeImageRef($_POST['member_image'] ?? '', $story['member_image'] ?? null);
 
             // Handle main image upload
             if (isset($_FILES['main_image_file']) && $_FILES['main_image_file']['error'] === UPLOAD_ERR_OK) {
