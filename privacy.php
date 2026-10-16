@@ -20,7 +20,7 @@ require_once __DIR__ . '/includes/header.php';
                 
                 <h2 class="text-2xl font-bold text-gray-900 mb-6">1. 基本方針</h2>
                 <p class="mb-6 text-gray-700 leading-relaxed">
-                    株式会社AiNA（以下「当社」といいます。）は、当社が提供する「<?= h(SITE_NAME) ?>」（以下「本サービス」といいます。）において、ユーザーの個人情報の保護を重要な責務と考え、個人情報保護法、その他の関係法令を遵守すると共に、以下のプライバシーポリシー（以下「本ポリシー」といいます。）に従って、個人情報を適切に取り扱います。
+                    株式会社AiNA BRAIN（以下「当社」といいます。）は、当社が提供する「<?= h(SITE_NAME) ?>」（以下「本サービス」といいます。）において、ユーザーの個人情報の保護を重要な責務と考え、個人情報保護法、その他の関係法令を遵守すると共に、以下のプライバシーポリシー（以下「本ポリシー」といいます。）に従って、個人情報を適切に取り扱います。
                 </p>
 
                 <h2 class="text-2xl font-bold text-gray-900 mb-6">2. 個人情報の定義</h2>
@@ -129,10 +129,10 @@ require_once __DIR__ . '/includes/header.php';
                 <div class="mt-12 p-6 bg-gray-50 rounded-xl">
                     <h3 class="text-lg font-semibold text-gray-900 mb-4">個人情報に関するお問い合わせ先</h3>
                     <div class="text-gray-700">
-                        <p class="mb-2"><strong>株式会社AiNA</strong></p>
+                        <p class="mb-2"><strong>株式会社AiNA BRAIN</strong></p>
                         <p class="mb-2">メール：privacy@ai-na.co.jp</p>
-                        <p class="mb-2">電話：03-6894-4209（平日10:00-17:00）</p>
-                        <p>住所：〒108-0075 東京都港区港南2-16-1 品川East One Tower 7F・8F</p>
+                        <p class="mb-2">電話：050-1720-4108（平日10:00-17:00）</p>
+                        <p>住所：〒107-0052 東京都港区赤坂五丁目2番33号 IsaI AkasakA 705号室</p>
                     </div>
                 </div>
 
