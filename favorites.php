@@ -257,6 +257,7 @@ async function removeFavorite(type, targetId) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
                 'X-Requested-With': 'XMLHttpRequest'
             },
             body: JSON.stringify({

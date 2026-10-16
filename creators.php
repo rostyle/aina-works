@@ -70,10 +70,6 @@ try {
     // クリエイター一覧取得
     $creatorsSql = "
         SELECT u.id,
-               u.aina_user_id,
-               u.name,
-               u.username,
-               u.email,
                u.full_name,
                u.nickname,
                u.profile_image,
@@ -91,7 +87,6 @@ try {
                u.is_pro,
                u.is_verified,
                u.is_active,
-               u.last_seen,
                u.created_at,
                u.updated_at,
                u.is_creator,
@@ -187,7 +182,6 @@ try {
     // エラーログを記録
     error_log("Creators page error: " . $e->getMessage());
     error_log("SQL Query: " . $creatorsSql);
-    error_log("Values: " . print_r($values, true));
     
     // エラー時は空の結果を返す
     $total = 0;
@@ -411,9 +405,6 @@ include 'includes/header.php';
                                              alt="<?= h($creator['full_name']) ?>" 
                                              class="w-full h-full rounded-full object-cover">
                                     </div>
-                                    <?php if ($creator['is_active']): ?>
-                                        <div class="absolute bottom-1 right-1 w-5 h-5 bg-green-500 border-4 border-white rounded-full" title="オンライン"></div>
-                                    <?php endif; ?>
                                 </div>
 
                                 <!-- Name & Title -->
@@ -563,6 +554,7 @@ async function toggleFavorite(targetType, targetId, button) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
                 'X-Requested-With': 'XMLHttpRequest'
             },
             body: JSON.stringify({
@@ -573,7 +565,7 @@ async function toggleFavorite(targetType, targetId, button) {
         });
 
         if (response.status === 401) {
-            const redirectUrl = 'login.php?redirect=' + encodeURIComponent(window.location.href);
+            const redirectUrl = <?= json_encode(url('login')) ?> + '?redirect=' + encodeURIComponent(window.location.pathname + window.location.search);
             window.location.href = redirectUrl;
             return;
         }

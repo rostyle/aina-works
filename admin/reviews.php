@@ -14,10 +14,13 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     $reviewId = (int)($_POST['review_id'] ?? 0);
     if ($reviewId > 0) {
         try {
+            $before = $db->selectOne("SELECT id, reviewer_id, reviewee_id, work_id, rating FROM reviews WHERE id = ?", [$reviewId]);
             $db->delete("DELETE FROM reviews WHERE id = ?", [$reviewId]);
+            logAdminAction('review_delete', 'review', $reviewId, ['before' => $before]);
             setFlash('success', 'レビューを削除しました');
         } catch (Exception $e) {
-            setFlash('error', '削除に失敗しました: ' . $e->getMessage());
+            error_log('admin/reviews: ' . $e->getMessage());
+            setFlash('error', '削除に失敗しました。時間をおいて再度お試しください');
         }
     }
     redirect(adminUrl('reviews.php'));
@@ -30,10 +33,10 @@ $perPage = 20;
 $where = [];
 $params = [];
 if ($q !== '') {
-    $where[] = "(au.full_name LIKE ? OR tu.full_name LIKE ? OR j.title LIKE ? OR w.title LIKE ? OR r.id = ?)";
+    // レビューは案件（jobs）と紐づいていないため、投稿者・対象者・作品名・IDで探す
+    $where[] = "(au.full_name LIKE ? OR tu.full_name LIKE ? OR w.title LIKE ? OR r.id = ?)";
     $params[] = "%{$q}%"; // author user
     $params[] = "%{$q}%"; // target user
-    $params[] = "%{$q}%"; // job title (if any)
     $params[] = "%{$q}%"; // work title
     $params[] = ctype_digit($q) ? (int)$q : 0;
 }

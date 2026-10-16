@@ -1,11 +1,41 @@
 <?php
 require_once __DIR__ . '/functions.php';
 
+// セキュリティヘッダ（.htaccess の mod_headers が使えない環境向けの保険）
+if (!headers_sent()) {
+    header('X-Frame-Options: SAMEORIGIN');
+    header('X-Content-Type-Options: nosniff');
+    header('Referrer-Policy: strict-origin-when-cross-origin');
+}
+
 // 現在のページパスを取得
 $currentPath = $_SERVER['REQUEST_URI'];
 
 // ユーザー情報を取得
 $user = isLoggedIn() ? getCurrentUser() : null;
+
+// 最終アクセス（チャットの「オンライン」表示に使う。5分に1回だけ更新）
+if ($user && (int)($_SESSION['last_seen_ping'] ?? 0) < time() - 300) {
+    $_SESSION['last_seen_ping'] = time();
+    try {
+        Database::getInstance()->update("UPDATE users SET last_seen = NOW() WHERE id = ?", [$user['id']]);
+    } catch (Throwable $e) {
+        // last_seen 列が無い環境では何もしない
+    }
+}
+
+// 自分あての未読チャット数（ナビのバッジ用）
+$unreadChatCount = 0;
+if ($user) {
+    try {
+        $unreadChatCount = (int)(Database::getInstance()->selectOne("
+            SELECT COUNT(*) AS c FROM chat_messages cm JOIN chat_rooms cr ON cm.room_id = cr.id
+            WHERE (cr.user1_id = ? OR cr.user2_id = ?) AND cm.sender_id <> ? AND cm.is_read = 0
+        ", [$user['id'], $user['id'], $user['id']])['c'] ?? 0);
+    } catch (Throwable $e) {
+        $unreadChatCount = 0;
+    }
+}
 
 // ナビゲーションアイテムを定義
 $navItems = [
@@ -23,7 +53,42 @@ $navItems = [
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AiNA Works</title>
+    <?php
+    // ページごとのタイトル・説明・OGP・canonical・noindex
+    $__siteName = defined('SITE_NAME') ? SITE_NAME : 'AiNA Works';
+    $__title = isset($pageTitle) && $pageTitle !== '' ? $pageTitle . ' | ' . $__siteName : $__siteName . ' | AIスキルで仕事を受ける・頼むマッチング';
+    $__desc = isset($pageDescription) && $pageDescription !== ''
+        ? $pageDescription
+        : (defined('SITE_DESCRIPTION') && SITE_DESCRIPTION !== '' ? SITE_DESCRIPTION : 'AiNAのクリエイターと依頼者をつなぐ、AI活用の仕事マッチング。案件の応募から納品・検収までをサイト上で進められます。');
+    $__desc = mb_strimwidth(preg_replace('/\s+/u', ' ', strip_tags((string)$__desc)), 0, 160, '…');
+    $__path = strtok($_SERVER['REQUEST_URI'] ?? '/', '?');
+    // ログインが必要なページ・個人のページは検索結果に出さない
+    $__privatePages = ['dashboard', 'profile', 'favorites', 'job-applications', 'chat', 'chats', 'edit-job', 'edit-work', 'post-job', 'select-role', 'login', 'logout', 'forgot-password', 'reset-password', 'booking'];
+    $__noindex = !empty($noindex) || in_array(basename((string)$__path, '.php'), $__privatePages, true) || http_response_code() >= 400;
+    $__canonicalQuery = '';
+    if (isset($_GET['id']) && (int)$_GET['id'] > 0) {
+        $__canonicalQuery = '?id=' . (int)$_GET['id'];
+    }
+    $__canonical = rtrim(BASE_URL, '/') . preg_replace('#\.php$#', '', (string)$__path) . $__canonicalQuery;
+    $__ogImage = isset($ogImage) && $ogImage ? $ogImage : rtrim(BASE_URL, '/') . asset('images/logo.png');
+    if (strpos($__ogImage, 'http') !== 0) {
+        $__ogImage = rtrim(BASE_URL, '/') . '/' . ltrim($__ogImage, '/');
+    }
+    ?>
+    <title><?= h($__title) ?></title>
+    <meta name="description" content="<?= h($__desc) ?>">
+    <?php if ($__noindex): ?>
+    <meta name="robots" content="noindex, nofollow">
+    <?php else: ?>
+    <link rel="canonical" href="<?= h($__canonical) ?>">
+    <?php endif; ?>
+    <meta property="og:site_name" content="<?= h($__siteName) ?>">
+    <meta property="og:title" content="<?= h($__title) ?>">
+    <meta property="og:description" content="<?= h($__desc) ?>">
+    <meta property="og:type" content="<?= ($__path === '/' || $__path === '') ? 'website' : 'article' ?>">
+    <meta property="og:url" content="<?= h($__canonical) ?>">
+    <meta property="og:image" content="<?= h($__ogImage) ?>">
+    <meta name="twitter:card" content="summary_large_image">
     <link rel="icon" type="image/x-icon" href="<?= asset('images/favicon.ico') ?>">
     <link rel="apple-touch-icon" href="<?= asset('images/logo.png') ?>">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -160,7 +225,7 @@ $navItems = [
                 <nav class="hidden lg:flex items-center space-x-8">
                     <?php foreach ($navItems as $item): ?>
                     <?php
-                        $isActive = strpos($currentPath, $item['url']) !== false;
+                        $isActive = strpos($currentPath, '/' . rtrim($item['url'] === 'works' ? 'work/' : $item['url'], '/')) !== false;
                         $activeClass = $isActive ? 'text-primary-600 bg-primary-50' : 'text-gray-600 hover:text-primary-600';
                         ?>
                         <a href="<?= url($item['url']) ?>"
@@ -169,6 +234,9 @@ $navItems = [
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="<?= $item['icon'] ?>" />
                             </svg>
                             <span><?= $item['label'] ?></span>
+                            <?php if ($item['url'] === 'chat' && $unreadChatCount > 0): ?>
+                                <span class="ml-1 min-w-[1.25rem] h-5 px-1 bg-red-500 text-white text-xs rounded-full inline-flex items-center justify-center" aria-label="未読<?= (int)$unreadChatCount ?>件"><?= $unreadChatCount > 99 ? '99+' : (int)$unreadChatCount ?></span>
+                            <?php endif; ?>
                         </a>
                     <?php endforeach; ?>
                 </nav>
@@ -240,7 +308,7 @@ $navItems = [
 
                 <!-- Mobile menu button -->
                 <div class="lg:hidden">
-                    <button type="button" id="mobile-menu-button" onclick="openMobileMenu()"
+                    <button type="button" id="mobile-menu-button" onclick="openMobileMenu()" aria-label="メニューを開く" aria-controls="mobile-menu"
                             class="p-2 text-gray-600 hover:text-primary-600 hover:bg-gray-100 rounded-md">
                         <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
@@ -302,7 +370,7 @@ $navItems = [
                         <!-- Main Navigation -->
                         <?php foreach ($navItems as $item): ?>
                                 <?php 
-                                    $isActive = strpos($currentPath, $item['url']) !== false; 
+                                    $isActive = strpos($currentPath, '/' . rtrim($item['url'] === 'works' ? 'work/' : $item['url'], '/')) !== false; 
                             $activeClass = $isActive ? 'bg-primary-50 text-primary-600 border-primary-200' : 'text-gray-700 hover:bg-gray-50 border-transparent';
                                 ?>
                                     <a href="<?= url($item['url']) ?>" 
@@ -311,8 +379,8 @@ $navItems = [
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="<?= $item['icon'] ?>" />
                                             </svg>
                                 <span class="font-medium"><?= $item['label'] ?></span>
-                                <?php if (isLoggedIn() && $item['url'] === 'chats'): ?>
-                                    <span id="mobile-chat-badge" class="ml-auto w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center hidden">0</span>
+                                <?php if ($item['url'] === 'chat' && $unreadChatCount > 0): ?>
+                                    <span id="mobile-chat-badge" class="ml-auto min-w-[1.25rem] h-5 px-1 bg-red-500 text-white text-xs rounded-full flex items-center justify-center" aria-label="未読<?= (int)$unreadChatCount ?>件"><?= $unreadChatCount > 99 ? '99+' : (int)$unreadChatCount ?></span>
                                         <?php endif; ?>
                                     </a>
                                 <?php endforeach; ?>
@@ -415,6 +483,26 @@ $navItems = [
     </header>
 
     <main class="min-h-screen">
+        <?php
+        // 各ページで setFlash() したメッセージをここで1回だけ表示する
+        $__flashes = function_exists('getFlash') ? getFlash() : [];
+        if (!empty($__flashes)):
+            $__flashStyles = [
+                'success' => 'bg-green-50 border-green-200 text-green-800',
+                'warning' => 'bg-yellow-50 border-yellow-200 text-yellow-800',
+                'info'    => 'bg-blue-50 border-blue-200 text-blue-800',
+                'error'   => 'bg-red-50 border-red-200 text-red-800',
+            ];
+        ?>
+            <div class="max-w-4xl mx-auto px-4 pt-4 space-y-2" id="flash-messages">
+                <?php foreach ($__flashes as $__type => $__msg): if (!is_string($__msg) || $__msg === '') continue; ?>
+                    <div class="flex items-start justify-between gap-3 rounded-xl border px-4 py-3 text-sm <?= $__flashStyles[$__type] ?? $__flashStyles['info'] ?>" role="<?= $__type === 'error' ? 'alert' : 'status' ?>">
+                        <p class="leading-relaxed"><?= nl2br(h($__msg)) ?></p>
+                        <button type="button" class="shrink-0 opacity-60 hover:opacity-100" aria-label="閉じる" onclick="this.parentElement.remove()">×</button>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
         <!-- ページコンテンツはここに入ります -->
 
     <script>

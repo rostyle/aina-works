@@ -16,7 +16,7 @@ $stats = [
     'works' => $db->selectOne("SELECT COUNT(*) as count FROM works WHERE status = 'published'")['count'] ?? 0,
     'jobs_completed' => $db->selectOne("SELECT COUNT(*) as count FROM jobs WHERE status = 'completed'")['count'] ?? 0,
     'categories' => $db->selectOne("SELECT COUNT(*) as count FROM categories WHERE is_active = 1")['count'] ?? 0,
-    'satisfaction_rate' => $db->selectOne("SELECT ROUND((AVG(rating) / 5) * 100) as rate FROM reviews")['rate'] ?? 0,
+    'satisfaction_rate' => $db->selectOne("SELECT ROUND((AVG(rating) / 5) * 100) as rate FROM reviews")['rate'] ?? null,
 ];
 
 // カテゴリ取得
@@ -47,7 +47,7 @@ include 'includes/header.php';
 ?>
 
 <!-- Classic Hero Section with Animation -->
-<section class="relative min-h-screen flex items-center justify-center overflow-hidden bg-slate-900 text-white">
+<section class="relative min-h-[70vh] md:min-h-screen flex items-center justify-center overflow-hidden bg-slate-900 text-white">
     <!-- Animated Background Image -->
     <div class="absolute inset-0 z-0">
         <div class="absolute inset-0 bg-cover bg-center animate-ken-burns transform-gpu" 
@@ -100,7 +100,7 @@ include 'includes/header.php';
                         placeholder="キーワードで検索 (例: LP制作, 動画編集...)"
                         autocomplete="off"
                     >
-                    <button type="submit" class="hidden md:flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-full font-bold transition-all shadow-lg hover:shadow-blue-500/30 transform hover:-translate-y-0.5 h-12 mr-1">
+                    <button type="submit" aria-label="検索" class="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 md:px-8 py-3 rounded-full font-bold transition-all shadow-lg hover:shadow-blue-500/30 transform hover:-translate-y-0.5 h-12 mr-1">
                         検索
                     </button>
                 </div>
@@ -121,10 +121,12 @@ include 'includes/header.php';
                 <div class="text-3xl font-bold text-white"><?= number_format($stats['jobs_completed']) ?>+</div>
                 <div class="text-sm text-slate-300/80 mt-1 uppercase tracking-wider font-medium">Projects</div>
             </div>
+            <?php if ($stats['satisfaction_rate'] !== null): ?>
             <div class="group">
-                <div class="text-3xl font-bold text-white"><?= $stats['satisfaction_rate'] ?>%</div>
+                <div class="text-3xl font-bold text-white"><?= (int)$stats['satisfaction_rate'] ?>%</div>
                 <div class="text-sm text-slate-300/80 mt-1 uppercase tracking-wider font-medium">Satisfaction</div>
             </div>
+            <?php endif; ?>
         </div>
     </div>
 
@@ -162,7 +164,6 @@ include 'includes/header.php';
 
 <!-- Categories Bento Grid Section -->
 <section class="py-32 bg-slate-50 relative overflow-hidden" aria-labelledby="categories-heading">
-    <div class="absolute inset-0 bg-[url('<?= asset('images/grid.svg') ?>')] opacity-[0.05]"></div>
     
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
         <div class="text-center mb-20 animate-on-scroll">
@@ -275,7 +276,7 @@ include 'includes/header.php';
                 <div class="group relative flex flex-col gap-4 animate-on-scroll">
                     <!-- Image Card -->
                     <div class="relative aspect-[4/3] rounded-2xl overflow-hidden bg-slate-100">
-                        <img src="<?= h($work['main_image']) ?>" 
+                        <img src="<?= h(uploaded_asset($work['main_image'] ?? '')) ?>" loading="lazy" 
                              alt="<?= h($work['title']) ?>" 
                              class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 will-change-transform">
                         
@@ -315,7 +316,7 @@ include 'includes/header.php';
 
                         <div class="flex items-center justify-between pt-2">
                             <div class="flex items-center gap-2">
-                                <img src="<?= h($work['creator_image'] ?? asset('images/default-avatar.png')) ?>" 
+                                <img src="<?= h(uploaded_asset($work['creator_image'] ?? '')) ?>" loading="lazy" 
                                      alt="<?= h($work['creator_name']) ?>" 
                                      class="w-6 h-6 rounded-full object-cover ring-2 ring-white shadow-sm">
                                 <span class="text-sm text-slate-600"><?= h($work['creator_name']) ?></span>
@@ -387,10 +388,12 @@ include 'includes/header.php';
                         <div class="text-4xl font-bold text-white mb-2"><?= number_format($stats['jobs_completed']) ?>+</div>
                         <div class="text-sm text-slate-400">マッチング成立</div>
                     </div>
+                    <?php if ($stats['satisfaction_rate'] !== null): ?>
                     <div>
-                        <div class="text-4xl font-bold text-white mb-2"><?= $stats['satisfaction_rate'] ?>%</div>
+                        <div class="text-4xl font-bold text-white mb-2"><?= (int)$stats['satisfaction_rate'] ?>%</div>
                         <div class="text-sm text-slate-400">クライアント満足度</div>
                     </div>
+                    <?php endif; ?>
                 </div>
             </div>
             
@@ -434,7 +437,6 @@ include 'includes/header.php';
 
 <!-- Magnetic CTA Section -->
 <section class="py-32 relative flex items-center justify-center overflow-hidden bg-white text-center">
-    <div class="absolute inset-0 opacity-[0.03] bg-[url('<?= asset('images/grid.svg') ?>')]"></div>
     
     <div class="max-w-4xl mx-auto px-4 relative z-10 animate-on-scroll">
         <h2 class="text-5xl md:text-7xl font-bold text-slate-900 mb-8 tracking-tight">
@@ -443,24 +445,24 @@ include 'includes/header.php';
         
         <p class="text-xl md:text-2xl text-slate-500 mb-12 max-w-2xl mx-auto">
             あなたの才能が、誰かの未来を変える。<br />
-            まずは無料で、新しい一歩を踏み出しましょう。
+            AiNAマイページと同じアカウントで、すぐに始められます。
         </p>
         
         <div class="flex flex-col sm:flex-row gap-6 justify-center items-center">
             <!-- Buttons are rendered by header, but we can add secondary CTA here if needed -->
             <!-- Using a 'magnetic' button style -->
-            <a href="<?= url('register') ?>" class="group relative px-8 py-4 bg-slate-900 rounded-full text-white font-bold text-lg overflow-hidden shadow-2xl hover:shadow-blue-500/50 transition-shadow duration-300">
+            <a href="<?= isLoggedIn() ? url('jobs') : url('login') ?>" class="group relative px-8 py-4 bg-slate-900 rounded-full text-white font-bold text-lg overflow-hidden shadow-2xl hover:shadow-blue-500/50 transition-shadow duration-300">
                 <div class="absolute inset-0 w-full h-full bg-gradient-to-r from-blue-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 <span class="relative flex items-center gap-2">
-                    今すぐ登録する
+                    <?= isLoggedIn() ? '募集中の案件を見る' : 'ログインして始める' ?>
                     <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
                     </svg>
                 </span>
             </a>
             
-            <a href="<?= url('about') ?>" class="text-slate-500 hover:text-slate-900 font-medium transition-colors">
-                AiNA Worksについて知る
+            <a href="<?= url('post-job') ?>" class="text-slate-500 hover:text-slate-900 font-medium transition-colors">
+                仕事を依頼する
             </a>
         </div>
     </div>

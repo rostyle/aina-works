@@ -29,65 +29,58 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         // エラーがない場合はパスワードリセット処理
-        if (empty($errors)) {
+        if (empty($errors) && !rateLimitAllow('pw_reset', strtolower($email) . '|' . clientIp(), 3, 3600)) {
+            // 回数を超えても結果は同じ表示にする（登録の有無を推測させない）
+            $success = true;
+        } elseif (empty($errors)) {
             try {
                 $db = Database::getInstance();
-                
-                // ユーザーが存在するかチェック
+
                 $user = $db->selectOne(
-                    "SELECT id, email, full_name FROM users WHERE email = ? AND is_active = 1",
+                    "SELECT id, email, full_name, aina_user_id FROM users WHERE email = ? AND is_active = 1",
                     [$email]
                 );
-                
-                if ($user) {
-                    // パスワードリセットトークンを生成
+
+                if ($user && !empty($user['aina_user_id'])) {
+                    // マイページ会員はマイページのパスワードでログインする。ここではローカルパスワードを作らない
+                    $subject = "【AiNA Works】ログインについてのご案内";
+                    $message = "AiNA Works は AiNAマイページと同じメールアドレス・パスワードでログインします。\n\n";
+                    $message .= "パスワードをお忘れの場合は、AiNAマイページのログイン画面から再設定してください。\n";
+                    $message .= "再設定したパスワードで AiNA Works にもログインできます。";
+                    sendNotificationMail($email, $subject, $message, AINA_MYPAGE_URL, 'AiNAマイページを開く');
+                    $success = true;
+                } elseif ($user) {
+                    // マイページに紐づかないアカウント（管理者・法人など）だけ、ここで再設定する
                     $token = bin2hex(random_bytes(32));
-                    $expiresAt = date('Y-m-d H:i:s', time() + 3600); // 1時間後に期限切れ
-                    
-                    // 既存の未使用トークンを削除
+                    $expiresAt = date('Y-m-d H:i:s', time() + 3600);
+
                     $db->delete(
                         "DELETE FROM password_resets WHERE email = ? AND used_at IS NULL",
                         [$email]
                     );
-                    
-                    // 新しいトークンを保存
                     $db->insert(
                         "INSERT INTO password_resets (email, token, expires_at) VALUES (?, ?, ?)",
-                        [$email, $token, $expiresAt]
+                        [$email, hash('sha256', $token), $expiresAt]
                     );
-                    
-                    // パスワードリセットメール送信
-                    $resetUrl = url("reset-password.php?token=" . $token, true);
-                    $subject = "【AiNA Works】パスワードリセットのご案内";
-                    $message = "パスワードリセットのリクエストを受け付けました。\n\n";
-                    $message .= "以下のボタンをクリックしてパスワードをリセットしてください。\n\n";
-                    $message .= "このリンクは1時間後に期限切れとなります。\n\n";
-                    $message .= "もしこのリクエストに心当たりがない場合は、このメールを無視してください。\n";
-                    $message .= "あなたのアカウントは安全に保護されています。";
-                    
-                    // PHPMyAdmin確認用：メール内容をログに記録
-                    error_log("=== パスワードリセットメール ===");
-                    error_log("宛先: " . $email);
-                    error_log("件名: " . $subject);
-                    error_log("リセットURL: " . $resetUrl);
-                    error_log("トークン: " . $token);
-                    error_log("有効期限: " . $expiresAt);
-                    error_log("========================");
-                    
-                    // PHPMailerでメール送信
-                    if (sendNotificationMail($email, $subject, $message, $resetUrl, 'パスワードをリセットする')) {
-                        $success = true;
-                    } else {
-                        $errors[] = 'メール送信に失敗しました。再度お試しください。';
+
+                    $resetUrl = url("reset-password?token=" . $token, true);
+                    $subject = "【AiNA Works】パスワード再設定のご案内";
+                    $message = "パスワード再設定のリクエストを受け付けました。\n\n";
+                    $message .= "下のボタンから新しいパスワードを設定してください。\n";
+                    $message .= "このリンクの有効期限は1時間です。\n\n";
+                    $message .= "お心当たりがない場合は、このメールを破棄してください。パスワードは変わりません。";
+
+                    if (!sendNotificationMail($email, $subject, $message, $resetUrl, 'パスワードを再設定する')) {
+                        error_log('パスワード再設定メールの送信に失敗 (user_id=' . $user['id'] . ')');
                     }
+                    $success = true;
                 } else {
-                    // セキュリティのため、存在しないメールアドレスでも成功メッセージを表示
+                    // 登録の有無を推測させないため同じ表示にする
                     $success = true;
                 }
-                
             } catch (Exception $e) {
                 error_log("パスワードリセットエラー: " . $e->getMessage());
-                $errors[] = 'パスワードリセットの処理に失敗しました。再度お試しください。';
+                $errors[] = 'パスワード再設定の処理に失敗しました。時間をおいて再度お試しください。';
             }
         }
     }
@@ -101,14 +94,17 @@ include 'includes/header.php';
     <div class="max-w-md w-full space-y-8">
         <div>
             <div class="mx-auto h-12 w-12 flex items-center justify-center rounded-full bg-gradient-to-r from-blue-600 to-purple-600">
-                <span class="text-white font-bold text-xl">CM</span>
+                <span class="text-white font-bold text-xl">AW</span>
             </div>
             <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
                 パスワードをお忘れですか？
             </h2>
             <p class="mt-2 text-center text-sm text-gray-600">
-                登録したメールアドレスを入力してください。<br>
-                パスワードリセット用のリンクをお送りします。
+                AiNA Works は <strong>AiNAマイページと同じメールアドレス・パスワード</strong>でログインします。<br>
+                お忘れの場合は <a href="<?= h(AINA_MYPAGE_URL) ?>" class="text-blue-600 underline" target="_blank" rel="noopener">AiNAマイページ</a> で再設定してください。
+            </p>
+            <p class="mt-2 text-center text-xs text-gray-500">
+                マイページ会員ではない法人アカウントの方は、下にメールアドレスを入力してください。再設定用のリンクをお送りします。
             </p>
         </div>
 
@@ -119,12 +115,8 @@ include 'includes/header.php';
                         <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
                     </svg>
                     <div class="text-sm text-green-700">
-                        <p class="font-medium">メールを送信しました</p>
-                        <p class="mt-1">パスワードリセット用のリンクをメールでお送りしました。メールをご確認ください。</p>
-                        <p class="mt-2 text-xs text-green-600">
-                            ※開発環境では実際のメール送信は行われません。<br>
-                            サーバーログまたはPHPMyAdminでメール内容を確認してください。
-                        </p>
+                        <p class="font-medium">ご案内を送りました</p>
+                        <p class="mt-1">ご登録のメールアドレスあてに、ログインのご案内をお送りしました。届かない場合は迷惑メールフォルダもご確認ください。</p>
                     </div>
                 </div>
             </div>

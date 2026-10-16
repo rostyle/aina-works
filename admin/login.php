@@ -42,13 +42,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if (isAdminUser()) {
                         redirect('./' . $redirectParam);
                     } else {
-                        // 管理者権限がない場合はログアウトしてエラー
-                        $_SESSION = [];
-                        if (isset($_COOKIE[session_name()])) {
-                            setcookie(session_name(), '', time() - 42000, '/');
-                        }
-                        session_destroy();
-                        $errors['general'] = '管理者権限がありません。';
+                        // 管理者でなければ管理画面には入れない（サイト本体のログインはそのまま）
+                        $errors['general'] = 'このアカウントには管理者権限がありません。';
                     }
                 } else {
                     $errors['general'] = $loginResult['message'] ?? 'ログインに失敗しました。';

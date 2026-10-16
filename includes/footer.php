@@ -74,6 +74,18 @@
                             </svg>
                             プライバシーポリシー
                         </a></li>
+                        <li><a href="<?= url('terms#contact') ?>" class="text-gray-300 hover:text-white transition-colors duration-300 flex items-center group">
+                            <svg class="w-4 h-4 mr-2 text-gray-500 group-hover:text-primary-400 transition-colors duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                            </svg>
+                            お問い合わせ
+                        </a></li>
+                        <li><a href="https://ai-na.co.jp/" target="_blank" rel="noopener" class="text-gray-300 hover:text-white transition-colors duration-300 flex items-center group">
+                            <svg class="w-4 h-4 mr-2 text-gray-500 group-hover:text-primary-400 transition-colors duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                            </svg>
+                            運営会社
+                        </a></li>
                     </ul>
                 </div>
             </div>
@@ -89,8 +101,8 @@
                             <a href="<?= url('terms') ?>" class="text-gray-400 hover:text-white transition-colors duration-300">利用規約</a>
                             <span class="text-gray-600">•</span>
                             <a href="<?= url('privacy') ?>" class="text-gray-400 hover:text-white transition-colors duration-300">プライバシーポリシー</a>
-                            <!-- <span class="text-gray-600">•</span>
-                            <a href="<?= url('contact.php') ?>" class="text-gray-400 hover:text-white transition-colors duration-300">お問い合わせ</a> -->
+                            <span class="text-gray-600">•</span>
+                            <a href="<?= url('terms#contact') ?>" class="text-gray-400 hover:text-white transition-colors duration-300">お問い合わせ</a>
                         </div>
                     </div>
                     
@@ -380,13 +392,18 @@
             const notification = document.createElement('div');
             notification.className = `fixed top-24 right-4 z-50 p-4 rounded-2xl shadow-xl backdrop-blur-lg border max-w-sm transform translate-x-full transition-all duration-300 ${getNotificationClasses(type)}`;
             
+            // メッセージは必ずテキストとして扱う（改行のみ<br>に変換）
+            const safeMessage = String(message ?? '')
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;').replace(/'/g, '&#39;')
+                .replace(/\n/g, '<br>');
             notification.innerHTML = `
                 <div class="flex items-start space-x-3">
                     <div class="flex-shrink-0">
                         ${getNotificationIcon(type)}
                     </div>
                     <div class="flex-1 min-w-0">
-                        <p class="text-sm font-medium text-gray-900">${message}</p>
+                        <p class="text-sm font-medium text-gray-900">${safeMessage}</p>
                     </div>
                     <button onclick="this.parentElement.parentElement.remove()" 
                             class="flex-shrink-0 p-1 text-gray-400 hover:text-gray-600 rounded-lg transition-colors duration-200">
@@ -440,7 +457,6 @@
             initHeaderScrollEffect();
             initSmoothScrolling();
             initScrollAnimations();
-            initNewsletterSignup();
             
             // フォームローディングは loading.js の initFormLoadingHandlers() で処理される
             // 既存のコードは新しいシステムに置き換え済み

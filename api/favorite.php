@@ -22,6 +22,10 @@ if (!$input) {
     ErrorHandler::jsonError('無効なJSONデータです', 400, null, 'INVALID_JSON');
 }
 
+if (!verifyCsrfToken(csrfTokenFromRequest($input))) {
+    ErrorHandler::jsonCsrfError(Messages::CSRF_INVALID);
+}
+
 $action = $input['action'] ?? '';
 $targetType = $input['target_type'] ?? '';
 $targetId = (int)($input['target_id'] ?? 0);
@@ -50,6 +54,10 @@ if (!$validation->isValid) {
 
 $db = Database::getInstance();
 
+if (!rateLimitAllow('favorite_toggle', (string)$user['id'], 60, 3600)) {
+    ErrorHandler::jsonError('短時間に操作が続いています。少し時間をおいてからお試しください。', 429, null, 'RATE_LIMITED');
+}
+
 try {
     if ($action === 'add') {
         // お気に入りに追加
@@ -66,13 +74,13 @@ try {
         }
         
         // 自分自身をお気に入りに追加できないようにする
-        if ($targetType === 'creator' && $targetId === $user['id']) {
+        if ($targetType === 'creator' && $targetId === (int)$user['id']) {
             ErrorHandler::jsonError(Messages::USER_SELF_OPERATION, 400, null, 'OWN_RESOURCE');
         }
         
         if ($targetType === 'work') {
             $work = $db->selectOne("SELECT user_id FROM works WHERE id = ?", [$targetId]);
-            if ($work && $work['user_id'] === $user['id']) {
+            if ($work && (int)$work['user_id'] === (int)$user['id']) {
                 ErrorHandler::jsonError('自分の作品をお気に入りに追加することはできません', 400, null, 'OWN_RESOURCE');
             }
         }
@@ -93,8 +101,11 @@ try {
             [$user['id'], $targetType, $targetId]
         );
         
-        // 対象者にメール通知を送信
+        // 対象者にメール通知（同じ人から同じ対象へは30日に1通まで。追加・解除の繰り返しでメールを連打させない）
         try {
+            if (!rateLimitAllow('favorite_mail', $user['id'] . ':' . $targetType . ':' . $targetId, 1, 86400 * 30)) {
+                ErrorHandler::jsonSuccess('お気に入りに追加しました', ['is_favorite' => true]);
+            }
             if ($targetType === 'creator') {
                 $targetUser = $db->selectOne(
                     "SELECT email, full_name FROM users WHERE id = ?",
@@ -126,7 +137,7 @@ try {
                     $message .= "素晴らしい作品が評価されています！\n";
                     $message .= "引き続き魅力的な作品を投稿して、さらに多くの人にアピールしましょう。";
                     
-                    $actionUrl = url('works', true);
+                    $actionUrl = url('work-detail?id=' . $targetId, true);
                     sendNotificationMail($workOwner['email'], $subject, $message, $actionUrl, 'あなたの作品を見る');
                 }
             }

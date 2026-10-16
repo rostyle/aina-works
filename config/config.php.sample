@@ -9,8 +9,18 @@ if (!headers_sent()) {
  * AiNA Works 設定ファイル
  */
 
-// セッション開始
+// セッション開始（Cookie は JavaScript から読めず、他サイトからの送信に付かない設定にする）
 if (session_status() === PHP_SESSION_NONE) {
+	$__https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+		|| strtolower((string)($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https';
+	session_set_cookie_params([
+		'lifetime' => 0,
+		'path' => '/',
+		'secure' => $__https,
+		'httponly' => true,
+		'samesite' => 'Lax',
+	]);
+	ini_set('session.use_strict_mode', '1');
 	session_start();
 }
 
@@ -75,15 +85,36 @@ define('DB_USER', $_ENV['DB_USER'] ?? 'root');
 define('DB_PASS', $_ENV['DB_PASS'] ?? '');
 
 // セキュリティ設定
-define('SECRET_KEY', $_ENV['SECRET_KEY'] ?? 'your_secret_key_here');
+define('SECRET_KEY', $_ENV['SECRET_KEY'] ?? '');
 define('UPLOAD_PATH', BASE_PATH . '/storage/app/uploads');
 define('UPLOAD_MAX_SIZE', (int)($_ENV['UPLOAD_MAX_SIZE'] ?? 5242880)); // 5MB
 define('ALLOWED_EXTENSIONS', explode(',', $_ENV['ALLOWED_EXTENSIONS'] ?? 'jpg,jpeg,png,gif,pdf'));
 define('ALLOWED_MIME_TYPES', explode(',', $_ENV['ALLOWED_MIME_TYPES'] ?? 'image/jpeg,image/png,image/gif,application/pdf'));
 
 // AiNA API設定
-define('AINA_API_BASE_URL', $_ENV['AINA_API_BASE_URL'] ?? 'https://backend.ai-na.co.jp/api');
-define('AINA_API_KEY', $_ENV['AINA_API_KEY'] ?? 'your_api_key_here');
+define('AINA_API_BASE_URL', $_ENV['AINA_API_BASE_URL'] ?? 'https://mypage.ai-na.co.jp/api/external');
+define('AINA_API_KEY', $_ENV['AINA_API_KEY'] ?? '');
+
+// メール送信（PHPMailer）
+define('MAIL_HOST', $_ENV['MAIL_HOST'] ?? '');
+define('MAIL_PORT', (int)($_ENV['MAIL_PORT'] ?? 587));
+define('MAIL_USERNAME', $_ENV['MAIL_USERNAME'] ?? '');
+define('MAIL_PASSWORD', $_ENV['MAIL_PASSWORD'] ?? '');
+define('MAIL_ENCRYPTION', $_ENV['MAIL_ENCRYPTION'] ?? 'tls');
+define('MAIL_FROM_ADDRESS', $_ENV['MAIL_FROM_ADDRESS'] ?? '');
+define('MAIL_FROM_NAME', $_ENV['MAIL_FROM_NAME'] ?? 'AiNA Works');
+
+// Gemini（モデル名は includes/gemini_model.php が旧名を現行名に読み替える）
+define('GEMINI_API_BASE_URL', $_ENV['GEMINI_API_BASE_URL'] ?? 'https://generativelanguage.googleapis.com/v1beta');
+define('GEMINI_API_KEY', $_ENV['GEMINI_API_KEY'] ?? '');
+define('GEMINI_MODEL', $_ENV['GEMINI_MODEL'] ?? '');
+define('GEMINI_REQUEST_TIMEOUT', (int)($_ENV['GEMINI_REQUEST_TIMEOUT'] ?? 20));
+define('GEMINI_MAX_TOKENS', (int)($_ENV['GEMINI_MAX_TOKENS'] ?? 2048));
+define('GEMINI_TEMPERATURE', (float)($_ENV['GEMINI_TEMPERATURE'] ?? 0.7));
+
+// LINE 求人取り込みBot
+define('DEMI_LINE_CHANNEL_SECRET', $_ENV['DEMI_LINE_CHANNEL_SECRET'] ?? '');
+define('DEMI_LINE_CHANNEL_ACCESS_TOKEN', $_ENV['DEMI_LINE_CHANNEL_ACCESS_TOKEN'] ?? '');
 
 // 認証設定
 // ステータスID: 3=アクティブ会員のみを許可

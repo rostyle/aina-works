@@ -3,6 +3,10 @@
  * 共通関数
  */
 
+if (!defined('AINA_MYPAGE_URL')) {
+    define('AINA_MYPAGE_URL', 'https://mypage.ai-na.co.jp/');
+}
+
 /**
  * HTMLエスケープ
  */
@@ -31,6 +35,10 @@ function url($path = '', $absolute = false) {
 
     // 末尾のスラッシュをトリミング（ルート以外）
     $finalPath = ltrim($basePathPart, '/');
+    // 作品一覧の正規URLは /work/（/works は .htaccess で /work/ へ301されるため、最初から正規URLを出す）
+    if ($finalPath === 'works' || $finalPath === 'works.php') {
+        $finalPath = 'work/';
+    }
     if ($query !== '') {
         $finalPath .= '?' . $query;
     }
@@ -75,6 +83,11 @@ function uploaded_asset($path) {
     // 外部URLの場合はそのまま返す
     if (preg_match('/^https?:\/\//', $path)) {
         return $path;
+    }
+
+    // 同梱の画像（既定アバターなど）は assets から返す
+    if (strpos(ltrim($path, '/'), 'assets/') === 0) {
+        return asset(substr(ltrim($path, '/'), strlen('assets/')));
     }
     
     // ベースURLのパス部分を取得
@@ -177,7 +190,58 @@ function generateCsrfToken() {
  * CSRFトークン検証
  */
 function verifyCsrfToken($token) {
-    return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
+    return is_string($token)
+        && $token !== ''
+        && isset($_SESSION['csrf_token'])
+        && is_string($_SESSION['csrf_token'])
+        && hash_equals($_SESSION['csrf_token'], $token);
+}
+
+/**
+ * リクエストからCSRFトークンを取り出す（フォーム・JSON本文・X-CSRF-Tokenヘッダの順）
+ */
+function csrfTokenFromRequest(?array $jsonInput = null): string {
+    $candidates = [
+        $_POST['csrf_token'] ?? null,
+        is_array($jsonInput) ? ($jsonInput['csrf_token'] ?? null) : null,
+        $_SERVER['HTTP_X_CSRF_TOKEN'] ?? null,
+    ];
+    foreach ($candidates as $c) {
+        if (is_string($c) && $c !== '') {
+            return $c;
+        }
+    }
+    return '';
+}
+
+/**
+ * ログイン後などの遷移先をサイト内に限定する（外部URLへのリダイレクトを防ぐ）
+ */
+function safeRedirectUrl($target, string $default = 'dashboard'): string {
+    $target = is_string($target) ? trim($target) : '';
+    if ($target === '' || preg_match('/[\x00-\x1f\\\\]/', $target)) {
+        return url($default);
+    }
+    if (preg_match('#^[a-z][a-z0-9+.-]*:#i', $target) || strpos($target, '//') === 0) {
+        $parts = parse_url($target);
+        $siteHost = parse_url(BASE_URL, PHP_URL_HOST);
+        $reqHost = $_SERVER['HTTP_HOST'] ?? '';
+        $host = $parts['host'] ?? '';
+        if ($host === '' || (strcasecmp($host, (string)$siteHost) !== 0 && strcasecmp($host, $reqHost) !== 0)
+            || !in_array(strtolower($parts['scheme'] ?? 'https'), ['http', 'https'], true)) {
+            return url($default);
+        }
+        $target = ($parts['path'] ?? '/') . (isset($parts['query']) ? '?' . $parts['query'] : '');
+    }
+    $sitePath = rtrim(parse_url(BASE_URL, PHP_URL_PATH) ?? '', '/');
+    if ($sitePath !== '' && strpos($target, $sitePath . '/') === 0) {
+        $target = substr($target, strlen($sitePath));
+    }
+    $target = ltrim($target, '/');
+    if ($target === '' || preg_match('#^(login|logout)(\.php)?($|[?/])#', $target)) {
+        return url($default);
+    }
+    return url($target);
 }
 
 /**
@@ -231,34 +295,23 @@ function getUserRoles($userId = null) {
 }
 
 /**
- * 現在のアクティブロール取得（簡素化版）
+ * 表示用の主な役割（クリエイター＞依頼者＞未設定）
  */
 function getCurrentRole() {
     if (!isLoggedIn()) {
         return null;
     }
-    
-    // API認証ユーザーはデフォルトで'member'
+    $user = getCurrentUser();
+    if (!$user) {
+        return null;
+    }
+    if (!empty($user['is_creator'])) {
+        return 'creator';
+    }
+    if (!empty($user['is_client'])) {
+        return 'client';
+    }
     return 'member';
-}
-
-/**
- * ロール切り替え
- */
-function switchRole($newRole) {
-    if (!isLoggedIn()) {
-        return false;
-    }
-    
-    $availableRoles = getUserRoles();
-    if (!in_array($newRole, $availableRoles)) {
-        return false;
-    }
-    
-    // セッションのロールを更新（DBカラムは廃止のためセッションのみ）
-    $_SESSION['active_role'] = $newRole;
-
-    return true;
 }
 
 /**
@@ -268,18 +321,13 @@ function hasPermission($permission) {
     if (!isLoggedIn()) {
         return false;
     }
-    
-    $currentRole = getCurrentRole();
-    if (!$currentRole) return false;
-    
-    // 基本的な権限チェック（現在のアクティブロールに基づく）
     switch ($permission) {
         case 'create_work':
             return isUserCreator();
         case 'post_job':
-            return isUserClient() || $currentRole === 'sales';
+            return true; // ログイン会員なら誰でも投稿できる（投稿すると依頼者になる）
         case 'admin':
-            return $currentRole === 'admin';
+            return isAdminUser();
         default:
             return false;
     }
@@ -693,47 +741,6 @@ function show500Error($message = 'サーバーエラーが発生しました') {
 }
 
 /**
- * ページの存在確認
- */
-function checkPageExists($pageName) {
-    $pageFile = BASE_PATH . '/' . $pageName . '.php';
-    return file_exists($pageFile);
-}
-
-/**
- * 許可されたページかチェック
- */
-function isAllowedPage($pageName) {
-    // 許可されたページのリスト
-    $allowedPages = [
-        'index', 'login', 'dashboard', 'profile', 'works', 'jobs',
-        'creators', 'creator-profile', 'job-detail', 'work-detail', 'post-job',
-        'edit-job', 'edit-work', 'job-applications', 'favorites', 'chat', 'chats',
-        'success-stories', 'terms', 'privacy', 'forgot-password', 'reset-password',
-        'logout', 'switch-role', 'serve'
-    ];
-    
-    return in_array($pageName, $allowedPages);
-}
-
-/**
- * ページアクセス制御
- */
-function validatePageAccess($pageName) {
-    // ページが存在しない場合
-    if (!checkPageExists($pageName)) {
-        show404Error('指定されたページは存在しません');
-    }
-    
-    // 許可されていないページの場合
-    if (!isAllowedPage($pageName)) {
-        show403Error('このページへのアクセスは許可されていません');
-    }
-    
-    return true;
-}
-
-/**
  * メール送信関数（PHPMailer使用）
  */
 function sendMail($to, $subject, $body, $isHtml = false) {
@@ -958,8 +965,6 @@ function authenticateWithAinaApi($email, $password = null) {
         'password' => $password
     ]);
     
-    // デバッグログ（メールアドレスとパスワードの長さのみ記録）
-    error_log('AiNA API認証開始: Email=' . $email . ', Email長=' . strlen($email) . ', Password長=' . strlen($password));
     
     $response = null;
     $httpStatus = 0;
@@ -1017,11 +1022,11 @@ function authenticateWithAinaApi($email, $password = null) {
     }
     
     if ($httpStatus >= 400) {
-        error_log('AiNA API HTTPエラー: Status ' . $httpStatus . ' Response: ' . $response);
+        error_log('AiNA API HTTPエラー: Status ' . $httpStatus);
         
         // 401エラーの場合でも、ユーザーには一時的な問題として再試行を促す
         if ($httpStatus === 401) {
-            error_log('AiNA API認証エラー(401): 詳細はログを確認してください - Email: ' . $email);
+            error_log('AiNA API認証エラー(401)');
             return [
                 'success' => false,
                 'message' => 'ログインに失敗しました。メールアドレスとパスワードを確認して、しばらく時間をおいて再度お試しください。',
@@ -1039,7 +1044,7 @@ function authenticateWithAinaApi($email, $password = null) {
     $data = json_decode($response, true);
     
     if (!$data) {
-        error_log('AiNA API応答エラー: JSONデコードに失敗 - ' . $response);
+        error_log('AiNA API応答エラー: JSONデコードに失敗 (length=' . strlen((string)$response) . ')');
         return [
             'success' => false, 
             'message' => 'サーバーからの応答が正しくありません。管理者にお問い合わせください。',
@@ -1048,7 +1053,7 @@ function authenticateWithAinaApi($email, $password = null) {
     }
     
     if (!isset($data['result'])) {
-        error_log('AiNA API応答エラー: resultフィールドが存在しません - ' . json_encode($data));
+        error_log('AiNA API応答エラー: resultフィールドが存在しません');
         return [
             'success' => false, 
             'message' => 'サーバーからの応答形式が正しくありません。',
@@ -1094,7 +1099,7 @@ function authenticateWithAinaApi($email, $password = null) {
     
     // 新API: userオブジェクト（配列ではなく単体オブジェクト）
     if (empty($data['user']) || !is_array($data['user'])) {
-        error_log('AiNA API応答エラー: userデータが存在しないか不正です - ' . json_encode($data));
+        error_log('AiNA API応答エラー: userデータが存在しないか不正です');
         return [
             'success' => false, 
             'message' => 'ユーザー情報を取得できませんでした。',
@@ -1104,14 +1109,12 @@ function authenticateWithAinaApi($email, $password = null) {
     
     $user = $data['user'];
     
-    // デバッグ: APIレスポンス全体をログに記録（nameフィールドの有無を確認）
-    error_log('AiNA APIレスポンス - userデータ: ' . json_encode($user, JSON_UNESCAPED_UNICODE));
     
     // 必要なフィールドの存在確認（新APIはid, email, name, status_id, plan_idを返す）
     $requiredFields = ['id', 'email'];
     foreach ($requiredFields as $field) {
         if (!isset($user[$field])) {
-            error_log('AiNA API応答エラー: 必要なフィールド ' . $field . ' が存在しません - ' . json_encode($user));
+            error_log('AiNA API応答エラー: 必要なフィールド ' . $field . ' が存在しません');
             return [
                 'success' => false, 
                 'message' => 'ユーザー情報が不完全です。管理者にお問い合わせください。',
@@ -1132,18 +1135,15 @@ function authenticateWithAinaApi($email, $password = null) {
             
             if (!empty($existingUser['full_name'])) {
                 $user['name'] = $existingUser['full_name'];
-                error_log('AiNA API警告: nameフィールドが空のため、既存のfull_name "' . $user['name'] . '" を使用します。');
             } else {
                 // フォールバック: メールアドレスの@より前の部分を使用
                 $emailParts = explode('@', $user['email']);
                 $user['name'] = $emailParts[0] ?? 'ユーザー';
-                error_log('AiNA API警告: nameフィールドが空のため、フォールバック値 "' . $user['name'] . '" を使用します。');
             }
         } catch (Exception $e) {
             // データベースエラーの場合もフォールバック値を使用
             $emailParts = explode('@', $user['email']);
             $user['name'] = $emailParts[0] ?? 'ユーザー';
-            error_log('AiNA API警告: nameフィールドが空で、DB取得エラー - フォールバック値 "' . $user['name'] . '" を使用します。');
         }
     }
     
@@ -1165,7 +1165,6 @@ function authenticateWithAinaApi($email, $password = null) {
     }
     
     // 認証成功時の詳細ログ
-    error_log('AiNA API認証成功: User ID=' . $user['id'] . ', Email=' . $user['email'] . ', Plan ID=' . ($user['plan_id'] ?? 'null') . ', Status ID=' . ($user['status_id'] ?? 'null'));
     
     return ['success' => true, 'user' => $user];
 }
@@ -1214,8 +1213,6 @@ function validateUserAccess($user) {
         
         // 詳細なデバッグログ
         error_log('ユーザーアクセス拒否: 不適切なプラン - User ID: ' . ($user['id'] ?? 'unknown') . ', Plan ID: ' . $userPlanId . ' (' . $planDisplay . ')');
-        error_log('許可されているプランID: ' . json_encode(ALLOWED_PLAN_IDS));
-        error_log('受信したユーザー情報: ' . json_encode($user));
         
         return [
             'valid' => false, 
@@ -1278,7 +1275,7 @@ function createOrUpdateUser($apiUser) {
         
         // 必要なフィールドの確認
         if (empty($apiUser['id']) || empty($apiUser['email'])) {
-            error_log('ユーザー作成エラー: 必要なフィールドが不足 - ' . json_encode($apiUser));
+            error_log('ユーザー作成エラー: 必要なフィールドが不足');
             return false;
         }
         
@@ -1292,12 +1289,10 @@ function createOrUpdateUser($apiUser) {
         if (empty($apiUser['name'])) {
             if (!empty($existingUser['full_name'])) {
                 $apiUser['name'] = $existingUser['full_name'];
-                error_log('ユーザー作成警告: nameフィールドが空のため、既存のfull_name "' . $apiUser['name'] . '" を使用します。');
             } else {
                 // フォールバック: メールアドレスの@より前の部分を使用
                 $emailParts = explode('@', $apiUser['email']);
                 $apiUser['name'] = $emailParts[0] ?? 'ユーザー';
-                error_log('ユーザー作成警告: nameフィールドが空のため、フォールバック値 "' . $apiUser['name'] . '" を使用します。');
             }
         }
         
@@ -1344,7 +1339,7 @@ function createOrUpdateUser($apiUser) {
             ]);
             
             if (!$userId) {
-                error_log('ユーザー作成エラー: INSERTが失敗 - ' . json_encode($apiUser));
+                error_log('ユーザー作成エラー: INSERTが失敗');
                 return false;
             }
             
@@ -1356,13 +1351,10 @@ function createOrUpdateUser($apiUser) {
             $adminListRaw = $_ENV['ADMIN_EMAILS'] ?? '';
             if ($adminListRaw !== '') {
                 $adminList = array_filter(array_map('trim', explode(',', $adminListRaw)));
-                if (!empty($adminList) && in_array((string)$apiUser['email'], $adminList, true)) {
-                    $exists = $db->selectOne("SELECT id, is_enabled FROM user_roles WHERE user_id = ? AND role = 'admin'", [$userId]);
-                    if ($exists) {
-                        if ((int)($exists['is_enabled'] ?? 0) !== 1) {
-                            $db->update("UPDATE user_roles SET is_enabled = 1 WHERE id = ?", [$exists['id']]);
-                        }
-                    } else {
+                if (!empty($adminList) && in_array(strtolower((string)$apiUser['email']), array_map('strtolower', $adminList), true)) {
+                    // 初回だけ付与する。管理画面で解除された行（is_enabled=0）は戻さない
+                    $exists = $db->selectOne("SELECT id FROM user_roles WHERE user_id = ? AND role = 'admin'", [$userId]);
+                    if (!$exists) {
                         $db->insert("INSERT INTO user_roles (user_id, role, is_enabled) VALUES (?, 'admin', 1)", [$userId]);
                     }
                 }
@@ -1373,7 +1365,7 @@ function createOrUpdateUser($apiUser) {
 
         return $userId;
     } catch (Exception $e) {
-        error_log('ユーザー作成例外エラー: ' . $e->getMessage() . ' - ' . json_encode($apiUser));
+        error_log('ユーザー作成例外エラー: ' . $e->getMessage());
         return false;
     }
 }
@@ -1395,15 +1387,42 @@ function performApiLogin($email, $password) {
         ];
     }
     
-    // まずローカルDBでの認証を試行
+    // 総当たり対策（失敗が続くメールアドレス・IPはしばらく受け付けない）
+    $emailKey = strtolower($email);
+    if (!rateLimitAllow('login_fail_email', $emailKey, 8, 900, false)
+        || !rateLimitAllow('login_fail_ip', clientIp(), 30, 900, false)) {
+        return [
+            'success' => false,
+            'message' => 'ログインの失敗が続いたため、一時的に受け付けを止めています。15分ほどおいてから再度お試しください。',
+            'error_type' => 'rate_limited'
+        ];
+    }
+    $recordFailure = function () use ($emailKey) {
+        rateLimitAllow('login_fail_email', $emailKey, 8, 900);
+        rateLimitAllow('login_fail_ip', clientIp(), 30, 900);
+    };
+
+    // ローカルパスワードはマイページ会員に紐づかないアカウント（管理者・法人など）だけに使う。
+    // 会員はマイページAPIで毎回 会員状態・プランを確かめる（退会・未払い・フリープランで使い続けられないように）
     $localAuthResult = performLocalLogin($email, $password);
     if ($localAuthResult['success']) {
+        rateLimitClear('login_fail_email', $emailKey);
         return $localAuthResult;
     }
-    
-    // ローカル認証が失敗した場合、API認証を試行
+    if (($localAuthResult['error_type'] ?? '') === 'password_mismatch') {
+        $recordFailure();
+        return [
+            'success' => false,
+            'message' => 'メールアドレスまたはパスワードが正しくありません。',
+            'error_type' => 'auth_failed'
+        ];
+    }
+
     $authResult = authenticateWithAinaApi($email, $password);
     if (!$authResult['success']) {
+        if (in_array($authResult['error_type'] ?? '', ['auth_failed', 'user_not_found', 'api_auth_error'], true)) {
+            $recordFailure();
+        }
         return [
             'success' => false, 
             'message' => $authResult['message'],
@@ -1426,7 +1445,7 @@ function performApiLogin($email, $password) {
     // ユーザー作成/更新
     $userId = createOrUpdateUser($apiUser);
     if (!$userId) {
-        error_log('ログイン失敗: ユーザー情報保存エラー - Email: ' . $email . ', AiNA ID: ' . $apiUser['id']);
+        error_log('ログイン失敗: ユーザー情報保存エラー - AiNA ID: ' . $apiUser['id']);
         return [
             'success' => false, 
             'message' => 'ユーザー情報の保存に失敗しました。しばらく時間をおいて再度お試しください。',
@@ -1436,6 +1455,8 @@ function performApiLogin($email, $password) {
     
     // セッション設定（パスワードは保持しない）
     try {
+        rateLimitClear('login_fail_email', $emailKey);
+        regenerateSessionSecurely();
         $_SESSION['user_id'] = $userId;
         $_SESSION['aina_user_id'] = $apiUser['id'];
         $_SESSION['user_rank'] = $apiUser['rank'] ?? $apiUser['plan_display'] ?? '';
@@ -1444,7 +1465,7 @@ function performApiLogin($email, $password) {
         $_SESSION['user_plan'] = $apiUser['plan'] ?? null;
         $_SESSION['login_time'] = time();
         
-        error_log('ログイン成功: User ID: ' . $userId . ', Email: ' . $email . ', AiNA ID: ' . $apiUser['id'] . ', Plan: ' . ($apiUser['plan_display'] ?? 'unknown') . ', Status: ' . $apiUser['status_id']);
+        error_log('ログイン成功: User ID: ' . $userId);
         
         return ['success' => true, 'user_id' => $userId];
     } catch (Exception $e) {
@@ -1482,10 +1503,18 @@ function performLocalLogin($email, $password) {
             ];
         }
         
+        // マイページ会員に紐づくアカウントはローカルパスワードを使わない（API側で会員状態を確認する）
+        if (!empty($user['aina_user_id'])) {
+            return [
+                'success' => false,
+                'message' => 'API認証が必要です。',
+                'error_type' => 'member_account'
+            ];
+        }
+
         // パスワードハッシュが存在する場合のみ検証
         if (!empty($user['password_hash'])) {
             if (!password_verify($password, $user['password_hash'])) {
-                error_log('ローカル認証失敗: パスワード不一致 - Email: ' . $email);
                 return [
                     'success' => false,
                     'message' => 'メールアドレスまたはパスワードが正しくありません。',
@@ -1506,16 +1535,13 @@ function performLocalLogin($email, $password) {
             $adminListRaw = $_ENV['ADMIN_EMAILS'] ?? '';
             if ($adminListRaw !== '') {
                 $adminList = array_filter(array_map('trim', explode(',', $adminListRaw)));
-                if (!empty($adminList) && in_array((string)$email, $adminList, true)) {
+                if (!empty($adminList) && in_array(strtolower((string)$email), array_map('strtolower', $adminList), true)) {
+                    // 初回だけ付与する。管理画面で解除された行（is_enabled=0）は戻さない
                     $exists = $db->selectOne(
-                        "SELECT id, is_enabled FROM user_roles WHERE user_id = ? AND role = 'admin'",
+                        "SELECT id FROM user_roles WHERE user_id = ? AND role = 'admin'",
                         [$user['id']]
                     );
-                    if ($exists) {
-                        if ((int)($exists['is_enabled'] ?? 0) !== 1) {
-                            $db->update("UPDATE user_roles SET is_enabled = 1 WHERE id = ?", [$exists['id']]);
-                        }
-                    } else {
+                    if (!$exists) {
                         $db->insert("INSERT INTO user_roles (user_id, role, is_enabled) VALUES (?, 'admin', 1)", [$user['id']]);
                     }
                 }
@@ -1525,6 +1551,7 @@ function performLocalLogin($email, $password) {
         }
 
         // セッション設定
+        regenerateSessionSecurely();
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['aina_user_id'] = $user['aina_user_id'] ?? null;
         $_SESSION['user_rank'] = '';
@@ -1533,7 +1560,7 @@ function performLocalLogin($email, $password) {
         $_SESSION['user_plan'] = null;
         $_SESSION['login_time'] = time();
 
-        error_log('ローカル認証成功: User ID: ' . $user['id'] . ', Email: ' . $email);
+        error_log('ローカル認証成功: User ID: ' . $user['id']);
         
         return ['success' => true, 'user_id' => $user['id']];
         
@@ -1616,25 +1643,391 @@ function requireAdmin(): void {
         echo '<a class="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200" href="' . h(url('')) . '">トップへ</a>';
         echo '<a class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700" href="' . h(url('logout')) . '">ログアウト</a>';
         echo '</div></div></body></html>';
+        exit;
     }
 }
 
 /**
- * 期限切れの案件を自動的に募集終了にする
+ * 締切を過ぎた募集中の案件を「募集終了」にし、依頼者へ知らせる
+ * 閲覧のたびではなく1時間に1回だけ実行する。
  */
 function updateExpiredJobs() {
     try {
+        $marker = storagePath('framework') . '/expired-jobs-last-run';
+        if (is_file($marker) && filemtime($marker) > time() - 3600) {
+            return;
+        }
+        @touch($marker);
+
         $db = Database::getInstance();
         $currentDate = date('Y-m-d');
-        
-        // ステータスが 'open' で、締切日が過ぎている案件を 'closed' に更新
-        $db->update(
-            "UPDATE jobs SET status = 'closed' WHERE status = 'open' AND deadline < ?",
+        $expired = $db->select(
+            "SELECT j.id, j.title, j.client_id, u.email,
+                    (SELECT COUNT(*) FROM job_applications ja WHERE ja.job_id = j.id AND ja.status = 'pending') AS pending_count
+             FROM jobs j JOIN users u ON j.client_id = u.id
+             WHERE j.status = 'open' AND j.deadline IS NOT NULL AND j.deadline < ?",
             [$currentDate]
         );
+        foreach ($expired as $job) {
+            $changed = $db->update("UPDATE jobs SET status = 'closed' WHERE id = ? AND status = 'open'", [$job['id']]);
+            if ($changed > 0 && !empty($job['email'])) {
+                $pending = (int)$job['pending_count'];
+                $msg = "案件「{$job['title']}」は締切日を過ぎたため、募集を終了しました。\n\n";
+                $msg .= $pending > 0
+                    ? "返事待ちの応募が{$pending}件あります。応募管理から受諾または見送りを選んでください。募集を続ける場合は締切日を延ばして再開できます。"
+                    : "募集を続ける場合は、案件ページから締切日を延ばして再開してください。";
+                sendNotificationMail($job['email'], "【AiNA Works】募集を終了しました - {$job['title']}", $msg, url('job-detail?id=' . (int)$job['id'], true), '案件を確認する');
+            }
+        }
     } catch (Exception $e) {
         error_log("updateExpiredJobs error: " . $e->getMessage());
     }
 }
 
+/* ======================================================================
+ * 運用ヘルパー（ストレージ・回数制限・監査ログ・環境変数）
+ * ====================================================================== */
 
+/**
+ * .env / プロセス環境の値を読む（config.php の定数に依存しない）
+ */
+function envValue(string $key, $default = null) {
+    if (array_key_exists($key, $_ENV) && $_ENV[$key] !== '') {
+        return $_ENV[$key];
+    }
+    $v = getenv($key);
+    return ($v === false || $v === '') ? $default : $v;
+}
+
+/**
+ * 公開しない作業用ディレクトリ（storage/<sub>）を用意して絶対パスを返す
+ * .htaccess で storage/logs・storage/framework・storage/app/private は外部から拒否している
+ */
+function storagePath(string $sub): string {
+    $dir = BASE_PATH . '/storage/' . trim($sub, '/');
+    if (!is_dir($dir)) {
+        @mkdir($dir, 0750, true);
+    }
+    return $dir;
+}
+
+/**
+ * 呼び出し元IP（共有サーバーの前段プロキシは信用しない）
+ */
+function clientIp(): string {
+    return (string)($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
+}
+
+/**
+ * 簡易レート制限（ファイル保存・スライディングウィンドウ）
+ * $record=false なら数えるだけ。上限内なら true。
+ */
+function rateLimitAllow(string $bucket, string $key, int $max, int $windowSec, bool $record = true): bool {
+    $dir = storagePath('framework/ratelimit');
+    $file = $dir . '/' . sha1($bucket . '|' . $key) . '.json';
+    $now = time();
+    $fp = @fopen($file, 'c+');
+    if ($fp === false) {
+        return true; // 保存できない環境では制限しない（機能停止を避ける）
+    }
+    try {
+        flock($fp, LOCK_EX);
+        $raw = stream_get_contents($fp);
+        $hits = json_decode($raw ?: '[]', true);
+        if (!is_array($hits)) {
+            $hits = [];
+        }
+        $hits = array_values(array_filter($hits, fn($t) => is_int($t) && $t > $now - $windowSec));
+        $allowed = count($hits) < $max;
+        if ($allowed && $record) {
+            $hits[] = $now;
+        }
+        ftruncate($fp, 0);
+        rewind($fp);
+        fwrite($fp, json_encode($hits));
+        fflush($fp);
+        flock($fp, LOCK_UN);
+    } finally {
+        fclose($fp);
+    }
+    // ときどき古いファイルを掃除
+    if (mt_rand(1, 200) === 1) {
+        foreach (glob($dir . '/*.json') ?: [] as $f) {
+            if (@filemtime($f) < $now - 86400) {
+                @unlink($f);
+            }
+        }
+    }
+    return $allowed;
+}
+
+/**
+ * レート制限の記録を消す（ログイン成功時など）
+ */
+function rateLimitClear(string $bucket, string $key): void {
+    $file = storagePath('framework/ratelimit') . '/' . sha1($bucket . '|' . $key) . '.json';
+    if (is_file($file)) {
+        @unlink($file);
+    }
+}
+
+/**
+ * 管理操作の監査ログ（storage/logs/admin-actions.log、1行1JSON）
+ */
+function logAdminAction(string $action, string $targetType, $targetId, array $detail = []): void {
+    $line = json_encode([
+        'at' => date('c'),
+        'admin_id' => $_SESSION['user_id'] ?? null,
+        'action' => $action,
+        'target_type' => $targetType,
+        'target_id' => $targetId,
+        'detail' => $detail,
+        'ip' => clientIp(),
+    ], JSON_UNESCAPED_UNICODE);
+    @file_put_contents(storagePath('logs') . '/admin-actions.log', $line . "\n", FILE_APPEND | LOCK_EX);
+}
+
+/**
+ * チャット添付の配信URL（参加者だけが開ける）
+ */
+function chatFileUrl($messageId, bool $download = false): string {
+    return url('api/chat-file.php?id=' . (int)$messageId . ($download ? '&dl=1' : ''));
+}
+
+/**
+ * セッションIDを作り直し、Cookie属性（HttpOnly/SameSite/Secure）を付け直す
+ */
+function regenerateSessionSecurely(): void {
+    if (session_status() !== PHP_SESSION_ACTIVE) {
+        return;
+    }
+    session_regenerate_id(true);
+    if (!headers_sent()) {
+        // 今のリクエストがHTTPSのときだけSecureを付ける（http経由の利用者がログアウト状態にならないように）
+        $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+            || strtolower((string)($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https';
+        setcookie(session_name(), session_id(), [
+            'expires' => 0,
+            'path' => '/',
+            'secure' => $secure,
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ]);
+    }
+}
+
+/* ======================================================================
+ * 案件の状態（ワークフロー）
+ *   open（募集中）→ contracted（契約中）→ delivered（納品済み）→ completed（完了）
+ *   closed（募集終了）・cancelled（キャンセル）・in_progress/approved は旧データ互換
+ * ====================================================================== */
+
+const JOB_STATUSES = ['open', 'closed', 'in_progress', 'contracted', 'delivered', 'approved', 'completed', 'cancelled'];
+
+function jobStatusInfo(?string $status): array {
+    $map = [
+        'open'        => ['label' => '募集中',     'badge' => 'bg-green-100 text-green-800'],
+        'closed'      => ['label' => '募集終了',   'badge' => 'bg-gray-100 text-gray-700'],
+        'in_progress' => ['label' => '進行中',     'badge' => 'bg-blue-100 text-blue-800'],
+        'contracted'  => ['label' => '契約中',     'badge' => 'bg-blue-100 text-blue-800'],
+        'delivered'   => ['label' => '納品済み',   'badge' => 'bg-purple-100 text-purple-800'],
+        'approved'    => ['label' => '検収済み',   'badge' => 'bg-indigo-100 text-indigo-800'],
+        'completed'   => ['label' => '完了',       'badge' => 'bg-gray-800 text-white'],
+        'cancelled'   => ['label' => 'キャンセル', 'badge' => 'bg-red-100 text-red-800'],
+    ];
+    return $map[$status ?? ''] ?? ['label' => (string)$status, 'badge' => 'bg-gray-100 text-gray-700'];
+}
+
+function jobStatusLabel(?string $status): string {
+    return jobStatusInfo($status)['label'];
+}
+
+/**
+ * 依頼者・受注者がそれぞれ選べる次の状態
+ * @param string $actor 'client' | 'creator'
+ */
+function jobNextStatuses(string $from, string $actor, int $acceptedCount): array {
+    if ($actor === 'creator') {
+        // 採用されたクリエイターだけが「納品を報告」できる
+        return in_array($from, ['open', 'closed', 'contracted', 'in_progress'], true) && $acceptedCount > 0 ? ['delivered'] : [];
+    }
+    switch ($from) {
+        case 'open':
+            return $acceptedCount > 0 ? ['closed', 'contracted', 'cancelled'] : ['closed', 'cancelled'];
+        case 'closed':
+            return $acceptedCount > 0 ? ['open', 'contracted', 'cancelled'] : ['open', 'cancelled'];
+        case 'contracted':
+        case 'in_progress':
+            return ['cancelled'];
+        case 'delivered':
+            // 検収して完了、または修正依頼で契約中に戻す
+            return ['completed', 'contracted'];
+        case 'approved':
+            return ['completed'];
+        case 'cancelled':
+            return $acceptedCount > 0 ? [] : ['open'];
+        default:
+            return [];
+    }
+}
+
+/**
+ * 案件ワークフローに必要な列（募集人数・募集中フラグ・状態の種類）を一度だけ整える。
+ * トランザクションの外で呼ぶこと（MySQLのDDLは暗黙コミットになるため）。
+ */
+function ensureJobWorkflowSchema(): void {
+    static $done = false;
+    if ($done) {
+        return;
+    }
+    $done = true;
+    // 毎回の閲覧ではなく、採用・状態変更のAPIからだけ呼ばれる。DBを復元しても確実に整うよう、実際の列を見て判断する
+    try {
+        $db = Database::getInstance();
+        $cols = [];
+        foreach ($db->select("SHOW COLUMNS FROM jobs") as $c) {
+            $cols[strtolower($c['Field'] ?? $c['field'] ?? '')] = $c;
+        }
+        if (!isset($cols['hiring_limit'])) {
+            $db->execute("ALTER TABLE jobs ADD COLUMN hiring_limit INT NOT NULL DEFAULT 1");
+        }
+        if (!isset($cols['is_recruiting'])) {
+            $db->execute("ALTER TABLE jobs ADD COLUMN is_recruiting TINYINT(1) NOT NULL DEFAULT 1");
+        }
+        $typeDef = (string)($cols['status']['Type'] ?? $cols['status']['type'] ?? '');
+        if ($typeDef !== '' && stripos($typeDef, 'enum(') === 0) {
+            $current = array_map(fn($v) => trim($v, " '"), explode(',', substr($typeDef, 5, -1)));
+            $merged = array_values(array_unique(array_merge($current, JOB_STATUSES)));
+            if (count($merged) !== count($current)) {
+                $enumList = "'" . implode("','", $merged) . "'";
+                $db->execute("ALTER TABLE jobs MODIFY status ENUM($enumList) NOT NULL DEFAULT 'open'");
+            }
+        }
+    } catch (Throwable $e) {
+        error_log('ensureJobWorkflowSchema: ' . $e->getMessage());
+    }
+}
+
+/**
+ * jobs.status にこの値を書けるか（ENUMのまま値が足りないと、MySQLの設定によっては空文字で保存されてしまう）
+ */
+function jobStatusWritable(string $status): bool {
+    static $allowed = null;
+    if ($allowed === null) {
+        $allowed = true; // 判定できない場合は書ける前提（VARCHAR など）
+        try {
+            $col = Database::getInstance()->selectOne("SHOW COLUMNS FROM jobs LIKE 'status'");
+            $typeDef = (string)($col['Type'] ?? $col['type'] ?? '');
+            if ($typeDef !== '' && stripos($typeDef, 'enum(') === 0) {
+                $allowed = array_map(fn($v) => trim($v, " '"), explode(',', substr($typeDef, 5, -1)));
+            }
+        } catch (Throwable $e) {
+            error_log('jobStatusWritable: ' . $e->getMessage());
+        }
+    }
+    return $allowed === true || in_array($status, $allowed, true);
+}
+
+/**
+ * 案件の採用済み人数（列ではなく応募テーブルから数える）
+ */
+function jobAcceptedCount(int $jobId): int {
+    $row = Database::getInstance()->selectOne(
+        "SELECT COUNT(*) AS c FROM job_applications WHERE job_id = ? AND status = 'accepted'",
+        [$jobId]
+    );
+    return (int)($row['c'] ?? 0);
+}
+
+/**
+ * 2人の間のチャットルームIDを返す（無ければ作る）
+ */
+function ensureChatRoom(int $userA, int $userB): int {
+    $db = Database::getInstance();
+    $room = $db->selectOne(
+        "SELECT id FROM chat_rooms WHERE (user1_id = ? AND user2_id = ?) OR (user1_id = ? AND user2_id = ?) ORDER BY id LIMIT 1",
+        [$userA, $userB, $userB, $userA]
+    );
+    if ($room) {
+        return (int)$room['id'];
+    }
+    return (int)$db->insert(
+        "INSERT INTO chat_rooms (user1_id, user2_id, created_at) VALUES (?, ?, NOW())",
+        [$userA, $userB]
+    );
+}
+
+/**
+ * チャットへシステム通知を投稿する（送信者は操作した本人）
+ */
+function postChatNotice(int $senderId, int $recipientId, string $message): ?int {
+    try {
+        $roomId = ensureChatRoom($senderId, $recipientId);
+        $db = Database::getInstance();
+        $db->insert(
+            "INSERT INTO chat_messages (room_id, sender_id, message, created_at) VALUES (?, ?, ?, NOW())",
+            [$roomId, $senderId, $message]
+        );
+        try {
+            $db->update("UPDATE chat_rooms SET updated_at = NOW() WHERE id = ?", [$roomId]);
+        } catch (Throwable $e) {
+            // updated_at が無い古いスキーマでも続行
+        }
+        return $roomId;
+    } catch (Throwable $e) {
+        error_log('postChatNotice: ' . $e->getMessage());
+        return null;
+    }
+}
+
+/**
+ * 生年月日の検証（プロフィールと役割選択で共通。13歳未満は利用不可）
+ * @return string|null エラーメッセージ
+ */
+function validateBirthdateForUse(?string $birthdate): ?string {
+    if ($birthdate === null || $birthdate === '') {
+        return '生年月日を入力してください。';
+    }
+    $d = DateTime::createFromFormat('Y-m-d', $birthdate);
+    if (!$d || $d->format('Y-m-d') !== $birthdate) {
+        return '生年月日の形式が正しくありません。';
+    }
+    $today = new DateTime();
+    if ($d > $today) {
+        return '生年月日に未来の日付は設定できません。';
+    }
+    $age = $today->diff($d)->y;
+    if ($age < 13) {
+        return '13歳未満の方はご利用いただけません。';
+    }
+    if ($age > 120) {
+        return '生年月日を正しく入力してください。';
+    }
+    return null;
+}
+
+/**
+ * クリエイター・依頼者のどちらも未設定か
+ */
+function userHasNoRole(?array $user): bool {
+    return $user !== null && empty($user['is_creator']) && empty($user['is_client']);
+}
+
+/**
+ * 管理画面の「画像URL」欄の値を検証する（http(s) の外部URLか、アップロード済みファイルのパスだけ通す）
+ */
+function sanitizeImageRef($value): string {
+    $value = trim((string)$value);
+    if ($value === '') {
+        return '';
+    }
+    if (preg_match('#^https?://#i', $value)) {
+        return filter_var($value, FILTER_VALIDATE_URL) ? mb_substr($value, 0, 255) : '';
+    }
+    // 既存データの形式（ファイル名だけ／storage/app/uploads/…／サブディレクトリ付き）はそのまま通し、
+    // スクリプトや親ディレクトリ参照（..）・画像以外は通さない
+    if (strpos($value, '..') === false && preg_match('#^/?[A-Za-z0-9._/-]+\.(jpe?g|png|gif|webp)$#i', $value)) {
+        return $value;
+    }
+    return '';
+}

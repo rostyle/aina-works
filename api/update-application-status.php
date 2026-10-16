@@ -75,76 +75,59 @@ try {
         jsonResponse(['error' => '保留中の応募のみ撤回できます'], 400);
     }
 
+    if ($action === 'accept') {
+        ensureJobWorkflowSchema(); // 列の用意はトランザクションの外で
+    }
+
     $db->beginTransaction();
 
     if ($action === 'accept') {
-        // Guard: cannot accept if job is already completed
-        if (in_array($application['job_status'], ['completed'], true)) {
+        // 同時に2件受諾しても定員を超えないよう、案件の行をロックしてから数える
+        $jobRow = $db->selectOne("SELECT * FROM jobs WHERE id = ? FOR UPDATE", [$application['job_id']]);
+        $jobStatus = (string)($jobRow['status'] ?? '');
+        if (!in_array($jobStatus, ['open', 'closed'], true)) {
             $db->rollback();
-            jsonResponse(['error' => 'この案件は受諾できない状態です'], 400);
+            jsonResponse(['error' => '「' . jobStatusLabel($jobStatus) . '」の案件では応募を受諾できません'], 400);
+        }
+        $limit = max(1, (int)($jobRow['hiring_limit'] ?? 1));
+        $acceptedBefore = jobAcceptedCount((int)$application['job_id']);
+        if ($acceptedBefore >= $limit) {
+            $db->rollback();
+            jsonResponse(['error' => "募集人数（{$limit}人）に達しています。追加で採用する場合は、案件ページで募集人数を増やしてください"], 400);
         }
 
-        // Accept the application
-        $db->update("UPDATE job_applications SET status = 'accepted' WHERE id = ?", [$applicationId]);
+        $db->update("UPDATE job_applications SET status = 'accepted' WHERE id = ? AND status = 'pending'", [$applicationId]);
 
-        // Optional job counters and status updates
-        try {
-            // Try to update counters and check limit
-            // Use direct SELECT instead of SHOW COLUMNS for better compatibility
+        // 定員に達したら募集を締め切り「契約中」にする（状態の列が古い形式で更新できなくても、受諾自体は成立させる）
+        if ($acceptedBefore + 1 >= $limit && jobStatusWritable('contracted')) {
             try {
-                // Update accepted_count if exists (will fail if column missing)
-                $db->update("UPDATE jobs SET accepted_count = IFNULL(accepted_count,0) + 1 WHERE id = ?", [$application['job_id']]);
-            } catch (Exception $e) {
-                // Ignore if accepted_count column missing
+                $db->update("UPDATE jobs SET status = 'contracted' WHERE id = ?", [$application['job_id']]);
+            } catch (Throwable $statusErr) {
+                error_log('accept: could not set contracted (job ' . (int)$application['job_id'] . '): ' . $statusErr->getMessage());
             }
-
-            try {
-                // Check hiring limit
-                $jobSettings = $db->selectOne("SELECT hiring_limit, is_recruiting, accepted_count FROM jobs WHERE id = ?", [$application['job_id']]);
-                
-                if ($jobSettings) {
-                    $limit = isset($jobSettings['hiring_limit']) ? (int)$jobSettings['hiring_limit'] : 1;
-                    $accepted = isset($jobSettings['accepted_count']) ? (int)$jobSettings['accepted_count'] : 0;
-                    
-                    if ($accepted >= $limit) {
-                        // Close recruiting
-                        try {
-                            $db->update("UPDATE jobs SET is_recruiting = 0 WHERE id = ?", [$application['job_id']]);
-                        } catch (Exception $e) {}
-
-                        // Update status to contracted if needed
-                        if ($application['job_status'] === 'open') {
-                            $db->update("UPDATE jobs SET status = 'contracted' WHERE id = ?", [$application['job_id']]);
-                        }
-                    }
-                }
-            } catch (Exception $e) {
-                // Ignore if columns missing
+            if (array_key_exists('is_recruiting', (array)$jobRow)) {
+                $db->update("UPDATE jobs SET is_recruiting = 0 WHERE id = ?", [$application['job_id']]);
             }
-        } catch (Exception $ignore) {
-            // Non-critical counters; ignore if schema not present
+        }
+        if (array_key_exists('accepted_count', (array)$jobRow)) {
+            $db->update("UPDATE jobs SET accepted_count = ? WHERE id = ?", [$acceptedBefore + 1, $application['job_id']]);
         }
 
         // Ensure chat room exists
-        error_log("チャットルーム確認開始 - currentUser: {$currentUser['id']}, creator: {$application['creator_id']}");
         $room = $db->selectOne(
             "SELECT id FROM chat_rooms WHERE (user1_id = ? AND user2_id = ?) OR (user1_id = ? AND user2_id = ?)",
             [$currentUser['id'], $application['creator_id'], $application['creator_id'], $currentUser['id']]
         );
         if (!$room) {
-            error_log("新しいチャットルームを作成");
             $roomId = (int)$db->insert(
                 "INSERT INTO chat_rooms (user1_id, user2_id, created_at) VALUES (?, ?, NOW())",
                 [$currentUser['id'], $application['creator_id']]
             );
-            error_log("チャットルーム作成完了 - roomId: {$roomId}");
         } else {
             $roomId = (int)$room['id'];
-            error_log("既存のチャットルームを使用 - roomId: {$roomId}");
         }
 
         // Initial chat message with application details
-        error_log("初期メッセージ作成開始");
         $initialMessage = "応募を受諾しました。ここからやり取りを開始しましょう。\n\n";
         $initialMessage .= "【案件】" . ($application['job_title'] ?? '案件') . "\n\n";
         $initialMessage .= "【応募内容】\n";
@@ -155,19 +138,14 @@ try {
         }
         $initialMessage .= "\nよろしくお願いいたします。";
         
-        error_log("初期メッセージ内容: " . substr($initialMessage, 0, 200) . "...");
-        
         $messageId = $db->insert(
             "INSERT INTO chat_messages (room_id, sender_id, message, created_at) VALUES (?, ?, ?, NOW())",
             [$roomId, $currentUser['id'], $initialMessage]
         );
         
         if (!$messageId) {
-            error_log("チャットメッセージ挿入失敗");
             throw new Exception("チャットメッセージの作成に失敗しました");
         }
-        
-        error_log("チャットメッセージ挿入完了 - messageId: {$messageId}");
 
         $db->commit();
 
@@ -180,7 +158,8 @@ try {
                 $message .= "あなたの応募が受諾されました。\n";
                 $message .= "案件: " . ($application['job_title'] ?? '案件') . "\n";
                 $message .= "クライアント: " . ($currentUser['full_name'] ?? '') . "\n\n";
-                $message .= "チャットルームが作成されましたので、詳細な打ち合わせを開始してください。\n";
+                $message .= "チャットで依頼者と内容・納期・お振込先を確認して作業を始めてください。\n";
+                $message .= "作業が終わったら、案件ページの「納品を報告する」を押してください。依頼者が検収すると完了になります。\n";
                 $actionUrl = url('chat?user_id=' . $currentUser['id'], true);
                 sendNotificationMail($creatorEmail['email'], $subject, $message, $actionUrl, 'チャットを開く');
             }

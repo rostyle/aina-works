@@ -25,7 +25,7 @@ updateExpiredJobs();
 
 // 統計情報取得 - 両方の情報を取得
 $creatorStats = [
-    'works' => $db->selectOne("SELECT COUNT(*) as count FROM works WHERE user_id = ?", [$user['id']])['count'] ?? 0,
+    'works' => $db->selectOne("SELECT COUNT(*) as count FROM works WHERE user_id = ? AND status = 'published'", [$user['id']])['count'] ?? 0,
     'applications' => $db->selectOne("SELECT COUNT(*) as count FROM job_applications WHERE creator_id = ?", [$user['id']])['count'] ?? 0,
     'reviews' => $db->selectOne("SELECT COUNT(*) as count FROM reviews WHERE reviewee_id = ?", [$user['id']])['count'] ?? 0,
     'avg_rating' => $db->selectOne("SELECT AVG(rating) as avg FROM reviews WHERE reviewee_id = ?", [$user['id']])['avg'] ?? 0,
@@ -38,7 +38,7 @@ $clientStats = [
     'jobs' => $db->selectOne("SELECT COUNT(*) as count FROM jobs WHERE client_id = ?", [$user['id']])['count'] ?? 0,
     'applications' => $db->selectOne("SELECT COUNT(*) as count FROM job_applications ja JOIN jobs j ON ja.job_id = j.id WHERE j.client_id = ?", [$user['id']])['count'] ?? 0,
     'completed' => $db->selectOne("SELECT COUNT(*) as count FROM jobs WHERE client_id = ? AND status = 'completed'", [$user['id']])['count'] ?? 0,
-    'in_progress' => $db->selectOne("SELECT COUNT(*) as count FROM jobs WHERE client_id = ? AND status = 'in_progress'", [$user['id']])['count'] ?? 0,
+    'in_progress' => $db->selectOne("SELECT COUNT(*) as count FROM jobs WHERE client_id = ? AND status IN ('in_progress','contracted','delivered','approved')", [$user['id']])['count'] ?? 0,
 ];
 
 // 最近の応募（クリエイター用）
@@ -63,6 +63,46 @@ $recentJobs = $db->select("
     LIMIT 5
 ", [$user['id']]);
 
+// やること（進行中の取引）
+$todo = [];
+// クリエイター: 採用された案件
+foreach ($db->select("
+    SELECT j.id, j.title, j.status, j.client_id, u.full_name AS client_name
+    FROM job_applications ja
+    JOIN jobs j ON ja.job_id = j.id
+    JOIN users u ON j.client_id = u.id
+    WHERE ja.creator_id = ? AND ja.status = 'accepted' AND j.status IN ('open','closed','contracted','in_progress','delivered','approved')
+    ORDER BY j.id DESC
+    LIMIT 10
+", [$user['id']]) as $r) {
+    $todo[] = $r['status'] === 'delivered' || $r['status'] === 'approved'
+        ? ['tone' => 'wait', 'title' => $r['title'], 'text' => '納品を報告しました。' . $r['client_name'] . 'さんの検収待ちです', 'url' => url('job-detail?id=' . $r['id']), 'cta' => '案件を見る']
+        : ['tone' => 'do', 'title' => $r['title'], 'text' => '採用されました。作業が終わったら「納品を報告する」を押してください', 'url' => url('job-detail?id=' . $r['id']), 'cta' => '納品を報告する'];
+}
+// 依頼者: 返事待ちの応募・検収待ち・作業中
+foreach ($db->select("
+    SELECT j.id, j.title, j.status,
+           (SELECT COUNT(*) FROM job_applications ja WHERE ja.job_id = j.id AND ja.status = 'pending') AS pending_count
+    FROM jobs j
+    WHERE j.client_id = ? AND j.status IN ('open','closed','contracted','in_progress','delivered','approved')
+    ORDER BY j.id DESC
+    LIMIT 20
+", [$user['id']]) as $r) {
+    if (in_array($r['status'], ['delivered', 'approved'], true)) {
+        $todo[] = ['tone' => 'do', 'title' => $r['title'], 'text' => '納品の報告が届いています。確認して「検収して完了にする」を押してください', 'url' => url('job-detail?id=' . $r['id']), 'cta' => '検収する'];
+    } elseif ((int)$r['pending_count'] > 0 && in_array($r['status'], ['open', 'closed'], true)) {
+        $todo[] = ['tone' => 'do', 'title' => $r['title'], 'text' => '返事待ちの応募が' . (int)$r['pending_count'] . '件あります', 'url' => url('job-applications?id=' . $r['id']), 'cta' => '応募を確認する'];
+    } elseif (in_array($r['status'], ['contracted', 'in_progress'], true)) {
+        $todo[] = ['tone' => 'wait', 'title' => $r['title'], 'text' => 'クリエイターが作業中です。納品が報告されるとお知らせします', 'url' => url('job-detail?id=' . $r['id']), 'cta' => '案件を見る'];
+    }
+}
+// 自分あての未読チャット
+$unreadChats = (int)($db->selectOne("
+    SELECT COUNT(*) AS c FROM chat_messages cm JOIN chat_rooms cr ON cm.room_id = cr.id
+    WHERE (cr.user1_id = ? OR cr.user2_id = ?) AND cm.sender_id <> ? AND cm.is_read = 0
+", [$user['id'], $user['id'], $user['id']])['c'] ?? 0);
+$noRole = userHasNoRole($user);
+
 include 'includes/header.php';
 ?>
 
@@ -77,8 +117,10 @@ include 'includes/header.php';
             <p class="text-gray-600 mt-2">
                 <?php if ($currentRole === 'creator'): ?>
                     あなたのクリエイター活動の状況をご確認ください
-                <?php else: ?>
+                <?php elseif ($currentRole === 'client'): ?>
                     あなたの案件の状況をご確認ください
+                <?php else: ?>
+                    はじめに使い方を選ぶと、ここに応募や案件の状況が表示されます
                 <?php endif; ?>
             </p>
             
@@ -92,6 +134,45 @@ include 'includes/header.php';
                     ツアーを開始
                 </button>
             </div>
+        </div>
+
+        <?php if ($noRole): ?>
+            <div class="mb-6 rounded-2xl border border-blue-200 bg-blue-50 p-5 flex flex-col sm:flex-row sm:items-center gap-4">
+                <div class="flex-1">
+                    <p class="font-bold text-blue-900">まず、AiNA Worksの使い方を選んでください</p>
+                    <p class="text-sm text-blue-800 mt-1">「仕事を受けたい」を選ぶと案件に応募でき、「仕事を頼みたい」を選ぶと案件を投稿できます。</p>
+                </div>
+                <a href="<?= h(url('select-role?redirect=dashboard')) ?>" class="inline-block text-center px-5 py-3 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700">使い方を選ぶ</a>
+            </div>
+        <?php endif; ?>
+
+        <!-- やること（進行中の取引） -->
+        <div class="mb-8 bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="text-lg font-bold text-gray-900">やること・進行中の取引</h2>
+                <?php if ($unreadChats > 0): ?>
+                    <a href="<?= h(url('chats')) ?>" class="text-sm font-semibold text-red-600">未読メッセージ <?= (int)$unreadChats ?>件</a>
+                <?php endif; ?>
+            </div>
+            <?php if (empty($todo)): ?>
+                <p class="text-sm text-gray-600">いま対応が必要なものはありません。
+                    <?php if (!empty($user['is_creator'])): ?><a class="text-blue-600 underline" href="<?= h(url('jobs')) ?>">募集中の案件を探す</a><?php endif; ?>
+                    <?php if (!empty($user['is_client'])): ?><a class="text-blue-600 underline ml-2" href="<?= h(url('post-job')) ?>">案件を投稿する</a><?php endif; ?>
+                </p>
+            <?php else: ?>
+                <ul class="divide-y divide-gray-100">
+                    <?php foreach ($todo as $t): ?>
+                        <li class="py-3 flex flex-col sm:flex-row sm:items-center gap-2">
+                            <span class="shrink-0 w-2 h-2 rounded-full <?= $t['tone'] === 'do' ? 'bg-red-500' : 'bg-gray-300' ?> hidden sm:block"></span>
+                            <div class="flex-1 min-w-0">
+                                <p class="font-semibold text-gray-900 truncate"><?= h($t['title']) ?></p>
+                                <p class="text-sm text-gray-600"><?= h($t['text']) ?></p>
+                            </div>
+                            <a href="<?= h($t['url']) ?>" class="shrink-0 text-center px-4 py-2 rounded-lg text-sm font-semibold <?= $t['tone'] === 'do' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'border border-gray-300 text-gray-700 hover:bg-gray-50' ?>"><?= h($t['cta']) ?></a>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            <?php endif; ?>
         </div>
 
         <!-- Stats Cards - ダッシュボード統計（SP省スペース: 2列） -->
@@ -208,8 +289,10 @@ include 'includes/header.php';
                     <div class="space-y-4">
                         <?php foreach ($recentApplications as $app): ?>
                             <div class="border border-gray-200 rounded-lg p-4">
-                                <div class="mb-2">
-                                    <h3 class="font-semibold text-gray-900"><?= h($app['job_title']) ?></h3>
+                                <?php $appLabels = ['pending' => ['返事待ち', 'bg-yellow-100 text-yellow-800'], 'accepted' => ['採用', 'bg-green-100 text-green-800'], 'rejected' => ['見送り', 'bg-gray-100 text-gray-600'], 'withdrawn' => ['取り下げ', 'bg-gray-100 text-gray-600'], 'cancelled' => ['キャンセル', 'bg-gray-100 text-gray-600']]; $al = $appLabels[$app['status']] ?? [$app['status'], 'bg-gray-100 text-gray-600']; ?>
+                                <div class="mb-2 flex items-start justify-between gap-2">
+                                    <h3 class="font-semibold text-gray-900"><a href="<?= h(url('job-detail?id=' . (int)$app['job_id'])) ?>" class="hover:text-blue-600"><?= h($app['job_title']) ?></a></h3>
+                                    <span class="shrink-0 px-2 py-1 text-xs rounded-full <?= h($al[1]) ?>"><?= h($al[0]) ?></span>
                                 </div>
                                 <p class="text-sm text-gray-600 mb-2"><?= h($app['client_name']) ?></p>
                                 <p class="text-sm text-gray-900 font-medium">
@@ -257,24 +340,8 @@ include 'includes/header.php';
                                             <?= h($job['title']) ?>
                                         </a>
                                     </h3>
-                                    <span class="px-2 py-1 text-xs rounded-full 
-                                        <?php
-                                        switch($job['status']) {
-                                            case 'open': echo 'bg-green-100 text-green-800'; break;
-                                            case 'in_progress': echo 'bg-blue-100 text-blue-800'; break;
-                                            case 'completed': echo 'bg-gray-100 text-gray-800'; break;
-                                            case 'cancelled': echo 'bg-red-100 text-red-800'; break;
-                                        }
-                                        ?>">
-                                        <?php
-                                        switch($job['status']) {
-                                            case 'open': echo '募集中'; break;
-                                            case 'in_progress': echo '進行中'; break;
-                                            case 'completed': echo '完了'; break;
-                                            case 'cancelled': echo 'キャンセル'; break;
-                                        }
-                                        ?>
-                                    </span>
+                                    <?php $si = jobStatusInfo($job['status']); ?>
+                                    <span class="px-2 py-1 text-xs rounded-full <?= h($si['badge']) ?>"><?= h($si['label']) ?></span>
                                 </div>
                                 <p class="text-sm text-gray-600 mb-2"><?= h($job['category_name']) ?></p>
                                 <div class="flex justify-between items-center">
@@ -282,9 +349,9 @@ include 'includes/header.php';
                                         <?= formatPrice($job['budget_min']) ?> - <?= formatPrice($job['budget_max']) ?>
                                     </p>
                                     <p class="text-xs text-gray-500">
-                                        <a href="<?= url('job-applications?search_job_id=' . $job['id']) ?>" 
+                                        <a href="<?= url('job-applications?id=' . (int)$job['id']) ?>" 
                                            class="text-blue-600 hover:text-blue-500">
-                                            <?= $job['application_count'] ?>件の応募
+                                            <?= (int)$job['application_count'] ?>件の応募
                                         </a>
                                     </p>
                                 </div>
@@ -296,6 +363,7 @@ include 'includes/header.php';
             </div>
             <?php endif; ?>
 
+            <?php if (!empty($user['is_creator']) || $noRole): ?>
             <!-- Creator Menu -->
             <div class="bg-white rounded-lg shadow-sm border border-gray-200">
                 <div class="p-6 border-b border-gray-200">
@@ -373,6 +441,9 @@ include 'includes/header.php';
                 </div>
             </div>
 
+            <?php endif; ?>
+
+            <?php if (!empty($user['is_client']) || (int)$clientStats['jobs'] > 0 || $noRole): ?>
             <!-- Client Menu -->
             <div class="bg-white rounded-lg shadow-sm border border-gray-200">
                 <div class="p-6 border-b border-gray-200">
@@ -463,6 +534,7 @@ include 'includes/header.php';
                     </div>
                 </div>
             </div>
+            <?php endif; ?>
         </div>
     </div>
 </section>

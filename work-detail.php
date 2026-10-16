@@ -62,8 +62,17 @@ try {
         redirect(url('works'));
     }
 
-    // 閲覧数更新
-    $db->update("UPDATE works SET view_count = view_count + 1 WHERE id = ?", [$workId]);
+    // 閲覧数更新（本人の閲覧・同じ人の再読み込み・検索ロボットは数えない）
+    $isBot = (bool)preg_match('/bot|crawl|spider|slurp|preview|facebookexternalhit/i', (string)($_SERVER['HTTP_USER_AGENT'] ?? ''));
+    $isOwner = isLoggedIn() && (int)($work['user_id'] ?? 0) === (int)$_SESSION['user_id'];
+    $_SESSION['viewed_works'] = $_SESSION['viewed_works'] ?? [];
+    if (!$isBot && !$isOwner && empty($_SESSION['viewed_works'][$workId])) {
+        $_SESSION['viewed_works'][$workId] = time();
+        if (count($_SESSION['viewed_works']) > 200) {
+            $_SESSION['viewed_works'] = array_slice($_SESSION['viewed_works'], -100, null, true);
+        }
+        $db->update("UPDATE works SET view_count = view_count + 1 WHERE id = ?", [$workId]);
+    }
 
     // クリエイターの統計情報取得
     $creatorStats = $db->selectOne("
@@ -112,8 +121,9 @@ try {
 }
 
 $isOwner = isLoggedIn() && $currentUser && ((int)$currentUser['id'] === (int)$work['user_id']);
-$pageTitle = h($work['title']) . ' - 作品詳細';
-$pageDescription = h($work['description']);
+$pageTitle = $work['title'] . ' - 作品詳細';
+$pageDescription = (string)$work['description'];
+$ogImage = !empty($work['main_image']) ? uploaded_asset($work['main_image']) : null;
 
 // 画像配列をデコード
 $images = json_decode($work['images'] ?? '[]', true) ?: [$work['main_image']];
@@ -508,7 +518,7 @@ include 'includes/header.php';
                         </div>
                         <div>
                             <span class="block text-gray-400">返信時間</span>
-                            <span class="font-medium"><?= $work['response_time'] ?>時間以内</span>
+                            <span class="font-medium"><?= (int)$work['response_time'] ?>時間以内</span>
                         </div>
                     </div>
                     
@@ -1041,8 +1051,11 @@ async function sendMessage(event) {
         const result = await response.json();
         
         if (result.success) {
-            showNotification(result.message || 'メッセージを送信しました', 'success');
+            showNotification(result.message || 'メッセージを送りました', 'success');
             closeMessageModal();
+            if (result.data && result.data.chat_url) {
+                setTimeout(() => { window.location.href = result.data.chat_url; }, 1500);
+            }
         } else {
             showNotification(result.message || result.error || 'エラーが発生しました', 'error');
         }
@@ -1085,8 +1098,11 @@ async function requestJob(event) {
         const result = await response.json();
         
         if (result.success) {
-            showNotification(result.message || '案件依頼を送信しました', 'success');
+            showNotification(result.message || '依頼を送りました', 'success');
             closeJobRequestModal();
+            if (result.chat_url) {
+                setTimeout(() => { window.location.href = result.chat_url; }, 1500);
+            }
         } else {
             showNotification(result.message || result.error || 'エラーが発生しました', 'error');
         }

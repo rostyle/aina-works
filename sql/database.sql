@@ -1,5 +1,10 @@
--- AiNA Works Database Schema (draft to match current code usage)
--- MySQL/MariaDB, utf8mb4
+-- AiNA Works Database Schema
+-- MySQL 8 / MariaDB 10.4+, utf8mb4
+--
+-- コードが使う全テーブル・全列をここに揃えた「再構成版」（2026-10-16）。
+-- 本番DB（Lolipop LAA1678017-ainaworks）から SHOW CREATE TABLE で取り直したものではないため、
+-- 型・既定値が本番と食い違う場合は本番を正とし、このファイルを合わせて直すこと。
+-- ローカル検証の手順は tests/README.md。
 
 SET NAMES utf8mb4;
 SET time_zone = '+09:00';
@@ -16,6 +21,19 @@ CREATE TABLE IF NOT EXISTS users (
   is_active        TINYINT(1) NOT NULL DEFAULT 1,
   is_creator       TINYINT(1) NOT NULL DEFAULT 0,
   is_client        TINYINT(1) NOT NULL DEFAULT 0,
+  nickname         VARCHAR(100) DEFAULT NULL,
+  location         VARCHAR(191) DEFAULT NULL,
+  website          VARCHAR(255) DEFAULT NULL,
+  twitter_url      VARCHAR(255) DEFAULT NULL,
+  instagram_url    VARCHAR(255) DEFAULT NULL,
+  facebook_url     VARCHAR(255) DEFAULT NULL,
+  linkedin_url     VARCHAR(255) DEFAULT NULL,
+  youtube_url      VARCHAR(255) DEFAULT NULL,
+  tiktok_url       VARCHAR(255) DEFAULT NULL,
+  response_time    INT DEFAULT 24,
+  is_pro           TINYINT(1) NOT NULL DEFAULT 0,
+  is_verified      TINYINT(1) NOT NULL DEFAULT 0,
+  last_seen        DATETIME DEFAULT NULL,
   created_at       DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at       DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
@@ -59,6 +77,7 @@ CREATE TABLE IF NOT EXISTS works (
   status           VARCHAR(32) NOT NULL DEFAULT 'published',
   is_featured      TINYINT(1) NOT NULL DEFAULT 0,
   like_count       INT NOT NULL DEFAULT 0,
+  view_count       INT NOT NULL DEFAULT 0,
   created_at       DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at       DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
@@ -115,7 +134,12 @@ CREATE TABLE IF NOT EXISTS jobs (
   budget_max           INT DEFAULT NULL,
   location             VARCHAR(191) DEFAULT NULL,
   urgency              VARCHAR(32) DEFAULT NULL,
+  duration_weeks       INT DEFAULT NULL,
+  required_skills      TEXT DEFAULT NULL,
+  -- open / closed / contracted / delivered / completed / cancelled（in_progress・approved は旧データ互換）
   status               VARCHAR(32) NOT NULL DEFAULT 'open',
+  hiring_limit         INT NOT NULL DEFAULT 1,
+  is_recruiting        TINYINT(1) NOT NULL DEFAULT 1,
   applications_count   INT NOT NULL DEFAULT 0,
   deadline             DATE DEFAULT NULL,
   created_at           DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -148,6 +172,7 @@ CREATE TABLE IF NOT EXISTS chat_rooms (
   user1_id   INT UNSIGNED NOT NULL,
   user2_id   INT UNSIGNED NOT NULL,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT NULL,
   PRIMARY KEY (id),
   KEY idx_chat_room_users (user1_id, user2_id),
   CONSTRAINT fk_chat_room_user1 FOREIGN KEY (user1_id) REFERENCES users(id) ON DELETE CASCADE,
@@ -159,7 +184,9 @@ CREATE TABLE IF NOT EXISTS chat_messages (
   room_id    INT UNSIGNED NOT NULL,
   sender_id  INT UNSIGNED NOT NULL,
   message    TEXT DEFAULT NULL,
+  message_type VARCHAR(16) NOT NULL DEFAULT 'text',
   file_path  VARCHAR(255) DEFAULT NULL,
+  is_read    TINYINT(1) NOT NULL DEFAULT 0,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   KEY idx_chat_msg_room (room_id),
@@ -185,3 +212,113 @@ CREATE TABLE IF NOT EXISTS user_bank_accounts (
   CONSTRAINT fk_bank_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS password_resets (
+  id          INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  email       VARCHAR(191) NOT NULL,
+  token       VARCHAR(64) NOT NULL,          -- SHA-256（平文トークンは保存しない）
+  expires_at  DATETIME NOT NULL,
+  used_at     DATETIME DEFAULT NULL,
+  created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_password_resets_token (token)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS messages (
+  id            INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  sender_id     INT UNSIGNED NOT NULL,
+  recipient_id  INT UNSIGNED NOT NULL,
+  subject       VARCHAR(255) DEFAULT NULL,
+  message       TEXT,
+  is_read       TINYINT(1) NOT NULL DEFAULT 0,
+  created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS job_requests (
+  id                   INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  client_id            INT UNSIGNED NOT NULL,
+  creator_id           INT UNSIGNED NOT NULL,
+  work_id              INT UNSIGNED DEFAULT NULL,
+  project_title        VARCHAR(191) NOT NULL,
+  project_description  TEXT,
+  budget_min           INT DEFAULT NULL,
+  budget_max           INT DEFAULT NULL,
+  deadline             DATE DEFAULT NULL,
+  requirements         TEXT DEFAULT NULL,
+  status               VARCHAR(32) NOT NULL DEFAULT 'pending',
+  created_at           DATETIME DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS success_stories (
+  id              INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  title           VARCHAR(255) NOT NULL,
+  category_name   VARCHAR(100) DEFAULT NULL,
+  tag_type        VARCHAR(50) DEFAULT NULL,
+  interview_date  DATE DEFAULT NULL,
+  intro_text      TEXT DEFAULT NULL,
+  main_image      VARCHAR(255) DEFAULT NULL,
+  member_image    VARCHAR(255) DEFAULT NULL,
+  member_name     VARCHAR(100) DEFAULT NULL,
+  member_role     VARCHAR(100) DEFAULT NULL,
+  result_badge    VARCHAR(100) DEFAULT NULL,
+  status          VARCHAR(20) NOT NULL DEFAULT 'draft',
+  created_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at      DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS success_story_sections (
+  id                INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  success_story_id  INT UNSIGNED NOT NULL,
+  heading           VARCHAR(255) DEFAULT NULL,
+  body_text         TEXT DEFAULT NULL,
+  display_order     INT NOT NULL DEFAULT 0,
+  PRIMARY KEY (id),
+  KEY idx_story_sections_story (success_story_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS skills (
+  id           INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  name         VARCHAR(100) NOT NULL,
+  category_id  INT UNSIGNED DEFAULT NULL,
+  PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS user_skills (
+  id           INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  user_id      INT UNSIGNED NOT NULL,
+  skill_id     INT UNSIGNED NOT NULL,
+  proficiency  INT NOT NULL DEFAULT 1,
+  PRIMARY KEY (id),
+  KEY idx_user_skills_user (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ライブ講座（AiNA本体の講座データと共用の可能性あり。列の追加は本体側と合わせて行う）
+CREATE TABLE IF NOT EXISTS course_books (
+  id            INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  course_name   VARCHAR(191) NOT NULL,
+  description   TEXT DEFAULT NULL,
+  start         DATETIME NOT NULL,
+  end           DATETIME DEFAULT NULL,
+  instructor    VARCHAR(100) DEFAULT NULL,
+  method        VARCHAR(50) DEFAULT NULL,
+  place         VARCHAR(191) DEFAULT NULL,
+  point_amount  INT DEFAULT NULL,
+  zoom_id       VARCHAR(64) DEFAULT NULL,
+  zoom_password VARCHAR(64) DEFAULT NULL,
+  category_id   INT UNSIGNED DEFAULT NULL,
+  booked_count  VARCHAR(16) DEFAULT '0',
+  updated_at    DATETIME DEFAULT NULL,
+  PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS course_user_bookings (
+  id          INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  book_id     INT UNSIGNED NOT NULL,
+  user_id     INT UNSIGNED NOT NULL,
+  created_at  DATETIME DEFAULT NULL,
+  updated_at  DATETIME DEFAULT NULL,
+  PRIMARY KEY (id),
+  KEY idx_course_bookings_user (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

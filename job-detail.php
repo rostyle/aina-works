@@ -29,6 +29,18 @@ if (!$job) {
     redirect(url('jobs'));
 }
 
+// キャンセルされた案件は、依頼者・応募者・管理者以外には見せない
+if ($job['status'] === 'cancelled') {
+    $viewerId = (int)($_SESSION['user_id'] ?? 0);
+    $involved = $viewerId > 0 && ((int)$job['client_id'] === $viewerId
+        || $db->selectOne("SELECT 1 FROM job_applications WHERE job_id = ? AND creator_id = ? LIMIT 1", [$jobId, $viewerId])
+        || isAdminUser());
+    if (!$involved) {
+        setFlash('info', 'この案件は募集が取り下げられました。');
+        redirect(url('jobs'));
+    }
+}
+
 // 必要スキルをデコード
 $requiredSkills = json_decode($job['required_skills'] ?? '[]', true) ?: [];
 
@@ -39,7 +51,7 @@ $hiringLimit = isset($job['hiring_limit']) ? max(1, (int)$job['hiring_limit']) :
 $isRecruiting = isset($job['is_recruiting']) ? (int)$job['is_recruiting'] : 1; // カラム未導入環境は募集中扱い
 
 $pageTitle = $job['title'];
-$pageDescription = mb_substr($job['description'], 0, 150) . '...';
+$pageDescription = mb_strimwidth(preg_replace('/\s+/u', ' ', (string)$job['description']), 0, 150, '…');
 
 // 既に応募済みかチェック & 自分の案件かチェック
 $hasApplied = false;
@@ -51,175 +63,127 @@ if (isLoggedIn()) {
     // 自分の案件かチェック
     $isOwnJob = ($job['client_id'] == $currentUser['id']);
     
-    // クリエイターの場合、応募済みかチェック
-    if (!empty($currentUser['is_creator'])) {
-        $existingApplication = $db->selectOne(
-            "SELECT id FROM job_applications WHERE job_id = ? AND creator_id = ?",
-            [$jobId, $currentUser['id']]
-        );
-        $hasApplied = (bool)$existingApplication;
-    }
+    // 自分の応募（クリエイター）
+    $myApplication = $db->selectOne(
+        "SELECT id, status FROM job_applications WHERE job_id = ? AND creator_id = ? ORDER BY id DESC LIMIT 1",
+        [$jobId, $currentUser['id']]
+    ) ?: null;
+    $hasApplied = (bool)$myApplication;
 }
+$myApplication = $myApplication ?? null;
+$isAcceptedCreator = $myApplication && $myApplication['status'] === 'accepted';
+$canApply = isLoggedIn() && !empty($currentUser['is_creator']) && $job['status'] === 'open' && $isRecruiting
+    && ($acceptedCount < $hiringLimit) && !$hasApplied && !$isOwnJob;
+$recruitingOpen = $job['status'] === 'open' && $isRecruiting && ($acceptedCount < $hiringLimit);
 
 // 応募処理 - デバッグ版
 // ※ 隠しフィールドで submit_application=1 を常に送るように修正（下のフォーム）
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_application'])) {
-    error_log('応募処理開始');
-    error_log('POST data: ' . print_r($_POST, true));
-    
-    // ログイン確認
     if (!isLoggedIn()) {
-        error_log('ログインしていません');
         setFlash('error', 'ログインが必要です。');
+        redirect(url('login?redirect=' . rawurlencode('job-detail?id=' . $jobId)));
+    }
+    if (!verifyCsrfToken($_POST['csrf_token'] ?? '')) {
+        setFlash('error', '画面の有効期限が切れました。もう一度応募してください。');
         redirect(url('job-detail?id=' . $jobId));
     }
 
     $user = getCurrentUser();
-    error_log('ユーザー情報: ' . print_r($user, true));
 
-    // クリエイター以外の応募ブロック
     if (empty($user['is_creator'])) {
-        setFlash('error', 'クリエイターのみ応募できます。');
-        redirect(url('job-detail?id=' . $jobId));
+        setFlash('error', '応募するには「仕事を受けたい（クリエイター）」の設定が必要です。');
+        redirect(url('select-role?role=creator&redirect=' . rawurlencode('job-detail?id=' . $jobId)));
     }
-    
-    // 自分の案件かチェック
     if ($job['client_id'] == $user['id']) {
         setFlash('error', '自分の案件には応募できません。');
         redirect(url('job-detail?id=' . $jobId));
     }
+    // 募集中・募集人数に空きがある案件だけ受け付ける
+    if ($job['status'] !== 'open' || !$isRecruiting || $acceptedCount >= $hiringLimit) {
+        setFlash('error', 'この案件は応募の受付を終了しています。');
+        redirect(url('job-detail?id=' . $jobId));
+    }
+    if (!rateLimitAllow('job_apply', (string)$user['id'], 20, 3600)) {
+        setFlash('error', '短時間に応募が続いています。少し時間をおいてから応募してください。');
+        redirect(url('job-detail?id=' . $jobId));
+    }
 
-    // 入力値取得（数値は下限ガード）
-    $coverLetter = trim($_POST['cover_letter'] ?? '');
+    $coverLetter = trim((string)($_POST['cover_letter'] ?? ''));
     $proposedPrice = max(0, (int)($_POST['proposed_price'] ?? 0));
     $proposedDuration = max(0, (int)($_POST['proposed_duration'] ?? 0));
-    
-    error_log('入力値: coverLetter=' . $coverLetter . ', proposedPrice=' . $proposedPrice . ', proposedDuration=' . $proposedDuration);
 
-    // バリデーション
     if ($coverLetter === '') {
-        error_log('応募メッセージが空です');
         setFlash('error', '応募メッセージを入力してください。');
         redirect(url('job-detail?id=' . $jobId));
     }
-    if ($proposedPrice < 100) {
-        error_log('提案金額が無効です: ' . $proposedPrice);
+    if (mb_strlen($coverLetter) > 3000) {
+        setFlash('error', '応募メッセージは3,000文字以内で入力してください。');
+        redirect(url('job-detail?id=' . $jobId));
+    }
+    if ($proposedPrice < 100 || $proposedPrice > 100000000) {
         setFlash('error', '提案金額は100円以上で入力してください。');
         redirect(url('job-detail?id=' . $jobId));
     }
-    if ($proposedDuration <= 0) {
-        error_log('提案期間が無効です: ' . $proposedDuration);
-        setFlash('error', '提案期間を正しく入力してください。');
+    if ($proposedDuration <= 0 || $proposedDuration > 52) {
+        setFlash('error', '提案期間は1〜52週で入力してください。');
         redirect(url('job-detail?id=' . $jobId));
     }
 
-    // 重複チェック
     $existingApp = $db->selectOne(
         "SELECT id FROM job_applications WHERE job_id = ? AND creator_id = ?",
         [$jobId, $user['id']]
     );
     if ($existingApp) {
-        setFlash('error', '既に応募済みです。');
+        setFlash('error', 'この案件には応募済みです。');
         redirect(url('job-detail?id=' . $jobId));
     }
 
-    // 応募データ挿入
     try {
-        error_log('データベース処理開始');
         $db->beginTransaction();
-        
-        $applicationId = $db->insert(
+        $db->insert(
             "INSERT INTO job_applications (job_id, creator_id, cover_letter, proposed_price, proposed_duration, status, created_at) VALUES (?, ?, ?, ?, ?, 'pending', NOW())",
             [$jobId, $user['id'], $coverLetter, $proposedPrice, $proposedDuration]
         );
-        
-        error_log('応募データ挿入完了: ID=' . $applicationId);
-        
-        // 応募数更新
         $db->update(
             "UPDATE jobs SET applications_count = applications_count + 1 WHERE id = ?",
             [$jobId]
         );
-        
-        error_log('応募数更新完了');
-        
         $db->commit();
-
-        // 応募内容をチャットに自動投稿（ベストエフォート）
-        try {
-            // チャットルームを取得または作成（応募者とクライアント）
-            $room = $db->selectOne(
-                "SELECT id FROM chat_rooms WHERE (user1_id = ? AND user2_id = ?) OR (user1_id = ? AND user2_id = ?)",
-                [$user['id'], $job['client_id'], $job['client_id'], $user['id']]
-            );
-            if (!$room) {
-                $roomId = (int)$db->insert(
-                    "INSERT INTO chat_rooms (user1_id, user2_id, created_at) VALUES (?, ?, NOW())",
-                    [$user['id'], $job['client_id']]
-                );
-            } else {
-                $roomId = (int)$room['id'];
-            }
-
-            // 応募内容メッセージ生成（応募者からの送信として保存）
-            $applicationMessage  = "新規応募を送信しました。\n\n";
-            $applicationMessage .= "【案件】" . ($job['title'] ?? '案件') . "\n\n";
-            $applicationMessage .= "【応募内容】\n";
-            $applicationMessage .= "・提案金額: ¥" . number_format((int)$proposedPrice) . "\n";
-            $applicationMessage .= "・提案期間: " . (int)$proposedDuration . "週間\n";
-            if (!empty($coverLetter)) {
-                $applicationMessage .= "・応募メッセージ:\n" . $coverLetter . "\n";
-            }
-
-            $db->insert(
-                "INSERT INTO chat_messages (room_id, sender_id, message, created_at) VALUES (?, ?, ?, NOW())",
-                [$roomId, $user['id'], $applicationMessage]
-            );
-        } catch (Exception $chatErr) {
-            error_log('応募内容のチャット保存エラー: ' . $chatErr->getMessage());
-        }
-        
-        error_log('応募処理成功');
-        
-        // クライアントにメール通知を送信
-        try {
-            $clientEmail = $db->selectOne(
-                "SELECT u.email, u.full_name FROM users u 
-                 INNER JOIN jobs j ON u.id = j.client_id 
-                 WHERE j.id = ?",
-                [$jobId]
-            );
-            
-            if ($clientEmail) {
-                $subject = "【AiNA Works】新しい応募が届きました - {$job['title']}";
-                $message = "お疲れ様です。\n\n";
-                $message .= "あなたの案件「{$job['title']}」に新しい応募が届きました。\n\n";
-                $message .= "応募者: {$user['full_name']}\n";
-                $message .= "提案金額: " . formatPrice($proposedPrice) . "\n";
-                $message .= "提案期間: {$proposedDuration}日\n\n";
-                $message .= "応募メッセージ:\n";
-                $message .= $coverLetter . "\n\n";
-                $message .= "応募の詳細を確認し、受諾または却下の判断をお願いします。";
-                
-                $actionUrl = url('job-applications', true);
-                sendNotificationMail($clientEmail['email'], $subject, $message, $actionUrl, '応募を確認する');
-            }
-        } catch (Exception $e) {
-            error_log('応募通知メール送信エラー: ' . $e->getMessage());
-            // メール送信エラーでも応募処理は継続
-        }
-        
-        setFlash('success', '応募を送信しました！');
-
-        // 成功時は同ページに戻して成功バナーを表示
-        redirect(url('job-detail?id=' . $jobId . '&applied=1'));
-        
     } catch (Exception $e) {
+        try { $db->rollback(); } catch (Throwable $t) {}
         error_log('応募処理エラー: ' . $e->getMessage());
-        $db->rollBack();
         setFlash('error', '応募の送信に失敗しました。もう一度お試しください。');
         redirect(url('job-detail?id=' . $jobId));
     }
+
+    // 応募内容を依頼者とのチャットに残す
+    $applicationMessage  = "新規応募を送信しました。\n\n";
+    $applicationMessage .= "【案件】" . ($job['title'] ?? '案件') . "\n\n";
+    $applicationMessage .= "【応募内容】\n";
+    $applicationMessage .= "・提案金額: ¥" . number_format($proposedPrice) . "\n";
+    $applicationMessage .= "・提案期間: " . $proposedDuration . "週間\n";
+    $applicationMessage .= "・応募メッセージ:\n" . $coverLetter . "\n";
+    postChatNotice((int)$user['id'], (int)$job['client_id'], $applicationMessage);
+
+    // 依頼者へメール
+    try {
+        $client = $db->selectOne("SELECT email FROM users WHERE id = ? AND is_active = 1", [$job['client_id']]);
+        if ($client) {
+            $subject = "【AiNA Works】新しい応募が届きました - {$job['title']}";
+            $message = "あなたの案件「{$job['title']}」に新しい応募が届きました。\n\n";
+            $message .= "応募者: {$user['full_name']}\n";
+            $message .= "提案金額: " . formatPrice($proposedPrice) . "\n";
+            $message .= "提案期間: {$proposedDuration}週間\n\n";
+            $message .= "応募メッセージ:\n" . mb_strimwidth($coverLetter, 0, 600, '…') . "\n\n";
+            $message .= "応募管理から受諾または見送りを選んでください。返事が早いほど良いクリエイターに出会えます。";
+            sendNotificationMail($client['email'], $subject, $message, url('job-applications?id=' . $jobId, true), '応募を確認する');
+        }
+    } catch (Exception $e) {
+        error_log('応募通知メール送信エラー: ' . $e->getMessage());
+    }
+
+    setFlash('success', '応募を送信しました。依頼者から返事が来るとメールでお知らせします。');
+    redirect(url('job-detail?id=' . $jobId . '&applied=1'));
 }
 
 include 'includes/header.php';
@@ -535,7 +499,16 @@ $showSuccess = isset($_GET['applied']) && $_GET['applied'] == '1';
                                 ]
                             ];
                             
-                            $currentStatus = $statusConfig[$job['status']] ?? $statusConfig['open'];
+                            if (!isset($statusConfig['closed'])) {
+                                $statusConfig['closed'] = [
+                                    'class' => 'bg-gray-100 text-gray-700 border-2 border-gray-300',
+                                    'label' => '募集終了',
+                                    'icon' => '',
+                                    'description' => '応募の受付を終了しました',
+                                    'bgClass' => 'bg-gray-50'
+                                ];
+                            }
+                            $currentStatus = $statusConfig[$job['status']] ?? $statusConfig['closed'];
                             ?>
                             
                             <span class="inline-flex items-center px-4 py-2 text-sm font-semibold rounded-full <?= $currentStatus['class'] ?>">
@@ -576,12 +549,14 @@ $showSuccess = isset($_GET['applied']) && $_GET['applied'] == '1';
                                 ?>
                             </p>
                         </div>
+                        <?php if (array_key_exists('remote_ok', $job) && $job['remote_ok'] !== null): ?>
                         <div>
                             <h4 class="text-sm font-medium text-gray-500">リモート</h4>
                             <p class="text-lg font-semibold text-gray-900">
                                 <?= $job['remote_ok'] ? '可能' : '不可' ?>
                             </p>
                         </div>
+                        <?php endif; ?>
                     </div>
 
                     <!-- Status Description -->
@@ -635,7 +610,6 @@ $showSuccess = isset($_GET['applied']) && $_GET['applied'] == '1';
                     <div class="prose max-w-none break-words" style="word-break: break-word; overflow-wrap: anywhere;">
                         <?= nl2br(autolink(h($job['description']))) ?>
                     </div>
-                    <p class="text-xs text-gray-500 mt-1">100円以上、100円単位で入力してください</p>
                 </div>
 
                 <!-- Required Skills -->
@@ -682,82 +656,157 @@ $showSuccess = isset($_GET['applied']) && $_GET['applied'] == '1';
                     </a>
                 </div>
 
-                <!-- Application Button / Client Controls -->
-                <?php if (isLoggedIn() && !empty(getCurrentUser()['is_creator']) && $job['status'] === 'open' && $isRecruiting && ($acceptedCount < $hiringLimit) && !$hasApplied && !$isOwnJob): ?>
-                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-4">この案件に応募</h3>
-                        <button id="open-application-modal" 
-                                    class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-blue-700 transition-colors">
-                                応募する
-                            </button>
-                    </div>
-                <?php elseif (isLoggedIn() && $isOwnJob): ?>
-                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-4">募集管理</h3>
-                        <div class="space-y-3">
-                            <div class="flex items-center justify-between">
-                                <label for="status_select" class="text-sm text-gray-700">募集状態</label>
-                                <div class="flex items-center space-x-2">
-                                    <select id="status_select" class="px-3 py-2 border border-gray-300 rounded-md text-sm">
-                                        <option value="open" <?= $job['status'] === 'open' ? 'selected' : '' ?>>募集中</option>
-                                        <option value="in_progress" <?= $job['status'] === 'in_progress' ? 'selected' : '' ?>>進行中</option>
-                                        <option value="contracted" <?= $job['status'] === 'contracted' ? 'selected' : '' ?>>契約済み</option>
-                                        <option value="delivered" <?= $job['status'] === 'delivered' ? 'selected' : '' ?>>納品済み</option>
-                                        <option value="approved" <?= $job['status'] === 'approved' ? 'selected' : '' ?>>検収済み</option>
-                                        <option value="completed" <?= $job['status'] === 'completed' ? 'selected' : '' ?>>完了</option>
-                                        <option value="closed" <?= $job['status'] === 'closed' ? 'selected' : '' ?>>募集終了</option>
-                                        <option value="cancelled" <?= $job['status'] === 'cancelled' ? 'selected' : '' ?>>キャンセル</option>
-                                    </select>
+                <!-- 状態と次の一歩（見る人ごとに出し分け） -->
+                <?php $statusInfo = jobStatusInfo($job['status']); ?>
+                <?php if (isLoggedIn() && $isOwnJob): ?>
+                    <?php $nextActions = jobNextStatuses($job['status'], 'client', $acceptedCount); ?>
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6" id="job-owner-panel">
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="text-lg font-semibold text-gray-900">あなたの案件</h3>
+                            <span class="px-3 py-1 rounded-full text-xs font-bold <?= h($statusInfo['badge']) ?>"><?= h($statusInfo['label']) ?></span>
+                        </div>
+                        <p class="text-sm text-gray-600 mb-4">採用 <?= (int)$acceptedCount ?> / <?= (int)$hiringLimit ?>人</p>
+
+                        <div class="rounded-lg bg-blue-50 border border-blue-100 p-3 text-sm text-blue-900 mb-4">
+                            <?php if ($job['status'] === 'open'): ?>
+                                応募が届いたら「応募を確認する」から受諾か見送りを選んでください。定員まで採用すると自動で「契約中」になります。
+                            <?php elseif ($job['status'] === 'closed'): ?>
+                                募集を締め切っています。届いている応募から採用するか、再募集できます。
+                            <?php elseif (in_array($job['status'], ['contracted', 'in_progress'], true)): ?>
+                                作業中です。チャットで進め方とお振込先を確認しましょう。クリエイターが「納品を報告」すると、ここに検収ボタンが出ます。
+                            <?php elseif ($job['status'] === 'delivered'): ?>
+                                納品の報告が届いています。内容を確認し、問題なければ「検収して完了にする」を押してください。完了後に報酬をお振込みください（振込先は応募管理の「振込先を見る」）。
+                            <?php elseif ($job['status'] === 'completed'): ?>
+                                完了しました。クリエイターのプロフィールからレビューを書くと、次の依頼者の参考になります。
+                            <?php elseif ($job['status'] === 'cancelled'): ?>
+                                この案件はキャンセルされています。
+                            <?php endif; ?>
+                        </div>
+
+                        <div class="space-y-2">
+                            <a href="<?= h(url('job-applications?id=' . $jobId)) ?>" class="block w-full text-center py-3 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700">
+                                応募を確認する<?= (int)($job['application_count'] ?? 0) > 0 ? '（' . (int)$job['application_count'] . '件）' : '' ?>
+                            </a>
+                            <?php
+                            $actionLabels = [
+                                'completed' => ['検収して完了にする', 'bg-green-600 hover:bg-green-700 text-white', '納品物を確認しましたか？完了にすると元に戻せません。'],
+                                'contracted' => [$job['status'] === 'delivered' ? '修正を依頼する' : '募集を締め切って契約中にする', 'bg-white border border-gray-300 text-gray-800 hover:bg-gray-50', $job['status'] === 'delivered' ? 'クリエイターに修正を依頼します。よろしいですか？' : '募集を締め切ります。よろしいですか？'],
+                                'closed' => ['募集を締め切る', 'bg-white border border-gray-300 text-gray-800 hover:bg-gray-50', '新しい応募の受付を止めます。よろしいですか？'],
+                                'open' => ['募集を再開する', 'bg-white border border-gray-300 text-gray-800 hover:bg-gray-50', '応募の受付を再開します。よろしいですか？'],
+                                'cancelled' => ['案件をキャンセルする', 'bg-white border border-red-300 text-red-700 hover:bg-red-50', '案件をキャンセルします。採用済みのクリエイターにも通知されます。よろしいですか？'],
+                            ];
+                            foreach ($nextActions as $to):
+                                if (!isset($actionLabels[$to])) continue;
+                                [$label, $cls, $confirmText] = $actionLabels[$to];
+                            ?>
+                                <button type="button" class="job-status-action block w-full text-center py-3 rounded-lg font-semibold <?= h($cls) ?>"
+                                        data-status="<?= h($to) ?>" data-confirm="<?= h($confirmText) ?>" data-ask-note="<?= ($to === 'contracted' && $job['status'] === 'delivered') ? '1' : '0' ?>">
+                                    <?= h($label) ?>
+                                </button>
+                            <?php endforeach; ?>
+                        </div>
+
+                        <?php if (in_array($job['status'], ['open', 'closed'], true)): ?>
+                            <div class="mt-5 pt-4 border-t border-gray-100">
+                                <label for="hiring_limit" class="block text-sm text-gray-700 mb-1">募集人数</label>
+                                <div class="flex items-center gap-2">
+                                    <input type="number" id="hiring_limit" min="<?= max(1, (int)$acceptedCount) ?>" max="100" value="<?= (int)$hiringLimit ?>" class="w-24 px-3 py-2 border border-gray-300 rounded-md">
+                                    <span class="text-sm text-gray-600">人</span>
+                                    <button type="button" id="btn-save-limit" class="ml-auto px-3 py-2 text-sm rounded-md bg-gray-800 text-white hover:bg-gray-900">変更する</button>
                                 </div>
                             </div>
-                            <div class="flex items-center justify-between">
-                                <label for="hiring_limit" class="text-sm text-gray-700">募集人数</label>
-                                <div class="flex items-center space-x-2">
-                                    <input type="number" id="hiring_limit" min="1" value="<?= isset($job['hiring_limit']) ? (int)$job['hiring_limit'] : 1 ?>" class="w-24 px-3 py-2 border border-gray-300 rounded-md">
-                                </div>
-                            </div>
-                            <div class="flex justify-between items-center pt-2">
-                                <?php if ($job['status'] === 'open'): ?>
-                                <a href="<?= url('edit-job?id=' . $jobId) ?>" class="text-sm text-blue-600 hover:text-blue-700">案件を編集する</a>
-                                <?php else: ?>
-                                <span class="text-xs text-gray-500">編集は募集中のみ可能です</span>
-                                <?php endif; ?>
-                                <button type="button" id="btn-save-settings" class="px-3 py-2 text-sm rounded-md bg-blue-600 text-white hover:bg-blue-700">保存</button>
-                            </div>
+                        <?php endif; ?>
+                        <div class="mt-4 text-sm">
+                            <?php if (in_array($job['status'], ['open', 'closed'], true)): ?>
+                                <a href="<?= h(url('edit-job?id=' . $jobId)) ?>" class="text-blue-600 hover:text-blue-700"><?= $job['status'] === 'closed' ? '締切日を延ばして再募集する' : '案件の内容を編集する' ?></a>
+                            <?php else: ?>
+                                <span class="text-xs text-gray-500">内容の編集は募集中・募集終了の案件のみできます</span>
+                            <?php endif; ?>
                         </div>
                     </div>
-                <?php elseif (isLoggedIn() && !empty(getCurrentUser()['is_creator']) && $hasApplied): ?>
-                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center">
-                        <div class="flex items-center justify-center mb-4">
-                            <svg class="h-12 w-12 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 1 1 -18 0 9 9 0 0 1 18 0z" />
-                            </svg>
+
+                <?php elseif ($isAcceptedCreator): ?>
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6" id="job-creator-panel">
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="text-lg font-semibold text-gray-900">採用されました</h3>
+                            <span class="px-3 py-1 rounded-full text-xs font-bold <?= h($statusInfo['badge']) ?>"><?= h($statusInfo['label']) ?></span>
                         </div>
-                        <h3 class="text-lg font-semibold text-gray-900 mb-2">応募済み</h3>
-                        <p class="text-sm text-gray-600 mb-4">この案件には既に応募済みです。</p>
-                        <a href="<?= url('dashboard') ?>"
-                           class="inline-block bg-gray-600 text-white py-2 px-4 rounded-lg font-semibold hover:bg-gray-700 transition-colors">
-                            応募状況を確認
+                        <div class="rounded-lg bg-green-50 border border-green-100 p-3 text-sm text-green-900 mb-4">
+                            <?php if ($job['status'] === 'delivered'): ?>
+                                納品を報告しました。依頼者の検収を待っています。
+                            <?php elseif ($job['status'] === 'completed'): ?>
+                                完了しました。お疲れさまでした。依頼者からのお振込をご確認ください。依頼者へのレビューもお願いします。
+                            <?php elseif ($job['status'] === 'cancelled'): ?>
+                                この案件はキャンセルされました。詳しくはチャットで依頼者に確認してください。
+                            <?php else: ?>
+                                チャットで内容・納期を確認して作業を始めてください。お振込先はプロフィールで登録できます。作業が終わったら「納品を報告する」を押してください。
+                            <?php endif; ?>
+                        </div>
+                        <div class="space-y-2">
+                            <a href="<?= h(url('chat?user_id=' . (int)$job['client_id'])) ?>" class="block w-full text-center py-3 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700">依頼者とチャットする</a>
+                            <?php if (in_array('delivered', jobNextStatuses($job['status'], 'creator', 1), true)): ?>
+                                <button type="button" class="job-status-action block w-full text-center py-3 rounded-lg font-semibold bg-green-600 text-white hover:bg-green-700"
+                                        data-status="delivered" data-confirm="納品物をチャットで渡しましたか？依頼者に納品を知らせます。" data-ask-note="1">
+                                    納品を報告する
+                                </button>
+                            <?php endif; ?>
+                            <?php if ($job['status'] === 'completed'): ?>
+                                <a href="<?= h(url('creator-profile?id=' . (int)$job['client_id'])) ?>" class="block w-full text-center py-3 rounded-lg border border-gray-300 text-gray-800 font-semibold hover:bg-gray-50">依頼者のレビューを書く</a>
+                            <?php endif; ?>
+                            <a href="<?= h(url('profile#bank')) ?>" class="block text-center text-sm text-gray-600 underline">お振込先を確認・登録する</a>
+                        </div>
+                    </div>
+
+                <?php elseif ($canApply): ?>
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">この案件に応募</h3>
+                        <p class="text-sm text-gray-600 mb-4">採用 <?= (int)$acceptedCount ?> / <?= (int)$hiringLimit ?>人<?= !empty($job['deadline']) ? '・締切 ' . h(formatDate($job['deadline'], 'n月j日')) : '' ?></p>
+                        <button id="open-application-modal" class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-blue-700 transition-colors">
+                            応募する
+                        </button>
+                    </div>
+
+                <?php elseif (isLoggedIn() && $hasApplied): ?>
+                    <?php $appStatus = $myApplication['status'] ?? 'pending'; ?>
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">
+                            <?= $appStatus === 'rejected' ? '今回は見送りになりました' : ($appStatus === 'withdrawn' ? '応募を取り下げました' : '応募済み・返事待ち') ?>
+                        </h3>
+                        <p class="text-sm text-gray-600 mb-4">
+                            <?= $appStatus === 'pending' ? '依頼者から返事が来るとメールでお知らせします。' : 'ほかの案件も探してみましょう。' ?>
+                        </p>
+                        <a href="<?= h(url($appStatus === 'pending' ? 'job-applications' : 'jobs')) ?>" class="inline-block bg-gray-700 text-white py-2 px-4 rounded-lg font-semibold hover:bg-gray-800 transition-colors">
+                            <?= $appStatus === 'pending' ? '自分の応募を見る' : '案件を探す' ?>
                         </a>
                     </div>
+
                 <?php elseif (!isLoggedIn()): ?>
                     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-4">応募するにはログインが必要です</h3>
-                        <a href="<?= url('login?redirect=' . urlencode('job-detail?id=' . $jobId)) ?>" 
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2"><?= $recruitingOpen ? '応募するにはログインが必要です' : 'この案件は応募の受付を終了しています' ?></h3>
+                        <p class="text-sm text-gray-600 mb-4">AiNAマイページと同じメールアドレス・パスワードでログインできます。</p>
+                        <a href="<?= h(url('login?redirect=' . rawurlencode('job-detail?id=' . $jobId))) ?>"
                            class="inline-block bg-blue-600 text-white py-2 px-4 rounded-lg font-semibold hover:bg-blue-700 transition-colors">
                             ログイン
                         </a>
-                        <!-- ローカル登録は無効化。ログインのみ案内 -->
                     </div>
-                <?php elseif ($job['status'] !== 'open'): ?>
+
+                <?php elseif ($recruitingOpen && empty($currentUser['is_creator'])): ?>
                     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-4">この案件は応募受付を終了しています</h3>
-                        <p class="text-sm text-gray-600">
-                            この案件は応募受付を終了しています
-                        </p>
-                        <a href="<?= url('jobs') ?>" 
-                           class="inline-block bg-gray-600 text-white py-2 px-4 rounded-lg font-semibold hover:bg-gray-700 transition-colors">
-                            他の案件を見る
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">応募するにはクリエイター登録が必要です</h3>
+                        <p class="text-sm text-gray-600 mb-4">「仕事を受けたい（クリエイター）」を選ぶと、すぐにこの案件に応募できます。</p>
+                        <a href="<?= h(url('select-role?role=creator&redirect=' . rawurlencode('job-detail?id=' . $jobId))) ?>"
+                           class="inline-block w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-blue-700 transition-colors">
+                            クリエイター登録して応募する
+                        </a>
+                    </div>
+
+                <?php else: ?>
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">この案件は応募の受付を終了しています</h3>
+                        <p class="text-sm text-gray-600 mb-4">状態: <?= h($statusInfo['label']) ?></p>
+                        <a href="<?= h(url('jobs')) ?>"
+                           class="inline-block bg-gray-700 text-white py-2 px-4 rounded-lg font-semibold hover:bg-gray-800 transition-colors">
+                            募集中の案件を見る
                         </a>
                     </div>
                 <?php endif; ?>
@@ -768,7 +817,7 @@ $showSuccess = isset($_GET['applied']) && $_GET['applied'] == '1';
 </section>
 
 <!-- Application Modal -->
-<?php if (isLoggedIn() && !empty(getCurrentUser()['is_creator']) && $job['status'] === 'open' && !$hasApplied && !$isOwnJob): ?>
+<?php if ($canApply): ?>
 <div id="application-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden" role="dialog" aria-modal="true">
     <div class="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
         <div class="mt-3">
@@ -786,7 +835,8 @@ $showSuccess = isset($_GET['applied']) && $_GET['applied'] == '1';
             <form id="application-form" method="POST" action="<?= url('job-detail?id=' . $jobId) ?>" class="space-y-4">
                 <!-- 常に送られるように隠しフィールドを追加 -->
                 <input type="hidden" name="submit_application" value="1">
-                <input type="hidden" name="job_id" value="<?= $jobId ?>">
+                <input type="hidden" name="csrf_token" value="<?= h(generateCsrfToken()) ?>">
+                <input type="hidden" name="job_id" value="<?= (int)$jobId ?>">
                 
                 <div>
                     <label for="modal_cover_letter" class="block text-sm font-medium text-gray-700 mb-2">
@@ -831,10 +881,12 @@ $showSuccess = isset($_GET['applied']) && $_GET['applied'] == '1';
                            max="52"
                            required
                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                           placeholder="<?= $job['duration_weeks'] ?>">
+                           placeholder="<?= (int)($job['duration_weeks'] ?? 0) ?: 2 ?>">
+                    <?php if (!empty($job['duration_weeks'])): ?>
                     <p class="text-xs text-gray-500 mt-1">
-                        希望期間: <?= $job['duration_weeks'] ?>週間
+                        希望期間: <?= (int)$job['duration_weeks'] ?>週間
                     </p>
+                    <?php endif; ?>
                 </div>
 
                 <div class="flex space-x-3 pt-4">
@@ -901,63 +953,53 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // 募集管理（依頼者向け）
-    const btnSave = document.getElementById('btn-save-settings');
-    if (btnSave) {
-        const statusSelect = document.getElementById('status_select');
-        const inputLimit = document.getElementById('hiring_limit');
-        const csrfEl = document.querySelector('meta[name="csrf-token"]');
-        const csrfToken = csrfEl ? csrfEl.getAttribute('content') : '';
+    // 案件の状態を変える（依頼者の各ボタン・クリエイターの「納品を報告」）
+    const csrfEl = document.querySelector('meta[name="csrf-token"]');
+    const csrfToken = csrfEl ? csrfEl.getAttribute('content') : '';
+    const settingsApi = <?= json_encode(url('api/update-job-settings.php')) ?>;
 
-        btnSave.addEventListener('click', async function() {
-            if (!confirm('募集設定を更新しますか？')) return;
-            
-            const btn = this;
-            const originalText = btn.textContent;
-            btn.disabled = true;
-            btn.textContent = '保存中...';
-
-            try {
-                const fd = new FormData();
-                fd.append('job_id', <?= (int)$jobId ?>);
-                fd.append('csrf_token', csrfToken);
-                if (statusSelect) fd.append('status', statusSelect.value);
-                if (inputLimit) fd.append('hiring_limit', inputLimit.value);
-
-                // 相対パスを使用
-                const apiUrl = 'api/update-job-settings.php';
-                
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    body: fd,
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                });
-
-                const responseText = await response.text();
-                let json;
-                try {
-                    json = JSON.parse(responseText);
-                } catch (e) {
-                    console.error('JSON Parse Error. Response was:', responseText);
-                    throw new Error('サーバーからの応答が正しくありません。');
-                }
-
-                if (json.success) {
-                    alert(json.message || '更新しました');
-                    location.reload();
-                } else {
-                    alert('エラー: ' + (json.error || '更新に失敗しました'));
-                    btn.disabled = false;
-                    btn.textContent = originalText;
-                }
-            } catch (error) {
-                console.error('Update Error:', error);
-                alert('エラーが発生しました: ' + error.message);
-                btn.disabled = false;
-                btn.textContent = originalText;
+    async function postJobSettings(params, btn) {
+        const original = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = '送信中...';
+        try {
+            const fd = new FormData();
+            fd.append('job_id', <?= (int)$jobId ?>);
+            fd.append('csrf_token', csrfToken);
+            Object.entries(params).forEach(([k, v]) => fd.append(k, v));
+            const res = await fetch(settingsApi, { method: 'POST', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+            let json = {};
+            try { json = await res.json(); } catch (e) { throw new Error('サーバーからの応答を読み取れませんでした。時間をおいて再度お試しください。'); }
+            if (!res.ok || !json.success) {
+                throw new Error(json.error || '更新できませんでした');
             }
+            if (typeof showNotification === 'function') showNotification(json.message || '更新しました', 'success');
+            setTimeout(() => location.reload(), 600);
+        } catch (err) {
+            if (typeof showNotification === 'function') showNotification(err.message, 'error'); else alert(err.message);
+            btn.disabled = false;
+            btn.textContent = original;
+        }
+    }
+
+    document.querySelectorAll('.job-status-action').forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (btn.dataset.confirm && !confirm(btn.dataset.confirm)) return;
+            const params = { status: btn.dataset.status };
+            if (btn.dataset.askNote === '1') {
+                const note = prompt('相手へのひとこと（任意）', '');
+                if (note === null) return;
+                if (note.trim() !== '') params.note = note.trim();
+            }
+            postJobSettings(params, btn);
+        });
+    });
+
+    const btnLimit = document.getElementById('btn-save-limit');
+    if (btnLimit) {
+        btnLimit.addEventListener('click', () => {
+            const v = document.getElementById('hiring_limit').value;
+            postJobSettings({ hiring_limit: v }, btnLimit);
         });
     }
 });

@@ -150,7 +150,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if (defined('DEBUG') && DEBUG) {
                     error_log("Profile update values - response_time: " . $responseTime);
                     error_log("Profile update values - fullName: " . $fullName . ", bio length: " . strlen($bio));
-                    error_log("Profile update values - birthdate: " . $birthdate . ", isCreator: " . $isCreator . ", isClient: " . $isClient);
                 }
                 
                 // ユーザー情報を更新
@@ -217,7 +216,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 error_log("Profile update error: " . $e->getMessage());
                 error_log("Stack trace: " . $e->getTraceAsString());
                 error_log("Profile update values - fullName: " . $fullName . ", bio: " . substr($bio, 0, 100) . "...");
-                error_log("Profile update values - birthdate: " . $birthdate . ", userId: " . $userId);
             }
         }
     }
@@ -357,10 +355,10 @@ include 'includes/header.php';
         </form>
 
         <!-- 振込口座設定 -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 lg:p-8 mt-6">
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 lg:p-8 mt-6" id="bank">
             <div class="border-b pb-4 mb-6">
                 <h3 class="text-lg font-medium text-gray-900">振込口座設定</h3>
-                <p class="text-sm text-gray-600 mt-1">案件の報酬を受け取るための銀行口座を設定してください。</p>
+                <p class="text-sm text-gray-600 mt-1">案件の報酬を受け取るための銀行口座です。報酬は依頼者からこの口座へ直接振り込まれます。依頼者に表示されるのは、あなたが「納品を報告」した後だけです。</p>
             </div>
 
             <form id="bank-account-form" class="space-y-4">
@@ -483,7 +481,14 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (hasErrors) {
                 e.preventDefault();
-                alert('以下のエラーがあります：\n\n' + errors.join('\n'));
+                const msg = '入力内容を確認してください：\n' + errors.join('\n');
+                if (typeof showNotification === 'function') {
+                    showNotification(msg, 'error', 8000);
+                } else {
+                    alert(msg);
+                }
+                const firstInvalid = profileForm.querySelector(':invalid') || document.getElementById('birthdate');
+                if (firstInvalid && typeof firstInvalid.focus === 'function') firstInvalid.focus();
                 return false;
             }
         });
@@ -560,7 +565,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             } catch (error) {
                 console.error('save bank account error', error);
-                const errorMsg = '通信エラーが発生しました: ' + error.message;
+                const errorMsg = '通信エラーが発生しました。電波の良い場所でもう一度お試しください。';
                 if (typeof showNotification === 'function') {
                     showNotification(errorMsg, 'error');
                 } else {

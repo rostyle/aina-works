@@ -25,7 +25,8 @@ try {
         LEFT JOIN reviews r ON u.id = r.reviewee_id
         LEFT JOIN works w ON u.id = w.user_id AND w.status = 'published'
         LEFT JOIN job_applications ja ON u.id = ja.creator_id AND ja.status = 'accepted'
-        WHERE u.id = ? AND u.is_creator = 1 AND u.is_active = 1
+        WHERE u.id = ? AND u.is_active = 1
+          AND (u.is_creator = 1 OR u.is_client = 1 OR EXISTS (SELECT 1 FROM jobs jj WHERE jj.client_id = u.id))
         GROUP BY u.id
     ", [$creatorId]);
 
@@ -83,8 +84,8 @@ try {
     redirect(url('creators'));
 }
 
-$pageTitle = h($creator['full_name']) . ' - クリエイタープロフィール';
-$pageDescription = h($creator['bio']);
+$pageTitle = $creator['full_name'] . ' - プロフィール';
+$pageDescription = (string)($creator['bio'] ?? '');
 
 include 'includes/header.php';
 ?>
@@ -164,7 +165,18 @@ include 'includes/header.php';
                 <p class="text-gray-700 leading-relaxed"><?= nl2br(autolink(h($creator['bio']))) ?></p>
             </div>
 
-            <?php if (isLoggedIn() && (int)$currentUser['id'] !== (int)$creator['id']): ?>
+            <?php
+            $canReview = false;
+            if (isLoggedIn() && $currentUser && (int)$currentUser['id'] !== (int)$creator['id']) {
+                $canReview = (bool)$db->selectOne("
+                    SELECT 1 FROM job_applications ja JOIN jobs j ON ja.job_id = j.id
+                    WHERE ja.status = 'accepted'
+                      AND ((j.client_id = ? AND ja.creator_id = ?) OR (j.client_id = ? AND ja.creator_id = ?))
+                    LIMIT 1
+                ", [$currentUser['id'], $creator['id'], $creator['id'], $currentUser['id']]);
+            }
+            ?>
+            <?php if ($canReview): ?>
             <!-- Review Form -->
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
                 <h2 class="text-xl font-semibold text-gray-900 mb-4">このクリエイターをレビュー</h2>
@@ -348,7 +360,7 @@ include 'includes/header.php';
                 <!-- Response Time -->
                 <div class="text-center mb-6">
                     <div class="text-sm text-gray-600">
-                        平均レスポンス時間: <span class="font-medium"><?= $creator['response_time'] ?>時間以内</span>
+                        平均レスポンス時間: <span class="font-medium"><?= (int)$creator['response_time'] ?>時間以内</span>
                     </div>
                 </div>
 
@@ -391,15 +403,11 @@ include 'includes/header.php';
                 <div class="space-y-3 text-sm">
                     <div class="flex justify-between">
                         <span class="text-gray-600">所在地</span>
-                        <span class="text-gray-900"><?= h($creator['location']) ?></span>
+                        <span class="text-gray-900"><?= h($creator['location'] ?: '未設定') ?></span>
                     </div>
                     <div class="flex justify-between">
-                        <span class="text-gray-600">対応可能状況</span>
-                        <span class="text-green-600 font-medium">対応可能</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="text-gray-600">最終ログイン</span>
-                        <span class="text-gray-900">1時間前</span>
+                        <span class="text-gray-600">登録</span>
+                        <span class="text-gray-900"><?= !empty($creator['created_at']) ? h(formatDate($creator['created_at'], 'Y年n月')) : '-' ?></span>
                     </div>
                 </div>
             </div>
@@ -428,6 +436,7 @@ async function toggleFavorite(targetType, targetId, button) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
                 'X-Requested-With': 'XMLHttpRequest'
             },
             body: JSON.stringify(requestData)
@@ -437,7 +446,7 @@ async function toggleFavorite(targetType, targetId, button) {
         console.log('Response OK:', response.ok);
         
         if (response.status === 401) {
-            const redirectUrl = 'login.php?redirect=' + encodeURIComponent(window.location.href);
+            const redirectUrl = <?= json_encode(url('login')) ?> + '?redirect=' + encodeURIComponent(window.location.pathname + window.location.search);
             window.location.href = redirectUrl;
             return;
         }

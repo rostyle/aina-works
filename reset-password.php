@@ -19,10 +19,11 @@ $email = '';
 if (!empty($token)) {
     try {
         $db = Database::getInstance();
-        $resetData = $db->selectOne(
-            "SELECT * FROM password_resets WHERE token = ? AND used_at IS NULL AND expires_at > NOW()",
-            [$token]
-        );
+        // トークンはハッシュで保存している（旧形式の平文トークンも有効期限内は受け付ける）
+        $resetData = is_string($token) && preg_match('/^[0-9a-f]{64}$/', $token) ? $db->selectOne(
+            "SELECT * FROM password_resets WHERE token IN (?, ?) AND used_at IS NULL AND expires_at > NOW()",
+            [hash('sha256', $token), $token]
+        ) : null;
         
         if ($resetData) {
             $validToken = true;
@@ -76,23 +77,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $validToken) {
                 $passwordHash = password_hash($password, PASSWORD_DEFAULT);
                 
                 // ユーザーのパスワードを更新
+                // マイページ会員のアカウントにはローカルパスワードを設定しない
                 $updated = $db->update(
-                    "UPDATE users SET password_hash = ?, updated_at = NOW() WHERE email = ? AND is_active = 1",
+                    "UPDATE users SET password_hash = ?, updated_at = NOW() WHERE email = ? AND is_active = 1 AND (aina_user_id IS NULL OR aina_user_id = '')",
                     [$passwordHash, $email]
                 );
                 
                 if ($updated > 0) {
                     // リセットトークンを使用済みにマーク
                     $db->update(
-                        "UPDATE password_resets SET used_at = NOW() WHERE token = ?",
-                        [$token]
+                        "UPDATE password_resets SET used_at = NOW() WHERE id = ?",
+                        [$resetData['id']]
                     );
                     
                     $db->commit();
                     $success = true;
                     
                     // ログに記録
-                    error_log("パスワードリセット完了: " . $email);
+                    error_log("パスワード再設定完了");
                 } else {
                     $db->rollback();
                     $errors['general'] = 'パスワードの更新に失敗しました。';

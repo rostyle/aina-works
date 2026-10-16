@@ -57,7 +57,7 @@ include '../includes/header.php';
                 <?php foreach ($courses as $course): ?>
                     <?php
                     $isBooked = in_array($course['id'], $bookedCourseIds);
-                    $scheduledDate = new DateTime($course['scheduled_at']);
+                    $scheduledDate = new DateTime($course['start'] ?? $course['scheduled_at'] ?? 'now');
                     $now = new DateTime();
                     $isPast = $scheduledDate < $now;
                     ?>
