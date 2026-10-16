@@ -11,6 +11,7 @@
 
 ## 設定（Git に入らないファイル）
 - `config/config.php` … `config/config.php.sample` をコピー
+  - 本番の config.php は古い版で、先頭の `ob_start()` が無く、末尾で改行を出力する（2026-10-17 のデプロイ後確認で判明）。ローカルでも先頭の `ob_start()` ブロックを消し、末尾に `?>` と空行を置いて再現しておくと、状態コードやCookieが送れない不具合を拾える。
 - `.env` … `.env.sample` をコピーし、次を設定
   ```
   SITE_URL=http://127.0.0.1:8080

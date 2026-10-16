@@ -3,6 +3,17 @@
  * 共通関数
  */
 
+if (PHP_SAPI !== 'cli') {
+    // 本番の config.php（git外）は読み込み後に改行を出力する。そのままだと状態コード・Cookie・リダイレクトの
+    // ヘッダが送れない（401が200になる、添付ファイルの先頭に改行が混ざる）ので、出力をいったん溜める
+    if (ob_get_level() === 0) {
+        ob_start();
+    }
+    // PHPの警告を利用者の画面に出さない（サーバーのパスが見える）。ログには残す
+    ini_set('display_errors', '0');
+    ini_set('log_errors', '1');
+}
+
 if (!defined('AINA_MYPAGE_URL')) {
     define('AINA_MYPAGE_URL', 'https://mypage.ai-na.co.jp/');
 }
@@ -1839,7 +1850,7 @@ function chatFileUrl($messageId, bool $download = false): string {
  * セッションIDを作り直し、Cookie属性（HttpOnly/SameSite/Secure）を付け直す
  */
 function regenerateSessionSecurely(): void {
-    if (session_status() !== PHP_SESSION_ACTIVE) {
+    if (session_status() !== PHP_SESSION_ACTIVE || headers_sent()) {
         return;
     }
     session_regenerate_id(true);

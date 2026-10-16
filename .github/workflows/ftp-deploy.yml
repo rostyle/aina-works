@@ -119,11 +119,11 @@ jobs:
           if [ "$c" = 200 ] && grep -q '\.bg-white{' /tmp/body; then ok "tailwind.css served"; else ng "tailwind.css ($c)"; fi
 
           c=$(code "$SITE/api/health.php")
-          if [ "$c" = 200 ] && grep -q '"ok":true' /tmp/body; then ok "health $(cat /tmp/body)"; else ng "health ($c) $(head -c 200 /tmp/body)"; fi
+          if [ "$c" = 200 ] && [ "$(head -c1 /tmp/body)" = "{" ] && grep -q '"ok":true' /tmp/body; then ok "health $(cat /tmp/body)"; else ng "health ($c) $(head -c 300 /tmp/body)"; fi
           grep -q '"clock_ok":true' /tmp/body || echo "::warning::DBの時刻がPHP(Asia/Tokyo)とずれています: $(cat /tmp/body)"
 
           c=$(code "$SITE/api/get_job.php?id=1")
-          if [ "$c" = 401 ] || [ "$c" = 403 ]; then ok "get_job anonymous denied ($c)"; else ng "get_job anonymous ($c)"; fi
+          if [ "$c" = 401 ] || [ "$c" = 403 ]; then ok "get_job anonymous denied ($c)"; else ng "get_job anonymous ($c) $(head -c 200 /tmp/body)"; fi
 
           for p in debug_env.php debug_schema.php debug_production_stories_v2.php serve.php api/send-chat-message.php api/upload-chat-file.php package.json tailwind.config.js; do
             c=$(code "$SITE/$p")
