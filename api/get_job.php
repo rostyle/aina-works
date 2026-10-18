@@ -4,6 +4,8 @@
  * 依頼者のメールアドレスを含むため管理者のみに返す。
  */
 require_once __DIR__ . '/../config/config.php';
+// Legacy server config may not load this dependency; declare it before auth errors.
+require_once __DIR__ . '/../includes/error-handler.php';
 
 if (!isLoggedIn()) {
     ErrorHandler::jsonAuthError();
@@ -50,3 +52,4 @@ try {
 } catch (Exception $e) {
     ErrorHandler::handleException($e);
 }
+
