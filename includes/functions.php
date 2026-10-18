@@ -3,6 +3,17 @@
  * 共通関数
  */
 
+if (PHP_SAPI !== 'cli') {
+    // Legacy production config emits whitespace after loading this file.
+    // Buffer it so status codes, cookies, redirects and JSON remain intact.
+    if (ob_get_level() === 0) {
+        ob_start();
+    }
+    // Keep PHP diagnostics in server logs, never in public responses.
+    ini_set('display_errors', '0');
+    ini_set('log_errors', '1');
+}
+
 if (!defined('AINA_MYPAGE_URL')) {
     define('AINA_MYPAGE_URL', 'https://mypage.ai-na.co.jp/');
 }
@@ -1839,7 +1850,7 @@ function chatFileUrl($messageId, bool $download = false): string {
  * セッションIDを作り直し、Cookie属性（HttpOnly/SameSite/Secure）を付け直す
  */
 function regenerateSessionSecurely(): void {
-    if (session_status() !== PHP_SESSION_ACTIVE) {
+    if (session_status() !== PHP_SESSION_ACTIVE || headers_sent()) {
         return;
     }
     session_regenerate_id(true);
@@ -2085,3 +2096,4 @@ function sanitizeImageRef($value, $current = null): string {
     }
     return '';
 }
+
