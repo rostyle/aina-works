@@ -38,6 +38,7 @@ jobs:
           server-dir: /aina-works/                    # ← 末尾のスラッシュ必須
           exclude: |                                      # 余計なものは送らない
             **/.git*
+            **/.git*/**
             **/.github/**
             **/node_modules/**
             **/*.md
@@ -119,7 +120,7 @@ jobs:
           if [ "$c" = 200 ] && grep -q '\.bg-white{' /tmp/body; then ok "tailwind.css served"; else ng "tailwind.css ($c)"; fi
 
           c=$(code "$SITE/api/health.php")
-          if [ "$c" = 200 ] && grep -q '"ok":true' /tmp/body; then ok "health $(cat /tmp/body)"; else ng "health ($c) $(head -c 200 /tmp/body)"; fi
+          if [ "$c" = 200 ] && [ "$(head -c1 /tmp/body)" = "{" ] && grep -q '"ok":true' /tmp/body; then ok "health $(cat /tmp/body)"; else ng "health ($c) $(head -c 300 /tmp/body)"; fi
           grep -q '"clock_ok":true' /tmp/body || echo "::warning::DBの時刻がPHP(Asia/Tokyo)とずれています: $(cat /tmp/body)"
 
           c=$(code "$SITE/api/get_job.php?id=1")
@@ -138,3 +139,4 @@ jobs:
           if [ "$c" = 400 ]; then ok "LINE webhook secret configured"; else echo "::warning::LINE webhook returned $c（503 なら .env の DEMI_LINE_CHANNEL_SECRET が未設定）"; fi
 
           exit $fail
+

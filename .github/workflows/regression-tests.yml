@@ -1,0 +1,64 @@
+name: Regression tests
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: local-test-root
+          MYSQL_DATABASE: aina_works
+          MYSQL_USER: aina
+          MYSQL_PASSWORD: aina
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -plocal-test-root"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: pdo_mysql, gd, fileinfo, mbstring
+          tools: composer
+      - name: PHP syntax check
+        run: |
+          set -o pipefail
+          git ls-files -z '*.php' | xargs -0 -n1 php -l
+      - name: Legacy config HTTP regression
+        run: python3 tests/header_regression.py
+      - name: Check FTP exclusion patterns
+        run: |
+          npm install --prefix "$RUNNER_TEMP/deploy-test" --ignore-scripts --no-audit --no-fund multimatch@5.0.0 js-yaml@4.1.0
+          NODE_PATH="$RUNNER_TEMP/deploy-test/node_modules" node tests/deploy_exclusions.cjs
+      - name: Prepare isolated application test configuration
+        run: |
+          composer install --no-interaction --prefer-dist
+          cp config/config.php.sample config/config.php
+          cat > .env <<'ENV'
+          SITE_URL=http://127.0.0.1:8080
+          DB_HOST=127.0.0.1
+          DB_USER=aina
+          DB_PASS=aina
+          AINA_API_BASE_URL=http://127.0.0.1:8099/api/external
+          AINA_API_KEY=local-key
+          MAIL_HOST=127.0.0.1
+          MAIL_PORT=1025
+          ADMIN_EMAILS=admin@example.com
+          DEBUG=true
+          ENV
+          printf '[client]\nhost=127.0.0.1\nuser=root\npassword=local-test-root\n' > "$HOME/.my.cnf"
+      - name: Application regression suite
+        run: bash tests/run_local.sh
