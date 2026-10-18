@@ -21,12 +21,12 @@ def main():
         for path in ('includes/functions.php', 'includes/error-handler.php', 'api/health.php', 'api/get_job.php'):
             shutil.copyfile(ROOT / path, root / path)
         # Deliberately no initial ob_start(), and output after loading functions,
-        # matching the legacy production config without reading that private file.
+        # matching legacy config behavior without reading that private file.
+        # Also omit ErrorHandler loading: endpoints must declare that dependency.
         (root / 'config/config.php').write_text('''<?php
 session_start();
 define('DEBUG', false);
 require_once __DIR__ . '/../includes/functions.php';
-require_once __DIR__ . '/../includes/error-handler.php';
 class Database {
     public static function getInstance() {
         file_put_contents(__DIR__ . '/../db-touched', '1');
