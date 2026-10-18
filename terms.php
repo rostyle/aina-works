@@ -168,7 +168,6 @@ require_once __DIR__ . '/includes/header.php';
           <div class="text-gray-700">
             <p class="mb-2"><strong>株式会社AiNA BRAIN</strong></p>
             <p class="mb-2">メール：info@ai-na.co.jp</p>
-            <p class="mb-2">電話：050-1720-4108（平日10:00-17:00）</p>
             <p>住所：〒107-0052 東京都港区赤坂五丁目2番33号 IsaI AkasakA 705号室</p>
           </div>
         </div>
